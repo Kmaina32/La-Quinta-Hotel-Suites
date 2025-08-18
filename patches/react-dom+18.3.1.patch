@@ -1,0 +1,49 @@
+diff --git a/node_modules/react-dom/cjs/react-dom-server-rendering-stub.development.js b/node_modules/react-dom/cjs/react-dom-server-rendering-stub.development.js
+index e4fc794..8247346 100644
+--- a/node_modules/react-dom/cjs/react-dom-server-rendering-stub.development.js
++++ b/node_modules/react-dom/cjs/react-dom-server-rendering-stub.development.js
+@@ -290,7 +290,9 @@
+   if (typeof action === 'function') {
+     // TODO: Use a unique symbol for this.
+     if (action.$$typeof === Symbol.for('react.server.reference')) {
+-      return ['$$id', action.$$id];
++      // The data-action line is the string representation of the action
++      // so we have to turn this back into an object.
++      return {
++        $$id: action.$$id,
++        $$typeof: Symbol.for('react.server.reference'),
++        $$async: action.$$async
++      };
+     }
+ 
+     var name = getActionName(action);
+diff --git a/node_modules/react-dom/cjs/react-dom.development.js b/node_modules/react-dom/cjs/react-dom.development.js
+index 9a7380c..1b5f2cf 100644
+--- a/node_modules/react-dom/cjs/react-dom.development.js
++++ b/node_modules/react-dom/cjs/react-dom.development.js
+@@ -10714,7 +10714,9 @@
+     if (typeof action === 'function') {
+       // TODO: Use a unique symbol for this.
+       if (action.$$typeof === Symbol.for('react.server.reference')) {
+-        return ['$$id', action.$$id];
++        return {
++          $$id: action.$$id
++        };
+       }
+ 
+       var name = getActionName(action);
+diff --git a/node_modules/react-dom/umd/react-dom.development.js b/node_modules/react-dom/umd/react-dom.development.js
+index a320a17..6662198 100644
+--- a/node_modules/react-dom/umd/react-dom.development.js
++++ b/node_modules/react-dom/umd/react-dom.development.js
+@@ -10984,7 +10984,9 @@
+     if (typeof action === 'function') {
+       // TODO: Use a unique symbol for this.
+       if (action.$$typeof === Symbol.for('react.server.reference')) {
+-        return ['$$id', action.$$id];
++        return {
++          $$id: action.$$id
++        };
+       }
+ 
+       var name = getActionName(action);

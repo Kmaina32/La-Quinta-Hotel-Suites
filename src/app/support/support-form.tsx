@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useFormStatus } from 'react-dom';
 import { generateResponse, type State } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,7 @@ function SubmitButton() {
 
 export default function SupportForm() {
   const initialState: State = { message: null, errors: {} };
-  const [state, dispatch] = useFormState(generateResponse, initialState);
+  const [state, formAction] = useActionState(generateResponse, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -41,7 +42,7 @@ export default function SupportForm() {
 
   return (
     <Card>
-      <form ref={formRef} action={dispatch}>
+      <form ref={formRef} action={formAction}>
         <CardHeader>
           <CardTitle className="font-headline">Customer Inquiry</CardTitle>
           <CardDescription>

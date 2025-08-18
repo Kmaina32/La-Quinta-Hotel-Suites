@@ -2,23 +2,35 @@
 'use client';
 
 import Image from 'next/image';
-import { Suspense } from 'react';
+import { Suspense, useState, useMemo } from 'react';
 import { notFound } from 'next/navigation';
 import { rooms } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const getRoomById = (id: string) => rooms.find((room) => room.id === id);
 
 function RoomDetailsContent({ params }: { params: { id: string } }) {
-  const room = getRoomById(params.id);
+  const room = useMemo(() => getRoomById(params.id), [params.id]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   if (!room) {
     notFound();
   }
+
+  const allImages = [room.image, ...room.images];
+
+  const openModal = (imageSrc: string) => {
+    setSelectedImage(imageSrc);
+  };
+
+  const closeModal = () => {
+    setSelectedImage(null);
+  };
+
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -27,27 +39,51 @@ function RoomDetailsContent({ params }: { params: { id: string } }) {
         <div className="container mx-auto px-4 py-12 md:px-6 md:py-16">
           <div className="grid gap-12 md:grid-cols-2">
             <div>
-              <Image
-                src={room.image}
-                alt={room.name}
-                width={800}
-                height={600}
-                className="aspect-[4/3] w-full rounded-lg object-cover"
-                data-ai-hint="hotel room"
-              />
-              <div className="mt-4 grid grid-cols-3 gap-4">
-                {room.images.map((img, index) => (
+              <Dialog open={!!selectedImage} onOpenChange={(isOpen) => !isOpen && closeModal()}>
+                <div 
+                  onClick={() => openModal(room.image)}
+                  className="cursor-pointer"
+                >
                   <Image
-                    key={index}
-                    src={img}
-                    alt={`${room.name} view ${index + 1}`}
-                    width={200}
-                    height={150}
+                    src={room.image}
+                    alt={room.name}
+                    width={800}
+                    height={600}
                     className="aspect-[4/3] w-full rounded-lg object-cover"
-                     data-ai-hint="hotel room interior"
+                    data-ai-hint="hotel room"
+                    priority
                   />
-                ))}
-              </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-4">
+                  {room.images.map((img, index) => (
+                    <div 
+                      key={index}
+                      onClick={() => openModal(img)}
+                      className="cursor-pointer"
+                    >
+                      <Image
+                        src={img}
+                        alt={`${room.name} view ${index + 1}`}
+                        width={200}
+                        height={150}
+                        className="aspect-[4/3] w-full rounded-lg object-cover"
+                        data-ai-hint="hotel room interior"
+                      />
+                    </div>
+                  ))}
+                </div>
+                {selectedImage && (
+                    <DialogContent className="max-w-4xl p-0">
+                        <Image
+                            src={selectedImage}
+                            alt="Enlarged room view"
+                            width={1200}
+                            height={900}
+                            className="h-auto w-full rounded-lg object-contain"
+                        />
+                    </DialogContent>
+                )}
+              </Dialog>
             </div>
             <div className="flex flex-col">
               <h1 className="font-headline text-4xl font-bold">{room.name}</h1>
@@ -88,6 +124,3 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
     </Suspense>
   );
 }
-
-
-    

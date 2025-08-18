@@ -27,6 +27,7 @@ export type AuthState = {
     general?: string[];
   };
   message?: string | null;
+  success?: boolean;
 };
 
 function handleAuthError(error: AuthError): AuthState {
@@ -57,12 +58,18 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
   const { email, password } = validatedFields.data;
 
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if(userCredential.user) {
+        // This will trigger the effect in the dialog
+        return { success: true }
+    }
   } catch (e) {
     return handleAuthError(e as AuthError);
   }
   
-  redirect('/bookings');
+  // This redirect is now handled by the effect in the component
+  // redirect('/bookings');
+  return { success: true };
 }
 
 export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {
@@ -77,10 +84,15 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
   const { email, password } = validatedFields.data;
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+     if (userCredential.user) {
+        return { success: true };
+     }
   } catch (e) {
      return handleAuthError(e as AuthError);
   }
   
-  redirect('/bookings');
+  // This redirect is now handled by the effect in the component
+  // redirect('/bookings');
+   return { success: true };
 }

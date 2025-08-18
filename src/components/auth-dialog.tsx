@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useState, useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { login, signup, type AuthState } from '@/app/auth-actions';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/context/auth-context';
+import { useRouter } from 'next/navigation';
 
 function SubmitButton({ isLogin }: { isLogin: boolean }) {
   const { pending } = useFormStatus();
@@ -23,6 +25,17 @@ export default function AuthDialog() {
   const [open, setOpen] = useState(false);
   const [loginState, loginAction] = useActionState(login, { message: null, errors: {} });
   const [signupState, signupAction] = useActionState(signup, { message: null, errors: {} });
+  const { user } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    // If the user becomes authenticated and the dialog is open, close it.
+    if (user && open) {
+      setOpen(false);
+      // Redirect to bookings page after successful login/signup
+      router.push('/bookings');
+    }
+  }, [user, open, router]);
 
 
   return (

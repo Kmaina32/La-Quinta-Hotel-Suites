@@ -1,7 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { Menu, UserCircle } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -10,6 +16,14 @@ const navLinks = [
 ];
 
 export default function Header() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -28,9 +42,24 @@ export default function Header() {
           ))}
         </nav>
         <div className="hidden items-center gap-4 md:flex">
-          <Link href="/#rooms">
-            <Button>Book Now</Button>
-          </Link>
+          {user ? (
+            <>
+              <span className="text-sm text-muted-foreground hidden lg:inline">Welcome, {user.email}</span>
+               <Button variant="ghost" size="icon" onClick={() => router.push('/bookings')}>
+                <UserCircle className="h-6 w-6" />
+              </Button>
+              <Button variant="outline" onClick={handleLogout}>Logout</Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Login</Button>
+              </Link>
+              <Link href="/signup">
+                <Button>Sign Up</Button>
+              </Link>
+            </>
+          )}
         </div>
         <div className="md:hidden">
           <Sheet>
@@ -56,9 +85,20 @@ export default function Header() {
                     </Link>
                   ))}
                 </nav>
-                <Link href="/#rooms">
-                  <Button className="w-full">Book Now</Button>
-                </Link>
+                <div className="mt-4">
+                  {user ? (
+                    <Button className="w-full" onClick={handleLogout}>Logout</Button>
+                  ) : (
+                    <div className='flex flex-col gap-2'>
+                      <Link href="/login">
+                        <Button variant="outline" className="w-full">Login</Button>
+                      </Link>
+                      <Link href="/signup">
+                        <Button className="w-full">Sign Up</Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </SheetContent>
           </Sheet>

@@ -26,12 +26,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type Booking, rooms } from '@/lib/data';
+import { useAuth } from '@/context/auth-context';
 
 
 export default function BookingForm() {
   const router = useRouter();
   const params = useParams();
   const room = rooms.find(r => r.id === params.id);
+  const { user } = useAuth();
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
@@ -53,6 +55,10 @@ export default function BookingForm() {
   };
   
   const handleBooking = () => {
+    if (!user) {
+        router.push('/login');
+        return;
+    }
     if (!room) {
         // If on the homepage where there is no specific room, redirect to rooms section.
         router.push('/#rooms');
@@ -67,11 +73,12 @@ export default function BookingForm() {
 
   const handlePayment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!date?.from || !date?.to || !room) return;
+    if (!date?.from || !date?.to || !room || !user) return;
 
     const nights = differenceInDays(date.to, date.from);
     const newBooking: Booking = {
       id: `BK${Date.now()}`,
+      userId: user.uid,
       roomId: room.id,
       roomName: room.name,
       checkIn: format(date.from, 'yyyy-MM-dd'),

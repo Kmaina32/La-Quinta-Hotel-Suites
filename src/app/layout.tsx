@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import WhatsappButton from '@/components/whatsapp-button';
+import { AuthProvider } from '@/context/auth-context';
 
 export const metadata: Metadata = {
   title: 'La Quinta Hotel & Suites',
@@ -29,9 +30,11 @@ export default function RootLayout({
           'min-h-screen bg-background font-body antialiased'
         )}
       >
-        {children}
-        <Toaster />
-        <WhatsappButton />
+        <AuthProvider>
+          {children}
+          <Toaster />
+          <WhatsappButton />
+        </AuthProvider>
       </body>
     </html>
   );

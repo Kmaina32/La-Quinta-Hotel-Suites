@@ -23,6 +23,7 @@ export const establishmentImages: EstablishmentImage[] = roomsData.establishment
 
 export type Booking = {
   id: string;
+  userId: string;
   roomId: string;
   roomName: string;
   checkIn: string;

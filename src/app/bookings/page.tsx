@@ -16,19 +16,39 @@ import { type Booking } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { cn } from '@/lib/utils';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
+import { useRouter } from 'next/navigation';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const storedBookings = localStorage.getItem('bookings');
-    if (storedBookings) {
-      setBookings(JSON.parse(storedBookings));
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login');
+      } else {
+        const storedBookings = localStorage.getItem('bookings');
+        if (storedBookings) {
+          const allBookings = JSON.parse(storedBookings) as Booking[];
+          const userBookings = allBookings.filter(booking => booking.userId === user.uid);
+          setBookings(userBookings);
+        }
+        setIsLoading(false);
+      }
     }
-    setIsLoading(false);
-  }, []);
+  }, [user, authLoading, router]);
+
+  if (authLoading || isLoading) {
+      return (
+        <div className="flex min-h-screen w-full items-center justify-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+      )
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -43,9 +63,7 @@ export default function BookingsPage() {
           </div>
 
           <div className="grid gap-6">
-            {isLoading ? (
-                <p>Loading bookings...</p>
-            ) : bookings.length > 0 ? (
+            {bookings.length > 0 ? (
               bookings.map((booking) => (
                 <Card key={booking.id} className="w-full">
                   <CardHeader>

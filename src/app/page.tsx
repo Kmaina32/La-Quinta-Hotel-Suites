@@ -30,16 +30,16 @@ export default function Home() {
       <main className="flex-1">
         <section
           id="hero"
-          className="relative h-[80vh] min-h-[500px] w-full"
+          className="relative h-[90vh] min-h-[600px] w-full p-4 md:p-6"
         >
           <Image
             src={config.heroImageUrl}
             alt="Laquinta Hotel & Suites"
             data-ai-hint="hotel exterior"
             fill
-            className="object-cover"
+            className="object-cover rounded-lg"
           />
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-black/50 rounded-lg" />
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
             <h1 className="font-headline text-5xl font-bold md:text-7xl">
               Laquinta Hotel & Suites

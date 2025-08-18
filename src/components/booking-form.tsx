@@ -65,7 +65,7 @@ export default function BookingForm() {
 
   return (
     <>
-      <Card className="mt-8 w-full max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
+      <Card className="mt-8 w-full max-w-sm md:max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
         <CardContent className="p-0">
           <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
             <div className="grid w-full items-center gap-1.5 text-left">

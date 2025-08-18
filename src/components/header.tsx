@@ -15,8 +15,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/#rooms', label: 'Rooms' },
-  { href: '/bookings', label: 'My Bookings' },
-  { href: '/support', label: 'Support' },
 ];
 
 export default function Header() {
@@ -45,80 +43,98 @@ export default function Header() {
             </Link>
           ))}
            {user && (
-            <Link href="/admin" className="text-sm font-medium transition-colors hover:text-primary">
-              Admin
-            </Link>
+             <>
+                <Link href="/bookings" className="text-sm font-medium transition-colors hover:text-primary">
+                    My Bookings
+                </Link>
+                <Link href="/support" className="text-sm font-medium transition-colors hover:text-primary">
+                    Support
+                </Link>
+                <Link href="/admin" className="text-sm font-medium transition-colors hover:text-primary">
+                Admin
+                </Link>
+             </>
           )}
         </nav>
-        <div className="hidden items-center gap-4 md:flex">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="icon" className="rounded-full">
-                  <UserCircle className="h-5 w-5" />
-                  <span className="sr-only">Toggle user menu</span>
+        <div className="flex items-center gap-4">
+            <div className="hidden md:flex">
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                      <UserCircle className="h-5 w-5" />
+                      <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                        <p className="text-sm font-medium leading-none">My Account</p>
+                        <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/bookings')}>Bookings</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/support')}>Support</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <AuthDialog />
+              )}
+            </div>
+            <div className="md:hidden">
+            <Sheet>
+                <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Toggle navigation menu</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                    <p className="text-sm font-medium leading-none">My Account</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/bookings')}>Bookings</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/support')}>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <AuthDialog />
-          )}
-        </div>
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <div className="grid gap-4 p-4">
-                <Link href="/" className="flex items-center gap-2">
-                  <span className="font-headline text-xl font-bold">La Quinta</span>
-                </Link>
-                <nav className="grid gap-2">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="rounded-md p-2 font-medium hover:bg-accent hover:text-accent-foreground"
-                    >
-                      {link.label}
+                </SheetTrigger>
+                <SheetContent side="right">
+                <div className="grid gap-4 p-4">
+                    <Link href="/" className="flex items-center gap-2">
+                    <span className="font-headline text-xl font-bold">La Quinta</span>
                     </Link>
-                  ))}
-                   {user && (
-                    <Link href="/admin" className="rounded-md p-2 font-medium hover:bg-accent hover:text-accent-foreground">
-                      Admin
-                    </Link>
-                  )}
-                </nav>
-                <div className="mt-4">
-                  {user ? (
-                     <div className='flex flex-col gap-2'>
-                        <div className="text-sm text-center">
-                            Signed in as <span className='font-semibold'>{user.email}</span>
+                    <nav className="grid gap-2">
+                    {navLinks.map((link) => (
+                        <Link
+                        key={link.href}
+                        href={link.href}
+                        className="rounded-md p-2 font-medium hover:bg-accent hover:text-accent-foreground"
+                        >
+                        {link.label}
+                        </Link>
+                    ))}
+                    {user && (
+                        <>
+                         <Link href="/bookings" className="rounded-md p-2 font-medium hover:bg-accent hover:text-accent-foreground">
+                            My Bookings
+                        </Link>
+                        <Link href="/support" className="rounded-md p-2 font-medium hover:bg-accent hover:text-accent-foreground">
+                            Support
+                        </Link>
+                        <Link href="/admin" className="rounded-md p-2 font-medium hover:bg-accent hover:text-accent-foreground">
+                            Admin
+                        </Link>
+                        </>
+                    )}
+                    </nav>
+                    <div className="mt-4">
+                    {user ? (
+                        <div className='flex flex-col gap-2'>
+                            <div className="text-sm text-center">
+                                Signed in as <span className='font-semibold'>{user.email}</span>
+                            </div>
+                            <Button className="w-full" onClick={handleLogout}>Logout</Button>
                         </div>
-                        <Button className="w-full" onClick={handleLogout}>Logout</Button>
-                     </div>
-                  ) : (
-                    <AuthDialog />
-                  )}
+                    ) : (
+                        <AuthDialog />
+                    )}
+                    </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+                </SheetContent>
+            </Sheet>
+            </div>
         </div>
       </div>
     </header>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useActionState, useEffect } from 'react';
+import { useState, useActionState, useEffect, use } from 'react';
 import { useFormStatus } from 'react-dom';
 import { login, signup, type AuthState } from '@/app/auth-actions';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,8 @@ export default function AuthDialog() {
   useEffect(() => {
     if (loginState.success || signupState.success) {
         setOpen(false);
+        // The router.push is now the single source of truth for redirection.
+        // It relies on the form state success flag.
         router.push('/bookings');
     }
   }, [loginState.success, signupState.success, router]);

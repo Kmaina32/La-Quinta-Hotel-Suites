@@ -128,7 +128,9 @@ export default function Header() {
                             <Button className="w-full" onClick={handleLogout}>Logout</Button>
                         </div>
                     ) : (
-                        <AuthDialog />
+                       <div className="w-full">
+                          <AuthDialog />
+                       </div>
                     )}
                     </div>
                 </div>

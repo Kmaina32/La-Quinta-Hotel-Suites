@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useActionState, useEffect, use } from 'react';
+import { useState, useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { login, signup, type AuthState } from '@/app/auth-actions';
 import { Button } from '@/components/ui/button';
@@ -23,19 +23,36 @@ function SubmitButton({ isLogin }: { isLogin: boolean }) {
 
 export default function AuthDialog() {
   const [open, setOpen] = useState(false);
-  const [loginState, loginAction] = useActionState(login, { message: null, errors: {} });
-  const [signupState, signupAction] = useActionState(signup, { message: null, errors: {} });
   const { user } = useAuth();
   const router = useRouter();
+
+  // Reset initial state to avoid carrying over old errors
+  const loginInitialState: AuthState = { message: null, errors: {} };
+  const signupInitialState: AuthState = { message: null, errors: {} };
+  
+  const [loginState, loginAction] = useActionState(login, loginInitialState);
+  const [signupState, signupAction] = useActionState(signup, signupInitialState);
   
   useEffect(() => {
-    if (loginState.success || signupState.success) {
+    // If the user is successfully authenticated (either by login or signup),
+    // and the dialog is open, close it and redirect.
+    if (user && open) {
         setOpen(false);
-        // The router.push is now the single source of truth for redirection.
-        // It relies on the form state success flag.
         router.push('/bookings');
     }
-  }, [loginState.success, signupState.success, router]);
+  }, [user, open, router]);
+
+  // This effect handles closing the dialog ONLY if the auth state becomes successful.
+  // The redirection is now implicitly handled by the parent context detecting the user change.
+  useEffect(() => {
+    if (loginState.success || signupState.success) {
+      if (open) {
+        // The onAuthStateChanged listener in AuthProvider will pick up the change,
+        // update the `user` context, and the effect above will trigger the redirect.
+        setOpen(false);
+      }
+    }
+  }, [loginState.success, signupState.success, open]);
 
 
   return (

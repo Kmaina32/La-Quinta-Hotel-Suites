@@ -35,24 +35,26 @@ export default function Home() {
       <main className="flex-1">
         <section
           id="hero"
-          className="relative h-[90vh] min-h-[600px] w-full p-4 md:p-6"
+          className="relative h-[90vh] min-h-[600px] w-full"
         >
-          <Image
-            src={config.heroImageUrl}
-            alt="La Quinta Hotel & Suites"
-            data-ai-hint="hotel exterior"
-            fill
-            className="object-cover rounded-lg"
-          />
-          <div className="absolute inset-0 bg-black/50 rounded-lg" />
-          <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
-            <h1 className="font-headline text-5xl font-bold md:text-7xl">
-              La Quinta Hotel & Suites
-            </h1>
-            <p className="mt-4 max-w-2xl text-lg md:text-xl">
-              Your serene getaway in the heart of Nakuru. Experience unparalleled comfort and hospitality.
-            </p>
-            <BookingForm />
+        <div className="relative h-full w-full p-4 md:p-6 lg:p-8">
+            <Image
+                src={config.heroImageUrl}
+                alt="La Quinta Hotel & Suites"
+                data-ai-hint="hotel exterior"
+                fill
+                className="object-cover rounded-lg"
+            />
+            <div className="absolute inset-0 bg-black/50 rounded-lg" />
+            <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white px-4">
+                <h1 className="font-headline text-5xl font-bold md:text-7xl">
+                La Quinta Hotel & Suites
+                </h1>
+                <p className="mt-4 max-w-2xl text-lg md:text-xl">
+                Your serene getaway in the heart of Nakuru. Experience unparalleled comfort and hospitality.
+                </p>
+                <BookingForm />
+            </div>
           </div>
         </section>
 

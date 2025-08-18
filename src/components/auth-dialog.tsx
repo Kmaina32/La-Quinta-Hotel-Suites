@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useActionState, useEffect } from 'react';
+import { useState, useActionState, useEffect, ReactNode } from 'react';
 import { useFormStatus } from 'react-dom';
 import { login, signup, type AuthState } from '@/app/auth-actions';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,7 @@ function SubmitButton({ isLogin }: { isLogin: boolean }) {
   );
 }
 
-export default function AuthDialog({ children, onAuthSuccess }: { children: React.ReactNode, onAuthSuccess?: () => void }) {
-  const [open, setOpen] = useState(false);
+export default function AuthDialog({ children, open, onOpenChange, onAuthSuccess }: { children: ReactNode, open?: boolean, onOpenChange?: (open: boolean) => void, onAuthSuccess?: () => void }) {
   const router = useRouter();
 
   const loginInitialState: AuthState = { message: null, errors: {} };
@@ -32,18 +31,20 @@ export default function AuthDialog({ children, onAuthSuccess }: { children: Reac
 
   useEffect(() => {
     if (loginState.success || signupState.success) {
-      setOpen(false); // Close the dialog
       if (onAuthSuccess) {
         onAuthSuccess();
       } else {
-        router.refresh(); // Force a refresh to update auth state across the app
+        router.refresh(); 
         router.push('/bookings');
       }
+      if(onOpenChange) {
+        onOpenChange(false);
+      }
     }
-  }, [loginState.success, signupState.success, onAuthSuccess, router]);
+  }, [loginState.success, signupState.success, onAuthSuccess, onOpenChange, router]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>

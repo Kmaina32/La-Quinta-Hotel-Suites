@@ -97,15 +97,19 @@ export default function BookingForm() {
   // This function is passed to the AuthDialog to handle successful authentication
   const onAuthSuccess = () => {
      setIsAuthDialogOpen(false); // Close the dialog
-     handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
+     if (!isAvailable) {
+        handleAvailabilityCheck();
+     } else {
+        handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
+     }
   };
 
   return (
     <>
       <Card className="mt-8 w-full max-w-sm md:max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
         <CardContent className="p-0">
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-4 lg:items-end">
-            <div className="grid w-full items-center gap-1.5 text-left md:col-span-2 lg:col-span-1">
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-3 lg:grid-cols-5 lg:items-end">
+            <div className="grid w-full items-center gap-1.5 text-left md:col-span-3 lg:col-span-2">
               <Label htmlFor="dates" className="text-white">
                 Check-in - Check-out
               </Label>
@@ -161,7 +165,7 @@ export default function BookingForm() {
                 min={1}
               />
             </div>
-            <div className="flex flex-col gap-4 sm:flex-row md:col-span-2 lg:col-span-2">
+            <div className="flex flex-col gap-4 sm:flex-row md:col-span-3 lg:col-span-2">
               <Button
                 type="button"
                 className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
@@ -177,20 +181,21 @@ export default function BookingForm() {
                   'Check Availability'
                 )}
               </Button>
-              <AuthDialog onAuthSuccess={onAuthSuccess}>
-                 <Button
-                    type="button"
-                    className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
-                    onClick={handleBookingAttempt}
-                    disabled={!isAvailable || isBooking}
-                    >
-                    {isBooking ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Booking...
-                    </>
-                    ) : 'Book Now'}
-                </Button>
+               <Button
+                  type="button"
+                  className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleBookingAttempt}
+                  disabled={!isAvailable || isBooking}
+                  >
+                  {isBooking ? (
+                  <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Booking...
+                  </>
+                  ) : 'Book Now'}
+              </Button>
+              <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={onAuthSuccess}>
+                <span />
               </AuthDialog>
 
             </div>

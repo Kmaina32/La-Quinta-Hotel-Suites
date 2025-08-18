@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type Booking, rooms } from '@/lib/data';
 import { saveBooking } from '@/app/bookings/actions';
 import { useAuth } from '@/context/auth-context';
@@ -43,9 +44,10 @@ export default function BookingForm() {
       };
   });
 
-  const [guests, setGuests] = useState(() => {
-      const numGuests = searchParams.get('guests');
-      return numGuests ? parseInt(numGuests) : 2;
+  const [occupancy, setOccupancy] = useState(() => {
+      const guests = searchParams.get('guests');
+      if (guests === "1") return "single";
+      return "double";
   });
 
 
@@ -78,7 +80,7 @@ export default function BookingForm() {
         const newParams = new URLSearchParams();
         if (date?.from) newParams.set('from', format(date.from, 'yyyy-MM-dd'));
         if (date?.to) newParams.set('to', format(date.to, 'yyyy-MM-dd'));
-        newParams.set('guests', guests.toString());
+        newParams.set('guests', occupancy === 'single' ? '1' : '2');
         newParams.set('show_rooms', 'true');
         
         // We use window.location.hash to ensure smooth scrolling
@@ -119,11 +121,14 @@ export default function BookingForm() {
 
     setIsBooking(true);
     const nights = differenceInDays(date.to, date.from);
+    const guests = occupancy === 'single' ? 1 : 2;
+    const roomName = occupancy === 'double-infant' ? `${room.name} (+Infant)` : room.name;
+    
     const newBooking: Booking = {
       id: `BK${Date.now()}`,
       userId: user.uid,
       roomId: room.id,
-      roomName: room.name,
+      roomName: roomName,
       checkIn: format(date.from, 'yyyy-MM-dd'),
       checkOut: format(date.to, 'yyyy-MM-dd'),
       guests,
@@ -201,49 +206,42 @@ export default function BookingForm() {
                 </Popover>
               </div>
               <div className="grid w-full items-center gap-1.5 text-left">
-                <Label htmlFor="guests" className="text-white">
-                  Guests
+                 <Label htmlFor="guests" className="text-white">
+                  Occupancy
                 </Label>
-                <Input
-                  type="number"
-                  id="guests"
-                  placeholder="2"
-                  className="text-black"
-                  value={guests}
-                  onChange={(e) => setGuests(parseInt(e.target.value))}
-                  min={1}
-                />
+                <Select value={occupancy} onValueChange={setOccupancy}>
+                    <SelectTrigger className="w-full text-black" id="guests">
+                        <SelectValue placeholder="Select occupancy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="single">Single Occupancy</SelectItem>
+                        <SelectItem value="double">Double Occupancy</SelectItem>
+                        <SelectItem value="double-infant">Double Occupancy + Infant</SelectItem>
+                    </SelectContent>
+                </Select>
               </div>
-              <div className={cn("flex w-full flex-col gap-2 sm:flex-row lg:col-span-4", isRoomPage ? "lg:grid-cols-1" : "lg:grid lg:grid-cols-2")}>
-                {!isRoomPage && (
-                    <Button
+              <div className="w-full lg:col-span-1">
+                 <Button
                     type="button"
                     className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={handleAvailabilityCheck}
-                    disabled={isChecking}
+                    onClick={isRoomPage ? handleBookingAttempt : handleAvailabilityCheck}
+                    disabled={isBooking || isChecking}
                     >
                     {isChecking ? (
                         <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Checking...
                         </>
-                    ) : (
-                        'Check Availability'
-                    )}
-                    </Button>
-                )}
-                 <Button
-                    type="button"
-                    className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
-                    onClick={handleBookingAttempt}
-                    disabled={isBooking}
-                    >
-                    {isBooking ? (
-                    <>
+                    ) : isBooking ? (
+                         <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Booking...
                     </>
-                    ) : 'Book Now'}
+                    ) : isRoomPage ? (
+                        'Book Now'
+                    ) : (
+                        'Check Availability'
+                    )}
                 </Button>
               </div>
             </div>

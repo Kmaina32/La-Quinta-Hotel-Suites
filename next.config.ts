@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
         hostname: 'q-xx.bstatic.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'dynamic-media-cdn.tripadvisor.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

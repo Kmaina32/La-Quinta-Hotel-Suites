@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -5,6 +6,7 @@ import { cn } from '@/lib/utils';
 import WhatsappButton from '@/components/whatsapp-button';
 import { AuthProvider } from '@/context/auth-context';
 import { PT_Sans } from 'next/font/google';
+import React from 'react';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -31,11 +33,15 @@ export default function RootLayout({
         )}
       >
         <AuthProvider>
-          {children}
-          <Toaster />
-          <WhatsappButton />
+            <React.Suspense fallback={<div>Loading...</div>}>
+                {children}
+            </React.Suspense>
+            <Toaster />
+            <WhatsappButton />
         </AuthProvider>
       </body>
     </html>
   );
 }
+
+    

@@ -2,10 +2,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname, useSearchParams } from 'next/navigation';
 import { Calendar as CalendarIcon, Check, Loader2 } from 'lucide-react';
 import { addDays, format, differenceInDays } from 'date-fns';
-import { DateRange } from 'react-day-picker';
+import type { DateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,56 +24,91 @@ import AuthDialog from './auth-dialog';
 export default function BookingForm() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const room = rooms.find(r => r.id === params.id);
   const { user } = useAuth();
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 5),
+  const [date, setDate] = useState<DateRange | undefined>(() => {
+      const from = searchParams.get('from');
+      const to = searchParams.get('to');
+      if (from && to) {
+          return { from: new Date(from), to: new Date(to) };
+      }
+      return {
+        from: new Date(),
+        to: addDays(new Date(), 5),
+      };
   });
-  const [guests, setGuests] = useState(2);
+
+  const [guests, setGuests] = useState(() => {
+      const numGuests = searchParams.get('guests');
+      return numGuests ? parseInt(numGuests) : 2;
+  });
+
+
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isBooking, setIsBooking] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
-
 
   const handleAvailabilityCheck = () => {
     setIsChecking(true);
     setTimeout(() => {
-      setIsAvailable(true); // Mock availability
+      const isMockAvailable = Math.random() > 0.2; // 80% chance of being available
+      setIsAvailable(isMockAvailable);
       setIsChecking(false);
     }, 1500);
   };
   
   const handleBookingAttempt = () => {
+    // If we are on the homepage, scroll to the rooms section
+    if (pathname === '/') {
+        const newParams = new URLSearchParams();
+        if (date?.from) newParams.set('from', format(date.from, 'yyyy-MM-dd'));
+        if (date?.to) newParams.set('to', format(date.to, 'yyyy-MM-dd'));
+        newParams.set('guests', guests.toString());
+        newParams.set('show_rooms', 'true');
+        
+        // We use window.location.hash to ensure smooth scrolling
+        window.location.hash = 'rooms';
+        // We use router.replace to update the URL without adding to history
+        router.replace(`/?${newParams.toString()}#rooms`);
+        return;
+    }
+
+    // If on a room page, check for user auth
     if (!user) {
       setIsAuthDialogOpen(true);
       return;
     }
+    
+    // If user is logged in on a room page
     if (!room) {
-      // If on a room detail page, stay, otherwise go to rooms section
-      if (params.id) {
-         // Maybe show a toast message here
-         console.error("Room data not found for booking.")
-      } else {
-         router.push('/#rooms');
-      }
+      console.error("Room data not found for booking.");
       return;
     }
+
+    if (!isAvailable) {
+        // Maybe add a toast here
+        alert("Please check availability before booking.");
+        return;
+    }
+
     setIsBooking(true);
     setTimeout(() => {
       setIsBooking(false);
       setShowPaymentModal(true);
-    }, 1500);
+    }, 1000);
   };
 
   const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!date?.from || !date?.to || !room || !user) return;
 
+    setIsBooking(true);
     const nights = differenceInDays(date.to, date.from);
     const newBooking: Booking = {
       id: `BK${Date.now()}`,
@@ -88,28 +123,28 @@ export default function BookingForm() {
       allocatedRoomNumber: null,
     };
 
-    await saveBooking(newBooking);
+    try {
+        await saveBooking(newBooking);
+        setShowPaymentModal(false);
+        router.push('/bookings');
+    } catch (error) {
+        console.error("Failed to save booking:", error);
+    } finally {
+        setIsBooking(false);
+    }
+  };
 
-    setShowPaymentModal(false);
-    router.push('/bookings');
-  }
-
-  // This function is passed to the AuthDialog to handle successful authentication
   const onAuthSuccess = () => {
-     setIsAuthDialogOpen(false); // Close the dialog
-     if (!isAvailable) {
-        handleAvailabilityCheck();
-     } else {
-        handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
-     }
+     setIsAuthDialogOpen(false);
+     handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
   };
 
   return (
     <>
       <Card className="mt-8 w-full max-w-sm md:max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
         <CardContent className="p-0">
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-3 lg:grid-cols-5 lg:items-end">
-            <div className="grid w-full items-center gap-1.5 text-left md:col-span-3 lg:col-span-2">
+          <div className="grid w-full gap-4 md:grid-cols-3 lg:grid-cols-[2fr_1fr_2fr] lg:items-end">
+            <div className="grid w-full items-center gap-1.5 text-left">
               <Label htmlFor="dates" className="text-white">
                 Check-in - Check-out
               </Label>
@@ -165,7 +200,7 @@ export default function BookingForm() {
                 min={1}
               />
             </div>
-            <div className="flex flex-col gap-4 sm:flex-row md:col-span-3 lg:col-span-2">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Button
                 type="button"
                 className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
@@ -185,7 +220,7 @@ export default function BookingForm() {
                   type="button"
                   className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
                   onClick={handleBookingAttempt}
-                  disabled={!isAvailable || isBooking}
+                  disabled={isBooking}
                   >
                   {isBooking ? (
                   <>
@@ -194,10 +229,6 @@ export default function BookingForm() {
                   </>
                   ) : 'Book Now'}
               </Button>
-              <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={onAuthSuccess}>
-                <span />
-              </AuthDialog>
-
             </div>
           </div>
           {isAvailable !== null && (
@@ -213,6 +244,11 @@ export default function BookingForm() {
           )}
         </CardContent>
       </Card>
+
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={onAuthSuccess}>
+        <span />
+      </AuthDialog>
+
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent>
           <DialogHeader>
@@ -247,7 +283,10 @@ export default function BookingForm() {
                              <Input id="zip" placeholder="12345" required/>
                         </div>
                     </div>
-                    <Button type="submit" className="w-full">Pay with Card</Button>
+                    <Button type="submit" className="w-full" disabled={isBooking}>
+                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Pay with Card
+                    </Button>
                 </form>
             </TabsContent>
             <TabsContent value="paypal">
@@ -256,7 +295,10 @@ export default function BookingForm() {
                         <Label htmlFor="paypalEmail">PayPal Email</Label>
                         <Input id="paypalEmail" type="email" placeholder="you@example.com" required/>
                     </div>
-                    <Button type="submit" className="w-full">Pay with PayPal</Button>
+                    <Button type="submit" className="w-full" disabled={isBooking}>
+                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Pay with PayPal
+                    </Button>
                 </form>
             </TabsContent>
             <TabsContent value="mpesa">
@@ -265,7 +307,10 @@ export default function BookingForm() {
                         <Label htmlFor="mpesaPhone">Phone Number</Label>
                         <Input id="mpesaPhone" placeholder="254712345678" required/>
                     </div>
-                    <Button type="submit" className="w-full">Pay with M-Pesa (STK Push)</Button>
+                    <Button type="submit" className="w-full" disabled={isBooking}>
+                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Pay with M-Pesa (STK Push)
+                    </Button>
                 </form>
             </TabsContent>
           </Tabs>
@@ -274,3 +319,5 @@ export default function BookingForm() {
     </>
   );
 }
+
+    

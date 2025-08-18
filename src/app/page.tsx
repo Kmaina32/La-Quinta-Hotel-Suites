@@ -1,5 +1,9 @@
+
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   BedDouble,
   ParkingCircle,
@@ -26,9 +30,14 @@ import { config } from '@/lib/config';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import LocationMap from '@/components/location-map';
+import { cn } from '@/lib/utils';
+import PressMeArrow from '@/components/press-me-arrow';
 
 
-export default function Home() {
+function HomePageContent() {
+  const searchParams = useSearchParams();
+  const showRoomsHint = searchParams.get('show_rooms') === 'true';
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
@@ -68,9 +77,10 @@ export default function Home() {
                 Choose from our selection of beautifully appointed rooms, each designed for your comfort.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {showRoomsHint && <PressMeArrow />}
               {rooms.map((room) => (
-                <Card key={room.id} className="overflow-hidden transition-shadow duration-300 hover:shadow-lg">
+                <Card key={room.id} className={cn("overflow-hidden transition-shadow duration-300 hover:shadow-lg", showRoomsHint && 'animate-throb')}>
                   <CardHeader className="p-0">
                     <Image
                       src={room.image}
@@ -222,3 +232,15 @@ export default function Home() {
     </div>
   );
 }
+
+
+// Wrap the component that uses searchParams in a Suspense boundary
+export default function Home() {
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <HomePageContent />
+    </React.Suspense>
+  );
+}
+
+    

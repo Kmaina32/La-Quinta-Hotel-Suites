@@ -1,17 +1,19 @@
+
+'use client';
+
 import Image from 'next/image';
-import Link from 'next/link';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { rooms } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
 
 const getRoomById = (id: string) => rooms.find((room) => room.id === id);
 
-export default function RoomDetailsPage({ params }: { params: { id: string } }) {
+function RoomDetailsContent({ params }: { params: { id: string } }) {
   const room = getRoomById(params.id);
 
   if (!room) {
@@ -78,3 +80,14 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
     </div>
   );
 }
+
+export default function RoomDetailsPage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<div>Loading room details...</div>}>
+      <RoomDetailsContent params={params} />
+    </Suspense>
+  );
+}
+
+
+    

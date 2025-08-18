@@ -5,8 +5,10 @@ import path from 'path';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import type { Room, EstablishmentImage, Booking } from '@/lib/data';
+import roomsData from '@/lib/rooms.json';
 
 const bookingsPath = path.join(process.cwd(), 'src', 'lib', 'bookings.json');
+const dataPath = path.join(process.cwd(), 'src', 'lib', 'rooms.json');
 
 async function readBookings(): Promise<Booking[]> {
   try {
@@ -18,6 +20,16 @@ async function readBookings(): Promise<Booking[]> {
     }
     throw error;
   }
+}
+
+export async function getRooms(): Promise<Room[]> {
+  // Reading from the imported JSON is sufficient for server components
+  return roomsData.rooms;
+}
+
+export async function getEstablishmentImages(): Promise<EstablishmentImage[]> {
+  // Reading from the imported JSON is sufficient for server components
+  return roomsData.establishment;
 }
 
 export async function getBookings(): Promise<Booking[]> {
@@ -278,3 +290,5 @@ export async function allocateRoom(formData: FormData) {
     return { error: 'Failed to allocate room.' };
   }
 }
+
+    

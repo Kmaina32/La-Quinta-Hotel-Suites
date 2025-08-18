@@ -1,64 +1,32 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateHeroImage, allocateRoom, getBookings as fetchBookings } from "./actions";
+import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateHeroImage, allocateRoom, getBookings as fetchBookings, getRooms, getEstablishmentImages } from "./actions";
 import { config as appConfig } from "@/lib/config";
-import { rooms as initialRooms, establishmentImages as initialImages, type Booking } from "@/lib/data";
+import { type Booking, type Room, type EstablishmentImage } from "@/lib/data";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from '@/context/auth-context';
+import { useEffect, useState } from "react";
 
-export default function AdminPage() {
-  const { user, loading } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  
-  useEffect(() => {
-    if (user) {
-      const loadBookings = async () => {
-        const fetched = await fetchBookings();
-        setBookings(fetched);
-      }
-      loadBookings();
-    }
-  }, [user]);
-
-  if (loading) {
-      return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-      )
-  }
-
-  if (!user) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1 bg-secondary">
-          <div className="container mx-auto px-4 py-12 md:px-6 md:py-16">
-            <div className="text-center">
-              <h1 className="font-headline text-4xl font-bold">Admin Panel</h1>
-              <p className="mt-4 text-lg text-muted-foreground">
-                You must be logged in to view this page.
-              </p>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
+function AdminDashboard({
+    bookings,
+    rooms,
+    images
+}: {
+    bookings: Booking[],
+    rooms: Room[],
+    images: EstablishmentImage[]
+}) {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -194,7 +162,7 @@ export default function AdminPage() {
             </Accordion>
             
             <div className="mt-8 space-y-6">
-              {initialRooms.map((room) => (
+              {rooms.map((room) => (
                 <Card key={room.id}>
                   <CardHeader>
                     <div className="flex justify-between items-center">
@@ -283,7 +251,7 @@ export default function AdminPage() {
             </Accordion>
             
             <div className="mt-8 space-y-6">
-              {initialImages.map((image) => (
+              {images.map((image) => (
                 <Card key={image.id}>
                   <CardHeader>
                     <div className="flex justify-between items-center">
@@ -323,3 +291,58 @@ export default function AdminPage() {
     </div>
   );
 }
+
+
+export default function AdminPage() {
+  const { user, loading } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [images, setImages] = useState<EstablishmentImage[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      const loadData = async () => {
+        const [bookingsData, roomsData, imagesData] = await Promise.all([
+            fetchBookings(),
+            getRooms(),
+            getEstablishmentImages(),
+        ]);
+        setBookings(bookingsData);
+        setRooms(roomsData);
+        setImages(imagesData);
+      }
+      loadData();
+    }
+  }, [user]);
+
+  if (loading) {
+      return (
+        <div className="flex min-h-screen w-full items-center justify-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+      )
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1 bg-secondary">
+          <div className="container mx-auto px-4 py-12 md:px-6 md:py-16">
+            <div className="text-center">
+              <h1 className="font-headline text-4xl font-bold">Admin Panel</h1>
+              <p className="mt-4 text-lg text-muted-foreground">
+                You must be logged in to view this page.
+              </p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return <AdminDashboard bookings={bookings} rooms={rooms} images={images} />;
+}
+
+    

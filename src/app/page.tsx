@@ -25,6 +25,7 @@ import BookingForm from '@/components/booking-form';
 import { config } from '@/lib/config';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import LocationMap from '@/components/location-map';
 
 
 export default function Home() {
@@ -188,29 +189,7 @@ export default function Home() {
                         Find us easily in the heart of Nakuru.
                     </p>
                 </div>
-                <div className="overflow-hidden rounded-lg">
-                    <iframe
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.810599187176!2d36.14180787496587!3d-0.3293593995804588!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182977000adf0c13%3A0x7a5f35c4157e80ee!2sLa%20Quita%20Hotel%20and%20Suites!5e0!3m2!1sen!2ske!4v1720524885803!5m2!1sen!2ske"
-                        width="100%"
-                        height="450"
-                        style={{ border: 0 }}
-                        allowFullScreen={true}
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                    ></iframe>
-                </div>
-                 <div className="mt-8 flex justify-center">
-                    <a
-                      href="https://www.google.com/maps/place/La+Quita+Hotel+and+Suites/@-0.329362,36.1430954,18z"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="outline">
-                        <MapPin className="mr-2 h-4 w-4" />
-                        Get Directions
-                      </Button>
-                    </a>
-                </div>
+                <LocationMap />
             </div>
         </section>
 

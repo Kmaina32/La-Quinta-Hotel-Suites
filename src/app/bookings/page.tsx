@@ -74,7 +74,7 @@ export default function BookingsPage() {
                       </div>
                       <div>
                         <p className="font-semibold">Total Price</p>
-                        <p>${booking.totalPrice}</p>
+                        <p>Ksh {booking.totalPrice}</p>
                       </div>
                     </div>
                   </CardContent>

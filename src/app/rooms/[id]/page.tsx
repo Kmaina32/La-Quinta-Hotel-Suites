@@ -63,7 +63,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
               </div>
               <div className="mt-8">
                  <p className="text-3xl font-bold">
-                    ${room.price}{' '}
+                    Ksh {room.price}{' '}
                     <span className="text-lg font-normal text-muted-foreground">/ night</span>
                 </p>
               </div>

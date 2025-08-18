@@ -83,7 +83,7 @@ export default function Home() {
                     <CardDescription className="mt-2">{room.description}</CardDescription>
                   </CardContent>
                   <CardFooter className="flex justify-between items-center p-6 pt-0">
-                    <p className="text-lg font-semibold">${room.price} / night</p>
+                    <p className="text-lg font-semibold">Ksh {room.price} / night</p>
                     <Link href={`/rooms/${room.id}`}>
                       <Button>View Details</Button>
                     </Link>

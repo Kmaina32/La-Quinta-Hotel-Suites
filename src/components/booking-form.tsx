@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname, useSearchParams } from 'next/navigation';
 import { Calendar as CalendarIcon, Check, Loader2 } from 'lucide-react';
 import { addDays, format, differenceInDays } from 'date-fns';
@@ -134,103 +134,105 @@ export default function BookingForm() {
     }
   };
 
-  const onAuthSuccess = () => {
-     setIsAuthDialogOpen(false);
-     handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
-  };
+  useEffect(() => {
+    if(user && isAuthDialogOpen) {
+      setIsAuthDialogOpen(false);
+      handleBookingAttempt();
+    }
+  }, [user, isAuthDialogOpen]);
 
   return (
     <>
       <Card className="mt-8 w-full max-w-sm md:max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
         <CardContent className="p-0">
-          <div className="grid w-full gap-4 md:grid-cols-3 lg:grid-cols-[2fr_1fr_2fr] lg:items-end">
-            <div className="grid w-full items-center gap-1.5 text-left">
-              <Label htmlFor="dates" className="text-white">
-                Check-in - Check-out
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="dates"
-                    variant={'outline'}
-                    className={cn(
-                      'w-full justify-start text-left font-normal text-black',
-                      !date && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date?.from ? (
-                      date.to ? (
-                        <>
-                          {format(date.from, 'LLL dd, y')} -{' '}
-                          {format(date.to, 'LLL dd, y')}
-                        </>
+           <div className="grid w-full items-end gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid w-full items-center gap-1.5 text-left lg:col-span-2">
+                <Label htmlFor="dates" className="text-white">
+                  Check-in - Check-out
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="dates"
+                      variant={'outline'}
+                      className={cn(
+                        'w-full justify-start text-left font-normal text-black',
+                        !date && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date?.from ? (
+                        date.to ? (
+                          <>
+                            {format(date.from, 'LLL dd, y')} -{' '}
+                            {format(date.to, 'LLL dd, y')}
+                          </>
+                        ) : (
+                          format(date.from, 'LLL dd, y')
+                        )
                       ) : (
-                        format(date.from, 'LLL dd, y')
-                      )
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={date?.from}
-                    selected={date}
-                    onSelect={setDate}
-                    numberOfMonths={2}
-                    disabled={{ before: new Date() }}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid w-full items-center gap-1.5 text-left">
-              <Label htmlFor="guests" className="text-white">
-                Guests
-              </Label>
-              <Input
-                type="number"
-                id="guests"
-                placeholder="2"
-                className="text-black"
-                value={guests}
-                onChange={(e) => setGuests(parseInt(e.target.value))}
-                min={1}
-              />
-            </div>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Button
-                type="button"
-                className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={handleAvailabilityCheck}
-                disabled={isChecking}
-              >
-                {isChecking ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Checking...
-                  </>
-                ) : (
-                  'Check Availability'
-                )}
-              </Button>
-               <Button
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={date?.from}
+                      selected={date}
+                      onSelect={setDate}
+                      numberOfMonths={2}
+                      disabled={{ before: new Date() }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid w-full items-center gap-1.5 text-left">
+                <Label htmlFor="guests" className="text-white">
+                  Guests
+                </Label>
+                <Input
+                  type="number"
+                  id="guests"
+                  placeholder="2"
+                  className="text-black"
+                  value={guests}
+                  onChange={(e) => setGuests(parseInt(e.target.value))}
+                  min={1}
+                />
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:flex-row lg:col-span-4 lg:grid lg:grid-cols-2">
+                <Button
                   type="button"
-                  className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
-                  onClick={handleBookingAttempt}
-                  disabled={isBooking}
-                  >
-                  {isBooking ? (
-                  <>
+                  className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={handleAvailabilityCheck}
+                  disabled={isChecking}
+                >
+                  {isChecking ? (
+                    <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Booking...
-                  </>
-                  ) : 'Book Now'}
-              </Button>
+                      Checking...
+                    </>
+                  ) : (
+                    'Check Availability'
+                  )}
+                </Button>
+                 <Button
+                    type="button"
+                    className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
+                    onClick={handleBookingAttempt}
+                    disabled={isBooking}
+                    >
+                    {isBooking ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Booking...
+                    </>
+                    ) : 'Book Now'}
+                </Button>
+              </div>
             </div>
-          </div>
           {isAvailable !== null && (
             <div className="mt-4 text-center text-white">
                 {isAvailable ? (
@@ -245,7 +247,7 @@ export default function BookingForm() {
         </CardContent>
       </Card>
 
-      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={onAuthSuccess}>
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={() => router.refresh()}>
         <span />
       </AuthDialog>
 

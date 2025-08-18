@@ -7,7 +7,7 @@ export default function Footer() {
     <footer className="w-full border-t bg-secondary">
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-12 md:grid-cols-4 md:px-6">
         <div className="flex flex-col gap-2">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-3">
             <Logo />
             <span className="font-headline text-xl font-bold">La Quinta Hotel & Suites</span>
           </Link>

@@ -5,10 +5,11 @@ export default function Logo({ className }: { className?: string }) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      className={cn("h-8 w-8 text-primary", className)}
       fill="currentColor"
+      className={cn("h-8 w-8 text-primary", className)}
     >
-      <path d="M12 2L2 7V17L12 22L22 17V7L12 2ZM11 11.76V18.9L4 15.48V8.52L11 11.76ZM13 11.76L20 8.52V15.48L13 18.9V11.76ZM12 4.52L18.6 8L12 11.48L5.4 8L12 4.52Z" />
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.59V18h-2v-1.5a2.5 2.5 0 0 1 5 0V18h-2v-1.41A5.002 5.002 0 0 0 12 7a5 5 0 0 0-1 9.59zM12 9a3 3 0 0 1 0 6 3 3 0 0 1 0-6z" />
+      <path d="M12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
     </svg>
   );
 }

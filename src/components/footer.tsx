@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { Hotel, Facebook, Twitter, Instagram } from 'lucide-react';
+import { Hotel, Facebook, Twitter, Instagram, MapPin, Phone } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="w-full border-t bg-secondary">
-      <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-12 md:grid-cols-3 md:px-6">
+      <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-12 md:grid-cols-4 md:px-6">
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center gap-2">
             <Hotel className="h-6 w-6 text-primary" />
@@ -23,6 +23,29 @@ export default function Footer() {
             <li><Link href="/support" className="text-sm hover:text-primary">Contact & Support</Link></li>
             <li><Link href="/admin" className="text-sm hover:text-primary">Admin</Link></li>
           </ul>
+        </div>
+        <div>
+           <h4 className="font-headline font-semibold">Contact Us</h4>
+            <ul className="mt-4 space-y-2">
+                <li className='flex items-center gap-2 text-sm'>
+                    <Phone className="h-4 w-4" />
+                    <a href="tel:0759713882" className="hover:text-primary">0759713882</a>
+                </li>
+                <li className='flex items-center gap-2 text-sm'>
+                    <MapPin className="h-4 w-4" />
+                    <span>Nakuru, Kenya</span>
+                </li>
+                 <li>
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=M4CV%2B7Q%20Nakuru"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                       className="text-sm hover:text-primary"
+                    >
+                      View on Map
+                    </a>
+                </li>
+            </ul>
         </div>
         <div>
            <h4 className="font-headline font-semibold">Connect With Us</h4>

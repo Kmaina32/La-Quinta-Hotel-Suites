@@ -6,7 +6,8 @@ import {
   UtensilsCrossed,
   Wifi,
   Wind,
-  Users
+  Users,
+  MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -177,6 +178,42 @@ export default function Home() {
           </div>
         </section>
         
+        <section id="location" className="w-full bg-secondary py-12 md:py-24 lg:py-32">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="mb-12 text-center">
+                    <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                        Our Location
+                    </h2>
+                    <p className="mx-auto mt-4 max-w-[700px] text-muted-foreground md:text-xl">
+                        Find us easily in the heart of Nakuru.
+                    </p>
+                </div>
+                <div className="overflow-hidden rounded-lg">
+                    <iframe
+                        src="https://maps.google.com/maps?q=M4CV%2B7Q%20Nakuru&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        width="100%"
+                        height="450"
+                        style={{ border: 0 }}
+                        allowFullScreen={true}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                </div>
+                 <div className="mt-8 flex justify-center">
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=M4CV%2B7Q%20Nakuru"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="outline">
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Get Directions
+                      </Button>
+                    </a>
+                </div>
+            </div>
+        </section>
+
         <section id="whatsapp-booking" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
             <div className="rounded-lg bg-accent p-8 text-accent-foreground md:p-12">

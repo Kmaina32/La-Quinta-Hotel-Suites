@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState } from 'react';
-import { useActionState, useFormStatus } from 'react-dom';
+import { useState, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { login, signup, type AuthState } from '@/app/auth-actions';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';

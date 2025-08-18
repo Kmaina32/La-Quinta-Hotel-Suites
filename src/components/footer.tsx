@@ -8,10 +8,10 @@ export default function Footer() {
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center gap-2">
             <Hotel className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl font-bold">La Quinta Reservations</span>
+            <span className="font-headline text-xl font-bold">Laquinta Reservations</span>
           </Link>
           <p className="max-w-xs text-muted-foreground">
-            Experience comfort and luxury at La Quinta Hotel & Suites, Nakuru.
+            Experience comfort and luxury at Laquinta Hotel & Suites, Nakuru.
           </p>
         </div>
         <div>
@@ -21,6 +21,7 @@ export default function Footer() {
             <li><Link href="/#rooms" className="text-sm hover:text-primary">Rooms</Link></li>
             <li><Link href="/bookings" className="text-sm hover:text-primary">My Bookings</Link></li>
             <li><Link href="/support" className="text-sm hover:text-primary">Contact & Support</Link></li>
+            <li><Link href="/admin" className="text-sm hover:text-primary">Admin</Link></li>
           </ul>
         </div>
         <div>
@@ -41,7 +42,7 @@ export default function Footer() {
       <div className="border-t">
         <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} La Quinta Reservations. All rights reserved.
+            &copy; {new Date().getFullYear()} Laquinta Reservations. All rights reserved.
           </p>
         </div>
       </div>

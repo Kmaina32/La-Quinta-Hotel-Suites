@@ -2,12 +2,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   BedDouble,
-  Calendar as CalendarIcon,
   ParkingCircle,
-  Users,
   UtensilsCrossed,
   Wifi,
   Wind,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,13 +17,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { rooms } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
+import BookingForm from '@/components/booking-form';
 
 export default function Home() {
   return (
@@ -37,7 +33,7 @@ export default function Home() {
         >
           <Image
             src="https://placehold.co/1600x900.png"
-            alt="La Quinta Hotel & Suites"
+            alt="Laquinta Hotel & Suites"
             data-ai-hint="hotel exterior"
             fill
             className="object-cover"
@@ -45,52 +41,12 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
             <h1 className="font-headline text-5xl font-bold md:text-7xl">
-              La Quinta Hotel & Suites
+              Laquinta Hotel & Suites
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl">
               Your serene getaway in the heart of Nakuru. Experience unparalleled comfort and hospitality.
             </p>
-            <Card className="mt-8 w-full max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
-              <CardContent className="p-0">
-                <form className="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
-                  <div className="grid w-full items-center gap-1.5 text-left">
-                    <Label htmlFor="checkin" className="text-white">Check-in Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal text-black">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          <span>Pick a date</span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar mode="single" initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="grid w-full items-center gap-1.5 text-left">
-                    <Label htmlFor="checkout" className="text-white">Check-out Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                         <Button variant="outline" className="w-full justify-start text-left font-normal text-black">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          <span>Pick a date</span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar mode="single" initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="grid w-full items-center gap-1.5 text-left">
-                    <Label htmlFor="guests" className="text-white">Guests</Label>
-                    <Input type="number" id="guests" placeholder="2" className="text-black" />
-                  </div>
-                  <Button type="submit" className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 md:h-10">
-                    Check Availability
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <BookingForm />
           </div>
         </section>
 
@@ -105,7 +61,7 @@ export default function Home() {
               </p>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {rooms.slice(0, 3).map((room) => (
+              {rooms.map((room) => (
                 <Card key={room.id} className="overflow-hidden transition-shadow duration-300 hover:shadow-lg">
                   <CardHeader className="p-0">
                     <Image
@@ -123,7 +79,9 @@ export default function Home() {
                   </CardContent>
                   <CardFooter className="flex justify-between items-center p-6 pt-0">
                     <p className="text-lg font-semibold">${room.price} / night</p>
-                    <Button>View Details</Button>
+                    <Link href={`/rooms/${room.id}`}>
+                      <Button>View Details</Button>
+                    </Link>
                   </CardFooter>
                 </Card>
               ))}
@@ -179,7 +137,7 @@ export default function Home() {
                   <p className="text-lg">Send us a message on WhatsApp for instant booking assistance.</p>
                 </div>
                 <Link
-                  href="https://wa.me/254700000000?text=I'd%20like%20to%20book%20a%20room%20at%20La%20Quinta."
+                  href="https://wa.me/254700000000?text=I'd%20like%20to%20book%20a%20room%20at%20Laquinta."
                   target="_blank"
                   rel="noopener noreferrer"
                 >

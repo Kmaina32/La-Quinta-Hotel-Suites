@@ -4,8 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'La Quinta Reservations',
-  description: 'A hotel booking platform for La Quinta Hotel & Suites in Nakuru.',
+  title: 'Laquinta Hotel and Suites',
+  description: 'A hotel booking platform for Laquinta Hotel & Suites in Nakuru.',
 };
 
 export default function RootLayout({

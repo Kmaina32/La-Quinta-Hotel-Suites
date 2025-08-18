@@ -70,7 +70,7 @@ export default function BookingsPage() {
                     <div className="flex flex-col justify-between md:flex-row md:items-start">
                       <div>
                         <CardTitle className="font-headline text-2xl">{booking.roomName}</CardTitle>
-                        <CardDescription>Booking ID: {booking.id}</CardDescription>
+                        <CardDescription>Booking ID: {booking.id.slice(-6)}</CardDescription>
                          {booking.allocatedRoomNumber && (
                            <p className="text-sm text-muted-foreground">
                                 Room Number: <span className="font-bold text-primary">{booking.allocatedRoomNumber}</span>

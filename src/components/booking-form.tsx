@@ -67,8 +67,8 @@ export default function BookingForm() {
     <>
       <Card className="mt-8 w-full max-w-sm md:max-w-4xl bg-white/10 p-4 text-white backdrop-blur-sm md:p-6">
         <CardContent className="p-0">
-          <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
-            <div className="grid w-full items-center gap-1.5 text-left">
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-4 lg:items-end">
+            <div className="grid w-full items-center gap-1.5 text-left md:col-span-2 lg:col-span-1">
               <Label htmlFor="dates" className="text-white">
                 Check-in - Check-out
               </Label>
@@ -123,34 +123,36 @@ export default function BookingForm() {
                 min={1}
               />
             </div>
-            <Button
-              type="button"
-              className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 md:h-10"
-              onClick={handleAvailabilityCheck}
-              disabled={isChecking}
-            >
-              {isChecking ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Checking...
-                </>
-              ) : (
-                'Check Availability'
-              )}
-            </Button>
-            <Button
-              type="button"
-              className="h-10 w-full bg-green-600 text-white hover:bg-green-700 md:h-10"
-              onClick={handleBooking}
-              disabled={!isAvailable || isBooking}
-            >
-              {isBooking ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Booking...
-                </>
-              ) : 'Book Now'}
-            </Button>
+            <div className="flex flex-col gap-4 sm:flex-row md:col-span-2 lg:col-span-2">
+              <Button
+                type="button"
+                className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleAvailabilityCheck}
+                disabled={isChecking}
+              >
+                {isChecking ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  'Check Availability'
+                )}
+              </Button>
+              <Button
+                type="button"
+                className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
+                onClick={handleBooking}
+                disabled={!isAvailable || isBooking}
+              >
+                {isBooking ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Booking...
+                  </>
+                ) : 'Book Now'}
+              </Button>
+            </div>
           </div>
           {isAvailable !== null && (
             <div className="mt-4 text-center text-white">

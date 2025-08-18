@@ -11,7 +11,14 @@ export type Room = {
   images: string[];
 };
 
-export const rooms: Room[] = roomsData;
+export type EstablishmentImage = {
+  id: string;
+  src: string;
+  description: string;
+};
+
+export const rooms: Room[] = roomsData.rooms;
+export const establishmentImages: EstablishmentImage[] = roomsData.establishment;
 
 
 export type Booking = {
@@ -43,15 +50,6 @@ export const bookings: Booking[] = [
     totalPrice: 1000,
     status: 'Confirmed',
   },
-];
-
-export const establishmentImages = [
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
-    'https://placehold.co/600x400.png',
 ];
 
 export const amenities = [

@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import type { Room } from '@/lib/data';
+import type { Room, EstablishmentImage } from '@/lib/data';
 
 const heroImageSchema = z.object({
   heroImageUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -49,7 +49,7 @@ const roomSchema = z.object({
 
 export async function addOrUpdateRoom(formData: FormData) {
     const validatedFields = roomSchema.safeParse({
-        id: formData.get('id'),
+        id: formData.get('id') || undefined,
         name: formData.get('name'),
         description: formData.get('description'),
         price: formData.get('price'),
@@ -68,7 +68,8 @@ export async function addOrUpdateRoom(formData: FormData) {
     const roomsPath = path.join(process.cwd(), 'src', 'lib', 'rooms.json');
 
     try {
-        const rooms: Room[] = JSON.parse(await fs.readFile(roomsPath, 'utf-8'));
+        const data = JSON.parse(await fs.readFile(roomsPath, 'utf-8'));
+        const rooms: Room[] = data.rooms;
         const roomIndex = id ? rooms.findIndex(r => r.id === id) : -1;
 
         if (roomIndex !== -1) {
@@ -96,7 +97,8 @@ export async function addOrUpdateRoom(formData: FormData) {
             rooms.push(newRoom);
         }
 
-        await fs.writeFile(roomsPath, JSON.stringify(rooms, null, 2));
+        data.rooms = rooms;
+        await fs.writeFile(roomsPath, JSON.stringify(data, null, 2));
         
         revalidatePath('/');
         if (id) revalidatePath(`/rooms/${id}`);
@@ -119,14 +121,16 @@ export async function deleteRoom(formData: FormData) {
   const roomsPath = path.join(process.cwd(), 'src', 'lib', 'rooms.json');
 
   try {
-    const rooms: Room[] = JSON.parse(await fs.readFile(roomsPath, 'utf-8'));
+    const data = JSON.parse(await fs.readFile(roomsPath, 'utf-8'));
+    const rooms: Room[] = data.rooms;
     const updatedRooms = rooms.filter(room => room.id !== id);
 
     if (rooms.length === updatedRooms.length) {
       return { error: 'Room not found.' };
     }
-
-    await fs.writeFile(roomsPath, JSON.stringify(updatedRooms, null, 2));
+    
+    data.rooms = updatedRooms;
+    await fs.writeFile(roomsPath, JSON.stringify(data, null, 2));
 
     revalidatePath('/');
     revalidatePath('/admin');
@@ -136,5 +140,82 @@ export async function deleteRoom(formData: FormData) {
   } catch (error) {
     console.error('Error deleting room:', error);
     return { error: 'Failed to delete room data.' };
+  }
+}
+
+const establishmentImageSchema = z.object({
+  id: z.string().optional(),
+  src: z.string().url({ message: 'Please enter a valid image URL.' }),
+  description: z.string().min(1, { message: 'Description cannot be empty.' }),
+});
+
+export async function addOrUpdateEstablishmentImage(formData: FormData) {
+  const validatedFields = establishmentImageSchema.safeParse({
+    id: formData.get('id') || undefined,
+    src: formData.get('src'),
+    description: formData.get('description'),
+  });
+
+  if (!validatedFields.success) {
+    console.error(validatedFields.error);
+    return { error: 'Invalid data provided for establishment image.' };
+  }
+
+  const { id, src, description } = validatedFields.data;
+  const dataPath = path.join(process.cwd(), 'src', 'lib', 'rooms.json');
+
+  try {
+    const data = JSON.parse(await fs.readFile(dataPath, 'utf-8'));
+    let establishment: EstablishmentImage[] = data.establishment || [];
+    const imageIndex = id ? establishment.findIndex(img => img.id === id) : -1;
+
+    if (imageIndex !== -1) {
+      establishment[imageIndex] = { ...establishment[imageIndex], src, description };
+    } else {
+      const newImage: EstablishmentImage = {
+        id: `gallery-${Date.now()}`,
+        src,
+        description,
+      };
+      establishment.push(newImage);
+    }
+    
+    data.establishment = establishment;
+    await fs.writeFile(dataPath, JSON.stringify(data, null, 2));
+
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return { success: true, message: id ? 'Image updated' : 'Image added' };
+  } catch (error) {
+    console.error('Error saving establishment image:', error);
+    return { error: 'Failed to save establishment image data.' };
+  }
+}
+
+export async function deleteEstablishmentImage(formData: FormData) {
+  const id = formData.get('id') as string;
+  if (!id) {
+    return { error: 'Image ID is missing.' };
+  }
+  const dataPath = path.join(process.cwd(), 'src', 'lib', 'rooms.json');
+
+  try {
+    const data = JSON.parse(await fs.readFile(dataPath, 'utf-8'));
+    let establishment: EstablishmentImage[] = data.establishment || [];
+    const updatedImages = establishment.filter(img => img.id !== id);
+
+    if (establishment.length === updatedImages.length) {
+      return { error: 'Image not found.' };
+    }
+
+    data.establishment = updatedImages;
+    await fs.writeFile(dataPath, JSON.stringify(data, null, 2));
+
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return { success: true, message: 'Image deleted' };
+  } catch (error) {
+    console.error('Error deleting establishment image:', error);
+    return { error: 'Failed to delete image.' };
   }
 }

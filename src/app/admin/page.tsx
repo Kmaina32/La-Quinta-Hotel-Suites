@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { addOrUpdateRoom, deleteRoom, updateHeroImage } from "./actions";
+import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateHeroImage } from "./actions";
 import { config } from "@/lib/config";
-import { rooms } from "@/lib/data";
+import { rooms, establishmentImages } from "@/lib/data";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -115,8 +115,14 @@ export default function AdminPage() {
                   <CardContent>
                     <form action={addOrUpdateRoom} className="space-y-4">
                       <input type="hidden" name="id" value={room.id} />
-                      <input type="hidden" name="name" value={room.name} />
-                      <input type="hidden" name="price" value={room.price} />
+                      <div className="space-y-2">
+                        <Label htmlFor={`name-${room.id}`}>Room Name</Label>
+                        <Input id={`name-${room.id}`} name="name" defaultValue={room.name} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`price-${room.id}`}>Price per night</Label>
+                        <Input id={`price-${room.id}`} name="price" type="number" defaultValue={room.price} />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor={`description-${room.id}`}>Description</Label>
                         <Textarea id={`description-${room.id}`} name="description" defaultValue={room.description} rows={4} />
@@ -145,6 +151,74 @@ export default function AdminPage() {
                 </Card>
               ))}
             </div>
+
+            <Separator />
+            
+            <div>
+              <h2 className="font-headline text-3xl font-bold">Establishment Gallery</h2>
+              <p className="mt-2 text-muted-foreground">
+                Manage the images in the homepage gallery.
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="add-image">
+                <AccordionTrigger>
+                  <h3 className="font-headline text-2xl font-bold">Add New Gallery Image</h3>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <form action={addOrUpdateEstablishmentImage} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="src">Image URL</Label>
+                          <Input id="src" name="src" placeholder="https://example.com/image.png" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Description</Label>
+                          <Input id="description" name="description" placeholder="e.g. Our main lobby" required />
+                        </div>
+                        <Button type="submit">Add Image</Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            
+            <div className="mt-8 space-y-6">
+              {establishmentImages.map((image) => (
+                <Card key={image.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Gallery Image</CardTitle>
+                      <form action={deleteEstablishmentImage}>
+                        <input type="hidden" name="id" value={image.id} />
+                        <Button variant="destructive" size="icon" type="submit">
+                           <Trash2 className="h-4 w-4"/>
+                           <span className="sr-only">Delete Image</span>
+                        </Button>
+                      </form>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={addOrUpdateEstablishmentImage} className="space-y-4">
+                      <input type="hidden" name="id" value={image.id} />
+                      <div className="space-y-2">
+                        <Label htmlFor={`src-${image.id}`}>Image URL</Label>
+                        <Input id={`src-${image.id}`} name="src" defaultValue={image.src} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`description-${image.id}`}>Description</Label>
+                        <Input id={`description-${image.id}`} name="description" defaultValue={image.description} />
+                      </div>
+                      <Button type="submit">Update Image</Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
 
           </div>
         </div>

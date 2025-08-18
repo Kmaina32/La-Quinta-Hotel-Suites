@@ -47,7 +47,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                 ))}
               </div>
             </div>
-            <div>
+            <div className="flex flex-col">
               <h1 className="font-headline text-4xl font-bold">{room.name}</h1>
               <p className="mt-4 text-lg text-muted-foreground">{room.description}</p>
               <div className="mt-6">
@@ -67,7 +67,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                     <span className="text-lg font-normal text-muted-foreground">/ night</span>
                 </p>
               </div>
-              <div className="mt-8">
+              <div className="mt-auto pt-8">
                 <BookingForm />
               </div>
             </div>

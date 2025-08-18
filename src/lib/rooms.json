@@ -1,23 +1,42 @@
-[
-  {
-    "id": "deluxe-king-1",
-    "name": "Deluxe King Room",
-    "description": "A spacious room with a king-sized bed, perfect for couples or solo travelers seeking comfort. The room is elegantly furnished and comes with a view of the city.",
-    "price": 150,
-    "capacity": 2,
-    "amenities": [
-      "King Bed",
-      "Free Wi-Fi",
-      "Air Conditioning",
-      "Mini Fridge",
-      "City View",
-      "Room Service"
-    ],
-    "image": "https://placehold.co/600x400.png",
-    "images": [
-      "https://placehold.co/600x400.png",
-      "https://placehold.co/600x400.png",
-      "https://placehold.co/600x400.png"
-    ]
-  }
-]
+{
+  "rooms": [
+    {
+      "id": "deluxe-king-1",
+      "name": "Deluxe King Room",
+      "description": "A spacious room with a king-sized bed, perfect for couples or solo travelers seeking comfort. The room is elegantly furnished and comes with a view of the city.",
+      "price": 150,
+      "capacity": 2,
+      "amenities": [
+        "King Bed",
+        "Free Wi-Fi",
+        "Air Conditioning",
+        "Mini Fridge",
+        "City View",
+        "Room Service"
+      ],
+      "image": "https://placehold.co/600x400.png",
+      "images": [
+        "https://placehold.co/600x400.png",
+        "https://placehold.co/600x400.png",
+        "https://placehold.co/600x400.png"
+      ]
+    }
+  ],
+  "establishment": [
+    {
+      "id": "gallery-1",
+      "src": "https://placehold.co/600x400.png",
+      "description": "Our elegant restaurant"
+    },
+    {
+      "id": "gallery-2",
+      "src": "https://placehold.co/600x400.png",
+      "description": "The serene pool area"
+    },
+    {
+      "id": "gallery-3",
+      "src": "https://placehold.co/600x400.png",
+      "description": "The welcoming hotel lobby"
+    }
+  ]
+}

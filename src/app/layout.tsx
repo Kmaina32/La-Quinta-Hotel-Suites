@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import WhatsappButton from '@/components/whatsapp-button';
 
 export const metadata: Metadata = {
   title: 'Laquinta Hotel and Suites',
@@ -30,6 +31,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
+        <WhatsappButton />
       </body>
     </html>
   );

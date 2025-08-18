@@ -23,6 +23,8 @@ import Footer from '@/components/footer';
 import BookingForm from '@/components/booking-form';
 import { config } from '@/lib/config';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 export default function Home() {
   return (
@@ -101,29 +103,38 @@ export default function Home() {
                 A glimpse into the comfort and luxury that awaits you.
               </p>
             </div>
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              className="w-full max-w-4xl mx-auto"
-            >
-              <CarouselContent>
-                {establishmentImages.map((src, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                    <div className="p-1">
-                      <Card>
-                        <CardContent className="flex aspect-square items-center justify-center p-0">
-                           <Image src={src} alt={`Establishment image ${index + 1}`} width={600} height={600} className="rounded-lg object-cover w-full h-full" data-ai-hint="hotel restaurant" />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+            <TooltipProvider>
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full max-w-4xl mx-auto"
+              >
+                <CarouselContent>
+                  {establishmentImages.map((image, index) => (
+                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                      <div className="p-1">
+                        <Card>
+                          <CardContent className="flex aspect-square items-center justify-center p-0">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Image src={image.src} alt={image.description} width={600} height={600} className="rounded-lg object-cover w-full h-full" data-ai-hint="hotel restaurant" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{image.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            </TooltipProvider>
           </div>
         </section>
 
@@ -175,7 +186,7 @@ export default function Home() {
                   <p className="text-lg">Send us a message on WhatsApp for instant booking assistance.</p>
                 </div>
                 <Link
-                  href="https://wa.me/254700000000?text=I'd%20like%20to%20book%20a%20room%20at%20Laquinta."
+                  href="https://wa.me/254759713882?text=I'd%20like%20to%20book%20a%20room%20at%20Laquinta."
                   target="_blank"
                   rel="noopener noreferrer"
                 >

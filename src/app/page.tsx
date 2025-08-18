@@ -17,11 +17,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { rooms } from '@/lib/data';
+import { rooms, establishmentImages } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import BookingForm from '@/components/booking-form';
 import { config } from '@/lib/config';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 export default function Home() {
   return (
@@ -90,7 +91,43 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="amenities" className="w-full bg-secondary py-12 md:py-24 lg:py-32">
+        <section id="gallery" className="w-full bg-secondary py-12 md:py-24 lg:py-32">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mb-12 text-center">
+              <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Our Establishment
+              </h2>
+              <p className="mx-auto mt-4 max-w-[700px] text-muted-foreground md:text-xl">
+                A glimpse into the comfort and luxury that awaits you.
+              </p>
+            </div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full max-w-4xl mx-auto"
+            >
+              <CarouselContent>
+                {establishmentImages.map((src, index) => (
+                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1">
+                      <Card>
+                        <CardContent className="flex aspect-square items-center justify-center p-0">
+                           <Image src={src} alt={`Establishment image ${index + 1}`} width={600} height={600} className="rounded-lg object-cover w-full h-full" data-ai-hint="hotel restaurant" />
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
+        </section>
+
+        <section id="amenities" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
               <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">

@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { updateHeroImage, updateRoom } from "./actions";
+import { addOrUpdateRoom, deleteRoom, updateHeroImage } from "./actions";
 import { config } from "@/lib/config";
 import { rooms } from "@/lib/data";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Trash2 } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -44,45 +46,106 @@ export default function AdminPage() {
             <div>
               <h2 className="font-headline text-3xl font-bold">Room Management</h2>
               <p className="mt-2 text-muted-foreground">
-                Update the details for each room.
+                Add, edit, or delete rooms.
               </p>
             </div>
 
-            {rooms.map((room) => (
-              <Card key={room.id}>
-                <CardHeader>
-                  <CardTitle>{room.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form action={updateRoom} className="space-y-4">
-                    <input type="hidden" name="id" value={room.id} />
-                    <div className="space-y-2">
-                      <Label htmlFor={`description-${room.id}`}>Description</Label>
-                      <Textarea id={`description-${room.id}`} name="description" defaultValue={room.description} rows={4} />
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="add-room">
+                <AccordionTrigger>
+                    <h3 className="font-headline text-2xl font-bold">Add New Room</h3>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <form action={addOrUpdateRoom} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Room Name</Label>
+                          <Input id="name" name="name" placeholder="e.g. Deluxe King Room" required/>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="price">Price per night</Label>
+                          <Input id="price" name="price" type="number" placeholder="150" required/>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea id="description" name="description" rows={4} required/>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="image">Main Image URL</Label>
+                          <Input id="image" name="image" required/>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="image1">Image URL 1</Label>
+                            <Input id="image1" name="image1" required/>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="image2">Image URL 2</Label>
+                            <Input id="image2" name="image2" required/>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="image3">Image URL 3</Label>
+                            <Input id="image3" name="image3" required/>
+                          </div>
+                        </div>
+                        <Button type="submit">Add Room</Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            
+            <div className="mt-8 space-y-6">
+              {rooms.map((room) => (
+                <Card key={room.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>{room.name}</CardTitle>
+                      <form action={deleteRoom}>
+                        <input type="hidden" name="id" value={room.id} />
+                        <Button variant="destructive" size="icon" type="submit">
+                           <Trash2 className="h-4 w-4"/>
+                           <span className="sr-only">Delete Room</span>
+                        </Button>
+                      </form>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`image-${room.id}`}>Main Image URL</Label>
-                      <Input id={`image-${room.id}`} name="image" defaultValue={room.image} />
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  </CardHeader>
+                  <CardContent>
+                    <form action={addOrUpdateRoom} className="space-y-4">
+                      <input type="hidden" name="id" value={room.id} />
+                      <input type="hidden" name="name" value={room.name} />
+                      <input type="hidden" name="price" value={room.price} />
                       <div className="space-y-2">
-                        <Label htmlFor={`image1-${room.id}`}>Image URL 1</Label>
-                        <Input id={`image1-${room.id}`} name="image1" defaultValue={room.images[0]} />
+                        <Label htmlFor={`description-${room.id}`}>Description</Label>
+                        <Textarea id={`description-${room.id}`} name="description" defaultValue={room.description} rows={4} />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`image2-${room.id}`}>Image URL 2</Label>
-                        <Input id={`image2-${room.id}`} name="image2" defaultValue={room.images[1]} />
+                        <Label htmlFor={`image-${room.id}`}>Main Image URL</Label>
+                        <Input id={`image-${room.id}`} name="image" defaultValue={room.image} />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`image3-${room.id}`}>Image URL 3</Label>
-                        <Input id={`image3-${room.id}`} name="image3" defaultValue={room.images[2]} />
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label htmlFor={`image1-${room.id}`}>Image URL 1</Label>
+                          <Input id={`image1-${room.id}`} name="image1" defaultValue={room.images[0]} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`image2-${room.id}`}>Image URL 2</Label>
+                          <Input id={`image2-${room.id}`} name="image2" defaultValue={room.images[1]} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`image3-${room.id}`}>Image URL 3</Label>
+                          <Input id={`image3-${room.id}`} name="image3" defaultValue={room.images[2]} />
+                        </div>
                       </div>
-                    </div>
-                    <Button type="submit">Update Room</Button>
-                  </form>
-                </CardContent>
-              </Card>
-            ))}
+                      <Button type="submit">Update Room</Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
           </div>
         </div>
       </main>

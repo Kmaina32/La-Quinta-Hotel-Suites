@@ -27,7 +27,7 @@ export type Booking = {
 export const bookings: Booking[] = [
   {
     id: 'BK12345',
-    roomId: 'deluxe-king',
+    roomId: 'deluxe-king-1',
     checkIn: '2024-08-15',
     checkOut: '2024-08-20',
     guests: 2,
@@ -36,25 +36,19 @@ export const bookings: Booking[] = [
   },
   {
     id: 'BK12346',
-    roomId: 'executive-suite',
+    roomId: 'deluxe-king-2',
     checkIn: '2024-09-01',
     checkOut: '2024-09-05',
     guests: 2,
     totalPrice: 1000,
     status: 'Confirmed',
   },
-  {
-    id: 'BK12347',
-    roomId: 'family-room',
-    checkIn: '2024-10-10',
-    checkOut: '2024-10-12',
-    guests: 4,
-    totalPrice: 400,
-    status: 'Cancelled',
-  },
 ];
 
-export const restaurantImages = [
+export const establishmentImages = [
+    'https://placehold.co/600x400.png',
+    'https://placehold.co/600x400.png',
+    'https://placehold.co/600x400.png',
     'https://placehold.co/600x400.png',
     'https://placehold.co/600x400.png',
     'https://placehold.co/600x400.png',

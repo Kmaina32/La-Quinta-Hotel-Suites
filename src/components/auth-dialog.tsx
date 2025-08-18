@@ -21,11 +21,8 @@ function SubmitButton({ isLogin }: { isLogin: boolean }) {
 
 export default function AuthDialog() {
   const [open, setOpen] = useState(false);
-  const loginInitialState: AuthState = { message: null, errors: {} };
-  const [loginState, loginAction] = useActionState(login, loginInitialState);
-  
-  const signupInitialState: AuthState = { message: null, errors: {} };
-  const [signupState, signupAction] = useActionState(signup, signupInitialState);
+  const [loginState, loginAction] = useActionState(login, { message: null, errors: {} });
+  const [signupState, signupAction] = useActionState(signup, { message: null, errors: {} });
 
 
   return (

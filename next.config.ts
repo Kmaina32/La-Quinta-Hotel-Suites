@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
         hostname: 'cf.bstatic.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'q-xx.bstatic.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

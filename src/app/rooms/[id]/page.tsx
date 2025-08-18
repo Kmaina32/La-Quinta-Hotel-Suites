@@ -1,8 +1,5 @@
 
-'use client';
-
 import Image from 'next/image';
-import { useState } from 'react';
 import { notFound } from 'next/navigation';
 import { type Room, rooms } from '@/lib/data';
 import Header from '@/components/header';
@@ -10,9 +7,12 @@ import Footer from '@/components/footer';
 import { Check } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useState } from 'react';
 
-// This is now a client component that receives the resolved room object
+// This is the Client Component for handling user interactions
 function RoomDetailsContent({ room }: { room: Room }) {
+  'use client';
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const openModal = (imageSrc: string) => {
@@ -108,7 +108,7 @@ function RoomDetailsContent({ room }: { room: Room }) {
   );
 }
 
-// This is now the main Server Component for the page
+// This is the main Server Component for the page
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
   const getRoomById = (id: string): Room | undefined => rooms.find((room) => room.id === id);
   const room = getRoomById(params.id);

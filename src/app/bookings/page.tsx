@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -19,35 +20,35 @@ import Footer from '@/components/footer';
 import { cn } from '@/lib/utils';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import { useRouter } from 'next/navigation';
+import AuthDialog from '@/components/auth-dialog';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user) {
-        router.push('/');
-      } else {
+      if (user) {
         const fetchBookings = async () => {
+          setIsLoading(true);
           const userBookings = await getBookingsForUser(user.uid);
           setBookings(userBookings);
           setIsLoading(false);
         };
         fetchBookings();
+      } else {
+        setIsLoading(false);
       }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
-  if (authLoading || isLoading) {
-      return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-      )
+  if (authLoading || (user && isLoading)) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
@@ -62,80 +63,93 @@ export default function BookingsPage() {
             </p>
           </div>
 
-          <div className="grid gap-6">
-            {bookings.length > 0 ? (
-              bookings.map((booking) => (
-                <Card key={booking.id} className="w-full">
-                  <CardHeader>
-                    <div className="flex flex-col justify-between md:flex-row md:items-start">
-                      <div>
-                        <CardTitle className="font-headline text-2xl">{booking.roomName}</CardTitle>
-                        <CardDescription>Booking ID: {booking.id.slice(-6)}</CardDescription>
-                         {booking.allocatedRoomNumber && (
-                           <p className="text-sm text-muted-foreground">
+          {!user ? (
+             <Card>
+                <CardContent className="pt-6">
+                    <div className="text-center text-muted-foreground">
+                        <p>Please log in to see your bookings.</p>
+                        <AuthDialog>
+                            <Button variant="link">Login or Sign Up</Button>
+                        </AuthDialog>
+                    </div>
+                </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6">
+              {bookings.length > 0 ? (
+                bookings.map((booking) => (
+                  <Card key={booking.id} className="w-full">
+                    <CardHeader>
+                      <div className="flex flex-col justify-between md:flex-row md:items-start">
+                        <div>
+                          <CardTitle className="font-headline text-2xl">{booking.roomName}</CardTitle>
+                          <CardDescription>Booking ID: {booking.id.slice(-6)}</CardDescription>
+                          {booking.allocatedRoomNumber && (
+                            <p className="text-sm text-muted-foreground">
                                 Room Number: <span className="font-bold text-primary">{booking.allocatedRoomNumber}</span>
-                           </p>
-                        )}
-                      </div>
-                      <Badge
-                        variant={
-                          booking.status === 'Confirmed'
-                            ? 'default'
-                            : booking.status === 'Cancelled'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                        className={cn(
-                          'mt-2 w-fit md:mt-0',
-                          booking.status === 'Confirmed' && 'bg-green-600 text-white'
-                        )}
-                      >
-                        {booking.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-                      <div>
-                        <p className="font-semibold">Check-in</p>
-                        <p>{booking.checkIn}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Check-out</p>
-                        <p>{booking.checkOut}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Guests</p>
-                        <p>{booking.guests}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Total Price</p>
-                        <p>Ksh {booking.totalPrice}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Link href="/support" className="ml-auto">
-                      <Button variant="ghost">
-                        Need help? <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))
-            ) : (
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="text-center text-muted-foreground">
-                            <p>You have no bookings yet.</p>
-                            <Link href="/#rooms">
-                                <Button variant="link">Explore Rooms</Button>
-                            </Link>
+                            </p>
+                          )}
                         </div>
+                        <Badge
+                          variant={
+                            booking.status === 'Confirmed'
+                              ? 'default'
+                              : booking.status === 'Cancelled'
+                              ? 'destructive'
+                              : 'secondary'
+                          }
+                          className={cn(
+                            'mt-2 w-fit md:mt-0',
+                            booking.status === 'Confirmed' && 'bg-green-600 text-white'
+                          )}
+                        >
+                          {booking.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+                        <div>
+                          <p className="font-semibold">Check-in</p>
+                          <p>{booking.checkIn}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold">Check-out</p>
+                          <p>{booking.checkOut}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold">Guests</p>
+                          <p>{booking.guests}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold">Total Price</p>
+                          <p>Ksh {booking.totalPrice}</p>
+                        </div>
+                      </div>
                     </CardContent>
-                </Card>
-            )}
-          </div>
+                    <CardFooter>
+                      <Link href="/support" className="ml-auto">
+                        <Button variant="ghost">
+                          Need help? <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                  <Card>
+                      <CardContent className="pt-6">
+                          <div className="text-center text-muted-foreground">
+                              <p>You have no bookings yet.</p>
+                              <Link href="/#rooms">
+                                  <Button variant="link">Explore Rooms</Button>
+                              </Link>
+                          </div>
+                      </CardContent>
+                  </Card>
+              )}
+            </div>
+          )}
         </div>
       </main>
       <Footer />

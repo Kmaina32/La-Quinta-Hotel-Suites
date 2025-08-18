@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,26 +10,16 @@ import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Booking, rooms } from '@/lib/data';
 import { saveBooking } from '@/app/bookings/actions';
 import { useAuth } from '@/context/auth-context';
-
+import AuthDialog from './auth-dialog';
 
 export default function BookingForm() {
   const router = useRouter();
@@ -45,7 +36,9 @@ export default function BookingForm() {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isBooking, setIsBooking] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'mpesa' | null>(null);
+  
+  // State to control the auth dialog visibility when 'Book Now' is clicked by a guest.
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleAvailabilityCheck = () => {
     setIsChecking(true);
@@ -55,21 +48,19 @@ export default function BookingForm() {
     }, 1500);
   };
   
-  const handleBooking = () => {
+  const handleBookingAttempt = () => {
     if (!user) {
-        // ideally, this would open the auth dialog
-        router.push('/');
-        return;
+      setShowAuthModal(true); // Open auth dialog if user is not logged in
+      return;
     }
     if (!room) {
-        // If on the homepage where there is no specific room, redirect to rooms section.
-        router.push('/#rooms');
-        return;
+      router.push('/#rooms');
+      return;
     }
     setIsBooking(true);
     setTimeout(() => {
-        setIsBooking(false);
-        setShowPaymentModal(true);
+      setIsBooking(false);
+      setShowPaymentModal(true);
     }, 1500);
   };
 
@@ -96,6 +87,12 @@ export default function BookingForm() {
     setShowPaymentModal(false);
     router.push('/bookings');
   }
+
+  // This function is passed to the AuthDialog to handle successful authentication
+  const onAuthSuccess = () => {
+     setShowAuthModal(false); // Close the dialog
+     handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
+  };
 
   return (
     <>
@@ -174,19 +171,28 @@ export default function BookingForm() {
                   'Check Availability'
                 )}
               </Button>
-              <Button
-                type="button"
-                className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
-                onClick={handleBooking}
-                disabled={!isAvailable || isBooking}
-              >
-                {isBooking ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Booking...
-                  </>
-                ) : 'Book Now'}
-              </Button>
+              {showAuthModal ? (
+                <AuthDialog onAuthSuccess={onAuthSuccess}>
+                    <Button type="button" className="h-10 w-full bg-green-600 text-white hover:bg-green-700">
+                        Book Now
+                    </Button>
+                </AuthDialog>
+              ) : (
+                 <Button
+                    type="button"
+                    className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
+                    onClick={handleBookingAttempt}
+                    disabled={!isAvailable || isBooking}
+                    >
+                    {isBooking ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Booking...
+                    </>
+                    ) : 'Book Now'}
+                </Button>
+              )}
+
             </div>
           </div>
           {isAvailable !== null && (
@@ -212,9 +218,9 @@ export default function BookingForm() {
           </DialogHeader>
           <Tabs defaultValue="card" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="card" onClick={() => setPaymentMethod('card')}>Card</TabsTrigger>
-              <TabsTrigger value="paypal" onClick={() => setPaymentMethod('paypal')}>PayPal</TabsTrigger>
-              <TabsTrigger value="mpesa" onClick={() => setPaymentMethod('mpesa')}>M-Pesa</TabsTrigger>
+              <TabsTrigger value="card">Card</TabsTrigger>
+              <TabsTrigger value="paypal">PayPal</TabsTrigger>
+              <TabsTrigger value="mpesa">M-Pesa</TabsTrigger>
             </TabsList>
             <TabsContent value="card">
                 <form onSubmit={handlePayment} className="space-y-4 pt-4">

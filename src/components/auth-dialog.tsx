@@ -9,8 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/context/auth-context';
-import { useRouter } from 'next/navigation';
 
 function SubmitButton({ isLogin }: { isLogin: boolean }) {
   const { pending } = useFormStatus();
@@ -21,44 +19,26 @@ function SubmitButton({ isLogin }: { isLogin: boolean }) {
   );
 }
 
-export default function AuthDialog() {
+export default function AuthDialog({ children, onAuthSuccess }: { children: React.ReactNode, onAuthSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
-  const { user } = useAuth();
-  const router = useRouter();
 
-  // Reset initial state to avoid carrying over old errors
   const loginInitialState: AuthState = { message: null, errors: {} };
   const signupInitialState: AuthState = { message: null, errors: {} };
   
   const [loginState, loginAction] = useActionState(login, loginInitialState);
   const [signupState, signupAction] = useActionState(signup, signupInitialState);
-  
-  useEffect(() => {
-    // If the user is successfully authenticated (either by login or signup),
-    // and the dialog is open, close it and redirect.
-    if (user && open) {
-        setOpen(false);
-        router.push('/bookings');
-    }
-  }, [user, open, router]);
 
-  // This effect handles closing the dialog ONLY if the auth state becomes successful.
-  // The redirection is now implicitly handled by the parent context detecting the user change.
   useEffect(() => {
     if (loginState.success || signupState.success) {
-      if (open) {
-        // The onAuthStateChanged listener in AuthProvider will pick up the change,
-        // update the `user` context, and the effect above will trigger the redirect.
-        setOpen(false);
-      }
+      setOpen(false);
+      onAuthSuccess?.();
     }
-  }, [loginState.success, signupState.success, open]);
-
+  }, [loginState.success, signupState.success, onAuthSuccess]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost">Login</Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <Tabs defaultValue="login" className="w-full">

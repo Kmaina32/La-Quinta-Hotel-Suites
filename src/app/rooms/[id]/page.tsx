@@ -2,26 +2,18 @@
 'use client';
 
 import Image from 'next/image';
-import { Suspense, useState, useMemo } from 'react';
+import { useState } from 'react';
 import { notFound } from 'next/navigation';
-import { rooms } from '@/lib/data';
+import { type Room, rooms } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { Check } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-const getRoomById = (id: string) => rooms.find((room) => room.id === id);
-
-function RoomDetailsContent({ params }: { params: { id: string } }) {
-  const room = useMemo(() => getRoomById(params.id), [params.id]);
+// This is now a client component that receives the resolved room object
+function RoomDetailsContent({ room }: { room: Room }) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  if (!room) {
-    notFound();
-  }
-
-  const allImages = [room.image, ...room.images];
 
   const openModal = (imageSrc: string) => {
     setSelectedImage(imageSrc);
@@ -30,7 +22,6 @@ function RoomDetailsContent({ params }: { params: { id: string } }) {
   const closeModal = () => {
     setSelectedImage(null);
   };
-
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -117,10 +108,15 @@ function RoomDetailsContent({ params }: { params: { id: string } }) {
   );
 }
 
+// This is now the main Server Component for the page
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
-  return (
-    <Suspense fallback={<div>Loading room details...</div>}>
-      <RoomDetailsContent params={params} />
-    </Suspense>
-  );
+  const getRoomById = (id: string): Room | undefined => rooms.find((room) => room.id === id);
+  const room = getRoomById(params.id);
+
+  if (!room) {
+    notFound();
+  }
+
+  // We pass the resolved room object to the client component
+  return <RoomDetailsContent room={room} />;
 }

@@ -190,7 +190,7 @@ export default function Home() {
                 </div>
                 <div className="overflow-hidden rounded-lg">
                     <iframe
-                        src="https://maps.google.com/maps?q=M4CV%2B7Q%20Nakuru&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.810599187176!2d36.14180787496587!3d-0.3293593995804588!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182977000adf0c13%3A0x7a5f35c4157e80ee!2sLa%20Quita%20Hotel%20and%20Suites!5e0!3m2!1sen!2ske!4v1720524885803!5m2!1sen!2ske"
                         width="100%"
                         height="450"
                         style={{ border: 0 }}
@@ -201,7 +201,7 @@ export default function Home() {
                 </div>
                  <div className="mt-8 flex justify-center">
                     <a
-                      href="https://www.google.com/maps/search/?api=1&query=M4CV%2B7Q%20Nakuru"
+                      href="https://www.google.com/maps/place/La+Quita+Hotel+and+Suites/@-0.329362,36.1430954,18z"
                       target="_blank"
                       rel="noopener noreferrer"
                     >

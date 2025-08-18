@@ -37,7 +37,7 @@ export default function Footer() {
                 </li>
                  <li>
                     <a
-                      href="https://www.google.com/maps/search/?api=1&query=M4CV%2B7Q%20Nakuru"
+                      href="https://www.google.com/maps/place/La+Quita+Hotel+and+Suites/@-0.329362,36.1430954,18z"
                       target="_blank"
                       rel="noopener noreferrer"
                        className="text-sm hover:text-primary"

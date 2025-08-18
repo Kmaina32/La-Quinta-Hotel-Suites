@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,15 +12,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { bookings, rooms } from '@/lib/data';
+import { type Booking } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
 
-const getRoomById = (id: string) => rooms.find((room) => room.id === id);
-
 export default function BookingsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const storedBookings = localStorage.getItem('bookings');
+    if (storedBookings) {
+      setBookings(JSON.parse(storedBookings));
+    }
+    setIsLoading(false);
+  }, []);
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
@@ -31,14 +43,15 @@ export default function BookingsPage() {
           </div>
 
           <div className="grid gap-6">
-            {bookings.map((booking) => {
-              const room = getRoomById(booking.roomId);
-              return (
+            {isLoading ? (
+                <p>Loading bookings...</p>
+            ) : bookings.length > 0 ? (
+              bookings.map((booking) => (
                 <Card key={booking.id} className="w-full">
                   <CardHeader>
                     <div className="flex flex-col justify-between md:flex-row md:items-start">
                       <div>
-                        <CardTitle className="font-headline text-2xl">{room?.name}</CardTitle>
+                        <CardTitle className="font-headline text-2xl">{booking.roomName}</CardTitle>
                         <CardDescription>Booking ID: {booking.id}</CardDescription>
                       </div>
                       <Badge
@@ -86,8 +99,19 @@ export default function BookingsPage() {
                     </Link>
                   </CardFooter>
                 </Card>
-              );
-            })}
+              ))
+            ) : (
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="text-center text-muted-foreground">
+                            <p>You have no bookings yet.</p>
+                            <Link href="/#rooms">
+                                <Button variant="link">Explore Rooms</Button>
+                            </Link>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
           </div>
         </div>
       </main>

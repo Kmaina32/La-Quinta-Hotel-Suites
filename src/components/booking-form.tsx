@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Calendar as CalendarIcon, Check, Loader2 } from 'lucide-react';
-import { addDays, format } from 'date-fns';
+import { addDays, format, differenceInDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
@@ -25,9 +25,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { type Booking, rooms } from '@/lib/data';
+
 
 export default function BookingForm() {
   const router = useRouter();
+  const params = useParams();
+  const room = rooms.find(r => r.id === params.id);
+
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 5),
@@ -48,6 +53,11 @@ export default function BookingForm() {
   };
   
   const handleBooking = () => {
+    if (!room) {
+        // If on the homepage where there is no specific room, redirect to rooms section.
+        router.push('/#rooms');
+        return;
+    }
     setIsBooking(true);
     setTimeout(() => {
         setIsBooking(false);
@@ -57,9 +67,24 @@ export default function BookingForm() {
 
   const handlePayment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(`Processing ${paymentMethod} payment...`);
+    if (!date?.from || !date?.to || !room) return;
+
+    const nights = differenceInDays(date.to, date.from);
+    const newBooking: Booking = {
+      id: `BK${Date.now()}`,
+      roomId: room.id,
+      roomName: room.name,
+      checkIn: format(date.from, 'yyyy-MM-dd'),
+      checkOut: format(date.to, 'yyyy-MM-dd'),
+      guests,
+      totalPrice: nights * room.price,
+      status: 'Confirmed',
+    };
+
+    const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
+    localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
+
     setShowPaymentModal(false);
-    // Here you would handle the actual payment processing
     router.push('/bookings');
   }
 
@@ -105,6 +130,7 @@ export default function BookingForm() {
                     selected={date}
                     onSelect={setDate}
                     numberOfMonths={2}
+                    disabled={{ before: new Date() }}
                   />
                 </PopoverContent>
               </Popover>

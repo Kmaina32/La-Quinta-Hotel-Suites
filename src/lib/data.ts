@@ -31,6 +31,7 @@ export type Booking = {
   guests: number;
   totalPrice: number;
   status: 'Confirmed' | 'Pending' | 'Cancelled';
+  allocatedRoomNumber: string | null;
 };
 
 export const amenities = [
@@ -40,4 +41,4 @@ export const amenities = [
     'Luxurious Bedding',
     'Air Conditioning',
     '24/7 Front Desk'
-]
+];

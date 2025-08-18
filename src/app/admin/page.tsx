@@ -4,15 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateHeroImage } from "./actions";
+import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateHeroImage, allocateRoom, getBookings } from "./actions";
 import { config } from "@/lib/config";
 import { rooms, establishmentImages } from "@/lib/data";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Trash2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const bookings = await getBookings();
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -38,6 +47,56 @@ export default function AdminPage() {
                   </div>
                   <Button type="submit">Save Changes</Button>
                 </form>
+              </CardContent>
+            </Card>
+
+            <Separator />
+
+            <div>
+              <h2 className="font-headline text-3xl font-bold">Booking Management</h2>
+              <p className="mt-2 text-muted-foreground">
+                View bookings and allocate rooms.
+              </p>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>All Bookings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Booking ID</TableHead>
+                      <TableHead>Room</TableHead>
+                      <TableHead>Dates</TableHead>
+                      <TableHead>User ID</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Room No.</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bookings.map((booking) => (
+                      <TableRow key={booking.id}>
+                        <TableCell className="font-medium">{booking.id.slice(-6)}</TableCell>
+                        <TableCell>{booking.roomName}</TableCell>
+                        <TableCell>{booking.checkIn} to {booking.checkOut}</TableCell>
+                        <TableCell>{booking.userId.slice(0,10)}...</TableCell>
+                        <TableCell>{booking.status}</TableCell>
+                        <TableCell>
+                          {booking.allocatedRoomNumber || 'Not set'}
+                        </TableCell>
+                         <TableCell>
+                          <form action={allocateRoom} className="flex gap-2">
+                            <input type="hidden" name="bookingId" value={booking.id} />
+                            <Input name="allocatedRoomNumber" placeholder="e.g. 101" className="h-8" required/>
+                            <Button size="sm" type="submit">Save</Button>
+                          </form>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
 

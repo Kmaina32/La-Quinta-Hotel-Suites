@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { type Booking } from '@/lib/data';
+import { getBookingsForUser } from './actions';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { cn } from '@/lib/utils';
@@ -29,15 +30,14 @@ export default function BookingsPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        router.push('/login');
+        router.push('/');
       } else {
-        const storedBookings = localStorage.getItem('bookings');
-        if (storedBookings) {
-          const allBookings = JSON.parse(storedBookings) as Booking[];
-          const userBookings = allBookings.filter(booking => booking.userId === user.uid);
+        const fetchBookings = async () => {
+          const userBookings = await getBookingsForUser(user.uid);
           setBookings(userBookings);
-        }
-        setIsLoading(false);
+          setIsLoading(false);
+        };
+        fetchBookings();
       }
     }
   }, [user, authLoading, router]);
@@ -71,6 +71,11 @@ export default function BookingsPage() {
                       <div>
                         <CardTitle className="font-headline text-2xl">{booking.roomName}</CardTitle>
                         <CardDescription>Booking ID: {booking.id}</CardDescription>
+                         {booking.allocatedRoomNumber && (
+                           <p className="text-sm text-muted-foreground">
+                                Room Number: <span className="font-bold text-primary">{booking.allocatedRoomNumber}</span>
+                           </p>
+                        )}
                       </div>
                       <Badge
                         variant={

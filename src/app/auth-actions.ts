@@ -62,7 +62,7 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
     return handleAuthError(e as AuthError);
   }
   
-  redirect('/');
+  redirect('/bookings');
 }
 
 export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {

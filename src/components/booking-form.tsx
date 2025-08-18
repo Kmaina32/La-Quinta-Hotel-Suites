@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type Booking, rooms } from '@/lib/data';
+import { saveBooking } from '@/app/bookings/actions';
 import { useAuth } from '@/context/auth-context';
 
 
@@ -56,7 +57,8 @@ export default function BookingForm() {
   
   const handleBooking = () => {
     if (!user) {
-        router.push('/login');
+        // ideally, this would open the auth dialog
+        router.push('/');
         return;
     }
     if (!room) {
@@ -71,7 +73,7 @@ export default function BookingForm() {
     }, 1500);
   };
 
-  const handlePayment = (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!date?.from || !date?.to || !room || !user) return;
 
@@ -86,10 +88,10 @@ export default function BookingForm() {
       guests,
       totalPrice: nights * room.price,
       status: 'Confirmed',
+      allocatedRoomNumber: null,
     };
 
-    const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]') as Booking[];
-    localStorage.setItem('bookings', JSON.stringify([...existingBookings, newBooking]));
+    await saveBooking(newBooking);
 
     setShowPaymentModal(false);
     router.push('/bookings');

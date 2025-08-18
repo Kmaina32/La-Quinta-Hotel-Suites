@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth-context';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import AuthDialog from './auth-dialog';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -51,14 +52,7 @@ export default function Header() {
               <Button variant="outline" onClick={handleLogout}>Logout</Button>
             </>
           ) : (
-            <>
-              <Link href="/login">
-                <Button variant="ghost">Login</Button>
-              </Link>
-              <Link href="/signup">
-                <Button>Sign Up</Button>
-              </Link>
-            </>
+            <AuthDialog />
           )}
         </div>
         <div className="md:hidden">
@@ -89,14 +83,7 @@ export default function Header() {
                   {user ? (
                     <Button className="w-full" onClick={handleLogout}>Logout</Button>
                   ) : (
-                    <div className='flex flex-col gap-2'>
-                      <Link href="/login">
-                        <Button variant="outline" className="w-full">Login</Button>
-                      </Link>
-                      <Link href="/signup">
-                        <Button className="w-full">Sign Up</Button>
-                      </Link>
-                    </div>
+                    <AuthDialog />
                   )}
                 </div>
               </div>

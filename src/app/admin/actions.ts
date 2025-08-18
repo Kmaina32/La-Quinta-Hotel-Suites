@@ -4,7 +4,25 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import type { Room, EstablishmentImage } from '@/lib/data';
+import type { Room, EstablishmentImage, Booking } from '@/lib/data';
+
+const bookingsPath = path.join(process.cwd(), 'src', 'lib', 'bookings.json');
+
+async function readBookings(): Promise<Booking[]> {
+  try {
+    const data = await fs.readFile(bookingsPath, 'utf-8');
+    return JSON.parse(data) as Booking[];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function getBookings(): Promise<Booking[]> {
+  return await readBookings();
+}
 
 const heroImageSchema = z.object({
   heroImageUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -217,5 +235,46 @@ export async function deleteEstablishmentImage(formData: FormData) {
   } catch (error) {
     console.error('Error deleting establishment image:', error);
     return { error: 'Failed to delete image.' };
+  }
+}
+
+
+const bookingSchema = z.object({
+  bookingId: z.string(),
+  allocatedRoomNumber: z.string().min(1, { message: 'Room number cannot be empty.' }),
+});
+
+export async function allocateRoom(formData: FormData) {
+  const validatedFields = bookingSchema.safeParse({
+    bookingId: formData.get('bookingId'),
+    allocatedRoomNumber: formData.get('allocatedRoomNumber'),
+  });
+
+  if (!validatedFields.success) {
+    console.error(validatedFields.error);
+    return { error: 'Invalid data provided.' };
+  }
+
+  const { bookingId, allocatedRoomNumber } = validatedFields.data;
+  const bookingsData = await fs.readFile(bookingsPath, 'utf-8');
+  const bookings: Booking[] = JSON.parse(bookingsData);
+  
+  try {
+    const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+    if (bookingIndex === -1) {
+      return { error: 'Booking not found.' };
+    }
+
+    bookings[bookingIndex].allocatedRoomNumber = allocatedRoomNumber;
+
+    await fs.writeFile(bookingsPath, JSON.stringify(bookings, null, 2));
+
+    revalidatePath('/admin');
+    revalidatePath('/bookings');
+
+    return { success: true, message: 'Room allocated successfully.' };
+  } catch (error) {
+    console.error('Error allocating room:', error);
+    return { error: 'Failed to allocate room.' };
   }
 }

@@ -21,6 +21,7 @@ import { rooms } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import BookingForm from '@/components/booking-form';
+import { config } from '@/lib/config';
 
 export default function Home() {
   return (
@@ -32,7 +33,7 @@ export default function Home() {
           className="relative h-[80vh] min-h-[500px] w-full"
         >
           <Image
-            src="https://placehold.co/1600x900.png"
+            src={config.heroImageUrl}
             alt="Laquinta Hotel & Suites"
             data-ai-hint="hotel exterior"
             fill

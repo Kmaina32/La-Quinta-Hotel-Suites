@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { updateHeroImage } from "./actions";
+import { config } from "@/lib/config";
 
 export default function AdminPage() {
   return (
@@ -23,12 +25,12 @@ export default function AdminPage() {
               <CardDescription>Update the main image on the homepage.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <form action={updateHeroImage} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="heroImageUrl">Hero Image URL</Label>
-                  <Input id="heroImageUrl" placeholder="https://example.com/image.png" />
+                  <Input id="heroImageUrl" name="heroImageUrl" placeholder="https://example.com/image.png" defaultValue={config.heroImageUrl} />
                 </div>
-                <Button>Save Changes</Button>
+                <Button type="submit">Save Changes</Button>
               </form>
             </CardContent>
           </Card>

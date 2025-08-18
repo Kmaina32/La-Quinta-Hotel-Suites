@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Hotel, Facebook, Twitter, Instagram, MapPin, Phone } from 'lucide-react';
+import { Facebook, Twitter, Instagram, MapPin, Phone } from 'lucide-react';
+import Logo from './logo';
 
 export default function Footer() {
   return (
@@ -7,11 +8,11 @@ export default function Footer() {
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-12 md:grid-cols-4 md:px-6">
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center gap-2">
-            <Hotel className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl font-bold">Laquinta Reservations</span>
+            <Logo />
+            <span className="font-headline text-xl font-bold">La Quinta Hotel & Suites</span>
           </Link>
           <p className="max-w-xs text-muted-foreground">
-            Experience comfort and luxury at Laquinta Hotel & Suites, Nakuru.
+            Experience comfort and luxury at La Quinta Hotel & Suites, Nakuru.
           </p>
         </div>
         <div>
@@ -65,7 +66,7 @@ export default function Footer() {
       <div className="border-t">
         <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Laquinta Reservations. All rights reserved.
+            &copy; {new Date().getFullYear()} La Quinta Hotel & Suites. All rights reserved.
           </p>
         </div>
       </div>

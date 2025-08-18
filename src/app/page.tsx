@@ -39,7 +39,7 @@ export default function Home() {
         >
           <Image
             src={config.heroImageUrl}
-            alt="Laquinta Hotel & Suites"
+            alt="La Quinta Hotel & Suites"
             data-ai-hint="hotel exterior"
             fill
             className="object-cover rounded-lg"
@@ -47,7 +47,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/50 rounded-lg" />
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
             <h1 className="font-headline text-5xl font-bold md:text-7xl">
-              Laquinta Hotel & Suites
+              La Quinta Hotel & Suites
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl">
               Your serene getaway in the heart of Nakuru. Experience unparalleled comfort and hospitality.

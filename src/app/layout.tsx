@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 import WhatsappButton from '@/components/whatsapp-button';
 
 export const metadata: Metadata = {
-  title: 'Laquinta Hotel and Suites',
-  description: 'A hotel booking platform for Laquinta Hotel & Suites in Nakuru.',
+  title: 'La Quinta Hotel & Suites',
+  description: 'A hotel booking platform for La Quinta Hotel & Suites in Nakuru.',
 };
 
 export default function RootLayout({

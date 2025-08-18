@@ -37,8 +37,8 @@ export default function BookingForm() {
   const [isBooking, setIsBooking] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   
-  // State to control the auth dialog visibility when 'Book Now' is clicked by a guest.
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+
 
   const handleAvailabilityCheck = () => {
     setIsChecking(true);
@@ -50,11 +50,17 @@ export default function BookingForm() {
   
   const handleBookingAttempt = () => {
     if (!user) {
-      setShowAuthModal(true); // Open auth dialog if user is not logged in
+      setIsAuthDialogOpen(true);
       return;
     }
     if (!room) {
-      router.push('/#rooms');
+      // If on a room detail page, stay, otherwise go to rooms section
+      if (params.id) {
+         // Maybe show a toast message here
+         console.error("Room data not found for booking.")
+      } else {
+         router.push('/#rooms');
+      }
       return;
     }
     setIsBooking(true);
@@ -90,7 +96,7 @@ export default function BookingForm() {
 
   // This function is passed to the AuthDialog to handle successful authentication
   const onAuthSuccess = () => {
-     setShowAuthModal(false); // Close the dialog
+     setIsAuthDialogOpen(false); // Close the dialog
      handleBookingAttempt(); // Retry the booking attempt, now that user is logged in.
   };
 
@@ -171,13 +177,7 @@ export default function BookingForm() {
                   'Check Availability'
                 )}
               </Button>
-              {showAuthModal ? (
-                <AuthDialog onAuthSuccess={onAuthSuccess}>
-                    <Button type="button" className="h-10 w-full bg-green-600 text-white hover:bg-green-700">
-                        Book Now
-                    </Button>
-                </AuthDialog>
-              ) : (
+              <AuthDialog onAuthSuccess={onAuthSuccess}>
                  <Button
                     type="button"
                     className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
@@ -191,7 +191,7 @@ export default function BookingForm() {
                     </>
                     ) : 'Book Now'}
                 </Button>
-              )}
+              </AuthDialog>
 
             </div>
           </div>

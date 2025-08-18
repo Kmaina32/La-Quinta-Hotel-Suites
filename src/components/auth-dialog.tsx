@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRouter } from 'next/navigation';
 
 function SubmitButton({ isLogin }: { isLogin: boolean }) {
   const { pending } = useFormStatus();
@@ -21,6 +22,7 @@ function SubmitButton({ isLogin }: { isLogin: boolean }) {
 
 export default function AuthDialog({ children, onAuthSuccess }: { children: React.ReactNode, onAuthSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   const loginInitialState: AuthState = { message: null, errors: {} };
   const signupInitialState: AuthState = { message: null, errors: {} };
@@ -30,10 +32,15 @@ export default function AuthDialog({ children, onAuthSuccess }: { children: Reac
 
   useEffect(() => {
     if (loginState.success || signupState.success) {
-      setOpen(false);
-      onAuthSuccess?.();
+      setOpen(false); // Close the dialog
+      if (onAuthSuccess) {
+        onAuthSuccess();
+      } else {
+        router.refresh(); // Force a refresh to update auth state across the app
+        router.push('/bookings');
+      }
     }
-  }, [loginState.success, signupState.success, onAuthSuccess]);
+  }, [loginState.success, signupState.success, onAuthSuccess, router]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

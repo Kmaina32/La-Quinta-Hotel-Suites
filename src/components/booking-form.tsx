@@ -54,6 +54,15 @@ export default function BookingForm() {
   const [isBooking, setIsBooking] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  const isRoomPage = pathname.includes('/rooms/');
+
+  useEffect(() => {
+    // On room pages, we assume availability to streamline UX
+    if (isRoomPage) {
+        setIsAvailable(true);
+    }
+  }, [isRoomPage]);
+
   const handleAvailabilityCheck = () => {
     setIsChecking(true);
     setTimeout(() => {
@@ -137,9 +146,12 @@ export default function BookingForm() {
   useEffect(() => {
     if(user && isAuthDialogOpen) {
       setIsAuthDialogOpen(false);
-      handleBookingAttempt();
+      // After login, re-trigger the booking attempt on room pages
+      if(isRoomPage) {
+        handleBookingAttempt();
+      }
     }
-  }, [user, isAuthDialogOpen]);
+  }, [user, isAuthDialogOpen, isRoomPage]);
 
   return (
     <>
@@ -202,22 +214,24 @@ export default function BookingForm() {
                   min={1}
                 />
               </div>
-              <div className="flex w-full flex-col gap-2 sm:flex-row lg:col-span-4 lg:grid lg:grid-cols-2">
-                <Button
-                  type="button"
-                  className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={handleAvailabilityCheck}
-                  disabled={isChecking}
-                >
-                  {isChecking ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Checking...
-                    </>
-                  ) : (
-                    'Check Availability'
-                  )}
-                </Button>
+              <div className={cn("flex w-full flex-col gap-2 sm:flex-row lg:col-span-4", isRoomPage ? "lg:grid-cols-1" : "lg:grid lg:grid-cols-2")}>
+                {!isRoomPage && (
+                    <Button
+                    type="button"
+                    className="h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={handleAvailabilityCheck}
+                    disabled={isChecking}
+                    >
+                    {isChecking ? (
+                        <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Checking...
+                        </>
+                    ) : (
+                        'Check Availability'
+                    )}
+                    </Button>
+                )}
                  <Button
                     type="button"
                     className="h-10 w-full bg-green-600 text-white hover:bg-green-700"
@@ -233,7 +247,7 @@ export default function BookingForm() {
                 </Button>
               </div>
             </div>
-          {isAvailable !== null && (
+          {isAvailable !== null && !isRoomPage && (
             <div className="mt-4 text-center text-white">
                 {isAvailable ? (
                     <p className="flex items-center justify-center gap-2 text-green-400">
@@ -247,9 +261,7 @@ export default function BookingForm() {
         </CardContent>
       </Card>
 
-      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={() => router.refresh()}>
-        <span />
-      </AuthDialog>
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
 
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent>
@@ -321,5 +333,3 @@ export default function BookingForm() {
     </>
   );
 }
-
-    

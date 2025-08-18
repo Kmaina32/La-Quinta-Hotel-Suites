@@ -1,4 +1,6 @@
 
+'use client';
+
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { type Room, rooms } from '@/lib/data';
@@ -11,8 +13,6 @@ import { useState } from 'react';
 
 // This is the Client Component for handling user interactions
 function RoomDetailsContent({ room }: { room: Room }) {
-  'use client';
-
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const openModal = (imageSrc: string) => {

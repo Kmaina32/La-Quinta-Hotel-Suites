@@ -29,13 +29,11 @@ export default function AuthDialog() {
   const router = useRouter();
   
   useEffect(() => {
-    // If the user becomes authenticated and the dialog is open, close it.
-    if (user && open) {
-      setOpen(false);
-      // Redirect to bookings page after successful login/signup
-      router.push('/bookings');
+    if (loginState.success || signupState.success) {
+        setOpen(false);
+        router.push('/bookings');
     }
-  }, [user, open, router]);
+  }, [loginState.success, signupState.success, router]);
 
 
   return (

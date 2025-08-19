@@ -8,7 +8,7 @@ import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { Check } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useState } from 'react';
 
 // This is the Client Component for handling user interactions
@@ -65,6 +65,7 @@ function RoomDetailsContent({ room }: { room: Room }) {
                 </div>
                 {selectedImage && (
                     <DialogContent className="max-w-4xl p-0">
+                        <DialogTitle className="sr-only">Enlarged room image</DialogTitle>
                         <Image
                             src={selectedImage}
                             alt="Enlarged room view"
@@ -108,7 +109,7 @@ function RoomDetailsContent({ room }: { room: Room }) {
   );
 }
 
-// This is the main Server Component for the page
+// This is the main page component (Server Component)
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
   const getRoomById = (id: string): Room | undefined => rooms.find((room) => room.id === id);
   const room = getRoomById(params.id);

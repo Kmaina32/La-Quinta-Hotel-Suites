@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Header from "@/components/header";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateHeroImage, allocateRoom, getBookings as fetchBookings, getRooms, getEstablishmentImages } from "./actions";
+import { addOrUpdateEstablishmentImage, addOrUpdateRoom, deleteEstablishmentImage, deleteRoom, updateSiteImages, allocateRoom, getBookings as fetchBookings, getRooms, getEstablishmentImages } from "./actions";
 import { config as appConfig } from "@/lib/config";
 import { type Booking, type Room, type EstablishmentImage } from "@/lib/data";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,14 +54,18 @@ function AdminDashboard({
           <div className="grid gap-8">
             <Card>
               <CardHeader>
-                <CardTitle>Hero Section</CardTitle>
-                <CardDescription>Update the main image on the homepage.</CardDescription>
+                <CardTitle>Site Images</CardTitle>
+                <CardDescription>Update the main images on the homepage and authentication dialog.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form action={updateHeroImage} className="space-y-4">
+                <form action={updateSiteImages} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="heroImageUrl">Hero Image URL</Label>
                     <Input id="heroImageUrl" name="heroImageUrl" placeholder="https://example.com/image.png" defaultValue={appConfig.heroImageUrl} />
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="authImageUrl">Auth Dialog Image URL</Label>
+                    <Input id="authImageUrl" name="authImageUrl" placeholder="https://example.com/image.png" defaultValue={appConfig.authImageUrl} />
                   </div>
                   <Button type="submit">Save Changes</Button>
                 </form>

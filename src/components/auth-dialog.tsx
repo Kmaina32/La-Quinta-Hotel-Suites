@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
+import { config } from '@/lib/config';
+import Image from 'next/image';
 
 function SubmitButton({ isLogin }: { isLogin: boolean }) {
   const { pending } = useFormStatus();
@@ -48,93 +50,105 @@ export default function AuthDialog({ children, open, onOpenChange, onAuthSuccess
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-          <TabsContent value="login">
-            <DialogHeader>
-              <DialogTitle>Login</DialogTitle>
-              <DialogDescription>
-                Enter your email below to login to your account.
-              </DialogDescription>
-            </DialogHeader>
-            <form action={loginAction} className="grid gap-4 py-4">
-              {loginState.errors?.general && (
-                <div className="text-sm font-medium text-destructive">
-                  {loginState.errors.general.join(', ')}
+      <DialogContent className="sm:max-w-[425px] p-0">
+        <div className="relative h-48 w-full">
+            <Image 
+                src={config.authImageUrl}
+                alt="Authentication background"
+                layout="fill"
+                objectFit="cover"
+                className="rounded-t-lg"
+                data-ai-hint="hotel interior"
+            />
+        </div>
+        <div className="p-6">
+            <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login">
+                <DialogHeader className="mt-4">
+                <DialogTitle>Login</DialogTitle>
+                <DialogDescription>
+                    Enter your email below to login to your account.
+                </DialogDescription>
+                </DialogHeader>
+                <form action={loginAction} className="grid gap-4 py-4">
+                {loginState.errors?.general && (
+                    <div className="text-sm font-medium text-destructive">
+                    {loginState.errors.general.join(', ')}
+                    </div>
+                )}
+                <div className="grid gap-2">
+                    <Label htmlFor="email-login">Email</Label>
+                    <Input
+                    id="email-login"
+                    type="email"
+                    name="email"
+                    placeholder="m@example.com"
+                    required
+                    />
+                    {loginState.errors?.email && (
+                        <p className="text-sm font-medium text-destructive">
+                        {loginState.errors.email.join(', ')}
+                        </p>
+                    )}
                 </div>
-              )}
-              <div className="grid gap-2">
-                <Label htmlFor="email-login">Email</Label>
-                <Input
-                  id="email-login"
-                  type="email"
-                  name="email"
-                  placeholder="m@example.com"
-                  required
-                />
-                {loginState.errors?.email && (
-                    <p className="text-sm font-medium text-destructive">
-                      {loginState.errors.email.join(', ')}
-                    </p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password-login">Password</Label>
-                <Input id="password-login" type="password" name="password" required />
-                 {loginState.errors?.password && (
-                    <p className="text-sm font-medium text-destructive">
-                      {loginState.errors.password.join(', ')}
-                    </p>
-                )}
-              </div>
-              <SubmitButton isLogin={true} />
-            </form>
-          </TabsContent>
-          <TabsContent value="signup">
-             <DialogHeader>
-              <DialogTitle>Sign Up</DialogTitle>
-              <DialogDescription>
-                Enter your information to create an account
-              </DialogDescription>
-            </DialogHeader>
-             <form action={signupAction} className="grid gap-4 py-4">
-              {signupState.errors?.general && (
-                <div className="text-sm font-medium text-destructive">
-                  {signupState.errors.general.join(', ')}
+                <div className="grid gap-2">
+                    <Label htmlFor="password-login">Password</Label>
+                    <Input id="password-login" type="password" name="password" required />
+                    {loginState.errors?.password && (
+                        <p className="text-sm font-medium text-destructive">
+                        {loginState.errors.password.join(', ')}
+                        </p>
+                    )}
                 </div>
-              )}
-              <div className="grid gap-2">
-                <Label htmlFor="email-signup">Email</Label>
-                <Input
-                  id="email-signup"
-                  type="email"
-                  name="email"
-                  placeholder="m@example.com"
-                  required
-                />
-                {signupState.errors?.email && (
-                    <p className="text-sm font-medium text-destructive">
-                      {signupState.errors.email.join(', ')}
-                    </p>
+                <SubmitButton isLogin={true} />
+                </form>
+            </TabsContent>
+            <TabsContent value="signup">
+                <DialogHeader className="mt-4">
+                <DialogTitle>Sign Up</DialogTitle>
+                <DialogDescription>
+                    Enter your information to create an account
+                </DialogDescription>
+                </DialogHeader>
+                <form action={signupAction} className="grid gap-4 py-4">
+                {signupState.errors?.general && (
+                    <div className="text-sm font-medium text-destructive">
+                    {signupState.errors.general.join(', ')}
+                    </div>
                 )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password-signup">Password</Label>
-                <Input id="password-signup" type="password" name="password" required />
-                 {signupState.errors?.password && (
-                    <p className="text-sm font-medium text-destructive">
-                      {signupState.errors.password.join(', ')}
-                    </p>
-                )}
-              </div>
-              <SubmitButton isLogin={false} />
-            </form>
-          </TabsContent>
-        </Tabs>
+                <div className="grid gap-2">
+                    <Label htmlFor="email-signup">Email</Label>
+                    <Input
+                    id="email-signup"
+                    type="email"
+                    name="email"
+                    placeholder="m@example.com"
+                    required
+                    />
+                    {signupState.errors?.email && (
+                        <p className="text-sm font-medium text-destructive">
+                        {signupState.errors.email.join(', ')}
+                        </p>
+                    )}
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="password-signup">Password</Label>
+                    <Input id="password-signup" type="password" name="password" required />
+                    {signupState.errors?.password && (
+                        <p className="text-sm font-medium text-destructive">
+                        {signupState.errors.password.join(', ')}
+                        </p>
+                    )}
+                </div>
+                <SubmitButton isLogin={false} />
+                </form>
+            </TabsContent>
+            </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

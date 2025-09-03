@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
@@ -9,6 +10,7 @@ import roomsData from '@/lib/rooms.json';
 
 const bookingsPath = path.join(process.cwd(), 'src', 'lib', 'bookings.json');
 const dataPath = path.join(process.cwd(), 'src', 'lib', 'rooms.json');
+const configPath = path.join(process.cwd(), 'src', 'lib', 'config.json');
 
 async function readBookings(): Promise<Booking[]> {
   try {
@@ -38,11 +40,13 @@ export async function getBookings(): Promise<Booking[]> {
 
 const heroImageSchema = z.object({
   heroImageUrl: z.string().url({ message: 'Please enter a valid URL.' }),
+  authImageUrl: z.string().url({ message: 'Please enter a valid URL.' }),
 });
 
-export async function updateHeroImage(formData: FormData) {
+export async function updateSiteImages(formData: FormData) {
   const validatedFields = heroImageSchema.safeParse({
     heroImageUrl: formData.get('heroImageUrl'),
+    authImageUrl: formData.get('authImageUrl'),
   });
 
   if (!validatedFields.success) {
@@ -50,18 +54,18 @@ export async function updateHeroImage(formData: FormData) {
     return { error: 'Invalid URL provided.' };
   }
   
-  const { heroImageUrl } = validatedFields.data;
-  const configPath = path.join(process.cwd(), 'src', 'lib', 'config.json');
+  const { heroImageUrl, authImageUrl } = validatedFields.data;
 
   try {
     const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
     config.heroImageUrl = heroImageUrl;
+    config.authImageUrl = authImageUrl;
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
     revalidatePath('/');
     revalidatePath('/admin');
   } catch (error) {
     console.error('Error updating hero image:', error);
-    return { error: 'Failed to update hero image.' };
+    return { error: 'Failed to update site images.' };
   }
 }
 

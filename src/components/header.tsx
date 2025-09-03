@@ -11,6 +11,7 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import AuthDialog from './auth-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { useState } from 'react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -23,11 +24,18 @@ const navLinks = [
 export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/');
+    router.refresh();
   };
+
+  const handleAuthSuccess = () => {
+    setIsAuthDialogOpen(false);
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -69,8 +77,8 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <AuthDialog>
-                <Button variant="ghost">Login</Button>
+              <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={handleAuthSuccess}>
+                <Button variant="ghost" onClick={() => setIsAuthDialogOpen(true)}>Login</Button>
               </AuthDialog>
             )}
           </div>
@@ -108,7 +116,7 @@ export default function Header() {
                       </div>
                     ) : (
                       <div className="w-full">
-                        <AuthDialog>
+                         <AuthDialog onAuthSuccess={handleAuthSuccess}>
                             <Button className="w-full">Login / Sign Up</Button>
                         </AuthDialog>
                       </div>

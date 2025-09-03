@@ -1,5 +1,3 @@
-import roomsData from './rooms.json';
-
 export type Room = {
   id: string;
   name: string;
@@ -16,10 +14,6 @@ export type EstablishmentImage = {
   src: string;
   description: string;
 };
-
-export const rooms: Room[] = roomsData.rooms;
-export const establishmentImages: EstablishmentImage[] = roomsData.establishment;
-
 
 export type Booking = {
   id: string;

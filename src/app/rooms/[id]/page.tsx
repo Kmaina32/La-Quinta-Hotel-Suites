@@ -2,17 +2,16 @@
 'use client';
 
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { type Room, rooms } from '@/lib/data';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import type { Room } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { getRooms } from '@/app/admin/actions';
 
-// This is the Client Component for handling user interactions
-function RoomDetailsContent({ room }: { room: Room }) {
+function RoomDetailsContent({ room, allRooms }: { room: Room, allRooms: Room[] }) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const openModal = (imageSrc: string) => {
@@ -98,7 +97,7 @@ function RoomDetailsContent({ room }: { room: Room }) {
                 </p>
               </div>
               <div className="mt-auto pt-8">
-                <BookingForm />
+                <BookingForm rooms={allRooms} />
               </div>
             </div>
           </div>
@@ -109,15 +108,56 @@ function RoomDetailsContent({ room }: { room: Room }) {
   );
 }
 
-// This is the main page component (Server Component)
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
-  const getRoomById = (id: string): Room | undefined => rooms.find((room) => room.id === id);
-  const room = getRoomById(params.id);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [allRooms, setAllRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!room) {
-    notFound();
+  useEffect(() => {
+    const fetchRoomData = async () => {
+      try {
+        setLoading(true);
+        const roomsData = await getRooms();
+        const currentRoom = roomsData.find((r) => r.id === params.id);
+        
+        if (currentRoom) {
+          setRoom(currentRoom);
+          setAllRooms(roomsData);
+        } else {
+          setError('Room not found.');
+        }
+      } catch (e) {
+        console.error(e);
+        setError('Failed to load room details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoomData();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (error) {
+     return (
+        <div className="flex min-h-screen flex-col items-center justify-center">
+            <p className="text-destructive">{error}</p>
+        </div>
+     )
   }
 
-  // We pass the resolved room object to the client component
-  return <RoomDetailsContent room={room} />;
+  if (!room) {
+    // This can be a more formal not found page
+    return <p>Room not found.</p>;
+  }
+
+  return <RoomDetailsContent room={room} allRooms={allRooms} />;
 }

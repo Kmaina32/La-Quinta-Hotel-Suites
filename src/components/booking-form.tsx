@@ -17,12 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type Booking, rooms } from '@/lib/data';
+import { type Booking, type Room } from '@/lib/data';
 import { saveBooking } from '@/app/bookings/actions';
 import { useAuth } from '@/context/auth-context';
 import AuthDialog from './auth-dialog';
 
-export default function BookingForm() {
+export default function BookingForm({ rooms }: { rooms: Room[] }) {
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -59,7 +59,6 @@ export default function BookingForm() {
   const isRoomPage = pathname.includes('/rooms/');
 
   useEffect(() => {
-    // On room pages, we assume availability to streamline UX
     if (isRoomPage) {
         setIsAvailable(true);
     }
@@ -68,14 +67,13 @@ export default function BookingForm() {
   const handleAvailabilityCheck = () => {
     setIsChecking(true);
     setTimeout(() => {
-      const isMockAvailable = Math.random() > 0.2; // 80% chance of being available
+      const isMockAvailable = Math.random() > 0.2; 
       setIsAvailable(isMockAvailable);
       setIsChecking(false);
     }, 1500);
   };
   
   const handleBookingAttempt = () => {
-    // If we are on the homepage, scroll to the rooms section
     if (pathname === '/') {
         const newParams = new URLSearchParams();
         if (date?.from) newParams.set('from', format(date.from, 'yyyy-MM-dd'));
@@ -83,27 +81,26 @@ export default function BookingForm() {
         newParams.set('guests', occupancy === 'single' ? '1' : '2');
         newParams.set('show_rooms', 'true');
         
-        // We use window.location.hash to ensure smooth scrolling
         window.location.hash = 'rooms';
-        // We use router.replace to update the URL without adding to history
-        router.replace(`/?${newParams.toString()}#rooms`);
+        router.replace(`/?${newParams.toString()}#rooms`, { scroll: false });
+        // Manually scroll after router update
+        setTimeout(() => {
+            document.getElementById('rooms')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
         return;
     }
 
-    // If on a room page, check for user auth
     if (!user) {
       setIsAuthDialogOpen(true);
       return;
     }
     
-    // If user is logged in on a room page
     if (!room) {
       console.error("Room data not found for booking.");
       return;
     }
 
     if (!isAvailable) {
-        // Maybe add a toast here
         alert("Please check availability before booking.");
         return;
     }
@@ -124,8 +121,8 @@ export default function BookingForm() {
     const guests = occupancy === 'single' ? 1 : 2;
     const roomName = occupancy === 'double-infant' ? `${room.name} (+Infant)` : room.name;
     
-    const newBooking: Booking = {
-      id: `BK${Date.now()}`,
+    // Note: 'id' is omitted, Firestore will generate it.
+    const newBooking: Omit<Booking, 'id'> = {
       userId: user.uid,
       roomId: room.id,
       roomName: roomName,
@@ -151,7 +148,6 @@ export default function BookingForm() {
   useEffect(() => {
     if(user && isAuthDialogOpen) {
       setIsAuthDialogOpen(false);
-      // After login, re-trigger the booking attempt on room pages
       if(isRoomPage) {
         handleBookingAttempt();
       }

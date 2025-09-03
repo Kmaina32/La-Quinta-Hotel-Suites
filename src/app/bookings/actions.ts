@@ -1,38 +1,30 @@
-
 'use server';
 
-import { promises as fs } from 'fs';
-import path from 'path';
-import { type Booking } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
+import { type Booking } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
-const bookingsPath = path.join(process.cwd(), 'src', 'lib', 'bookings.json');
-
-async function readBookings(): Promise<Booking[]> {
+export async function saveBooking(booking: Omit<Booking, 'id'>): Promise<void> {
   try {
-    const data = await fs.readFile(bookingsPath, 'utf-8');
-    if (!data) {
-        return [];
-    }
-    return JSON.parse(data) as Booking[];
+    await addDoc(collection(db, 'bookings'), booking);
+    revalidatePath('/bookings');
+    revalidatePath('/admin');
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return [];
-    }
-    console.error("Failed to read bookings:", error);
-    return []; // Return empty array on error
+    console.error('Error saving booking:', error);
+    throw new Error('Failed to save booking.');
   }
 }
 
-export async function saveBooking(booking: Booking): Promise<void> {
-  const bookings = await readBookings();
-  bookings.push(booking);
-  await fs.writeFile(bookingsPath, JSON.stringify(bookings, null, 2));
-  revalidatePath('/bookings');
-  revalidatePath('/admin');
-}
-
 export async function getBookingsForUser(userId: string): Promise<Booking[]> {
-    const bookings = await readBookings();
-    return bookings.filter(booking => booking.userId === userId);
+  try {
+    const bookingsCol = collection(db, 'bookings');
+    const q = query(bookingsCol, where('userId', '==', userId));
+    const bookingSnapshot = await getDocs(q);
+    const bookingList = bookingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    return bookingList;
+  } catch (error) {
+    console.error("Failed to read bookings for user:", error);
+    return []; // Return empty array on error
+  }
 }

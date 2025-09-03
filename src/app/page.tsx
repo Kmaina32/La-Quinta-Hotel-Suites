@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -24,7 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { rooms, establishmentImages } from '@/lib/data';
+import { type Room, type EstablishmentImage } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import BookingForm from '@/components/booking-form';
@@ -34,12 +34,31 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import LocationMap from '@/components/location-map';
 import { cn } from '@/lib/utils';
 import PressMeArrow from '@/components/press-me-arrow';
-
+import { getRooms, getEstablishmentImages } from '@/app/admin/actions'; // Fetch from server actions
+import { Skeleton } from '@/components/ui/skeleton';
 
 function HomePageContent() {
   const searchParams = useSearchParams();
   const showRoomsHint = searchParams.get('show_rooms') === 'true';
   const autoplay = React.useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
+  
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [images, setImages] = useState<EstablishmentImage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const [roomsData, imagesData] = await Promise.all([
+        getRooms(),
+        getEstablishmentImages()
+      ]);
+      setRooms(roomsData);
+      setImages(imagesData);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -65,7 +84,7 @@ function HomePageContent() {
                 <p className="mt-4 max-w-2xl text-lg md:text-xl">
                 Your serene getaway in the heart of Nakuru. Experience unparalleled comfort and hospitality.
                 </p>
-                <BookingForm />
+                <BookingForm rooms={rooms} />
             </div>
           </div>
         </section>
@@ -82,30 +101,46 @@ function HomePageContent() {
             </div>
             <div className="relative grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {showRoomsHint && <PressMeArrow />}
-              {rooms.map((room) => (
-                <Card key={room.id} className={cn("overflow-hidden transition-shadow duration-300 hover:shadow-lg", showRoomsHint && 'animate-throb')}>
-                  <CardHeader className="p-0">
-                    <Image
-                      src={room.image}
-                      alt={room.name}
-                      data-ai-hint="hotel room"
-                      width={600}
-                      height={400}
-                      className="aspect-video w-full object-cover"
-                    />
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <CardTitle className="font-headline text-2xl">{room.name}</CardTitle>
-                    <CardDescription className="mt-2">{room.description}</CardDescription>
-                  </CardContent>
-                  <CardFooter className="flex justify-between items-center p-6 pt-0">
-                    <p className="text-lg font-semibold">Ksh {room.price} / night</p>
-                    <Link href={`/rooms/${room.id}`}>
-                      <Button>View Details</Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))}
+              {loading ? (
+                 Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i}>
+                      <Skeleton className="h-[250px] w-full" />
+                      <CardContent className="p-6 space-y-2">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                      </CardContent>
+                      <CardFooter className="p-6 pt-0 flex justify-between items-center">
+                         <Skeleton className="h-6 w-1/4" />
+                         <Skeleton className="h-10 w-1/3" />
+                      </CardFooter>
+                    </Card>
+                  ))
+              ) : (
+                rooms.map((room) => (
+                  <Card key={room.id} className={cn("overflow-hidden transition-shadow duration-300 hover:shadow-lg", showRoomsHint && 'animate-throb')}>
+                    <CardHeader className="p-0">
+                      <Image
+                        src={room.image}
+                        alt={room.name}
+                        data-ai-hint="hotel room"
+                        width={600}
+                        height={400}
+                        className="aspect-video w-full object-cover"
+                      />
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <CardTitle className="font-headline text-2xl">{room.name}</CardTitle>
+                      <CardDescription className="mt-2">{room.description}</CardDescription>
+                    </CardContent>
+                    <CardFooter className="flex justify-between items-center p-6 pt-0">
+                      <p className="text-lg font-semibold">Ksh {room.price} / night</p>
+                      <Link href={`/rooms/${room.id}`}>
+                        <Button>View Details</Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </section>
@@ -132,14 +167,19 @@ function HomePageContent() {
                 onMouseLeave={autoplay.current.reset}
               >
                 <CarouselContent>
-                  {establishmentImages.map((image, index) => (
-                    <CarouselItem key={index}>
+                  {loading ? (
+                    <CarouselItem>
+                      <Skeleton className="w-full h-[400px] md:h-[600px]"/>
+                    </CarouselItem>
+                  ) : (
+                    images.map((image, index) => (
+                    <CarouselItem key={image.id || index}>
                       <div className="p-1">
                         <Card>
                           <CardContent className="flex aspect-square items-center justify-center p-0">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Image src={image.src} alt={image.description} width={600} height={600} className="rounded-lg object-cover w-full h-full" data-ai-hint="hotel restaurant" />
+                                <Image src={image.src} alt={image.description} width={800} height={800} className="rounded-lg object-cover w-full h-full" data-ai-hint="hotel restaurant" />
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>{image.description}</p>
@@ -149,7 +189,7 @@ function HomePageContent() {
                         </Card>
                       </div>
                     </CarouselItem>
-                  ))}
+                  )))}
                 </CarouselContent>
                 <CarouselPrevious />
                 <CarouselNext />

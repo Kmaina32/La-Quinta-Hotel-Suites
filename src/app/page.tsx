@@ -5,6 +5,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import Autoplay from "embla-carousel-autoplay"
 import {
   BedDouble,
   ParkingCircle,
@@ -38,6 +39,7 @@ import PressMeArrow from '@/components/press-me-arrow';
 function HomePageContent() {
   const searchParams = useSearchParams();
   const showRoomsHint = searchParams.get('show_rooms') === 'true';
+  const autoplay = React.useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -120,15 +122,18 @@ function HomePageContent() {
             </div>
             <TooltipProvider>
               <Carousel
+                plugins={[autoplay.current]}
                 opts={{
                   align: "start",
                   loop: true,
                 }}
                 className="w-full max-w-4xl mx-auto"
+                onMouseEnter={autoplay.current.stop}
+                onMouseLeave={autoplay.current.reset}
               >
                 <CarouselContent>
                   {establishmentImages.map((image, index) => (
-                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <CarouselItem key={index}>
                       <div className="p-1">
                         <Card>
                           <CardContent className="flex aspect-square items-center justify-center p-0">
@@ -215,7 +220,7 @@ function HomePageContent() {
                   <p className="text-lg">Send us a message on WhatsApp for instant booking assistance.</p>
                 </div>
                 <Link
-                  href="https://wa.me/254759713882?text=I'd%20like%20to%20book%20a%20room%20at%20Laquinta."
+                  href="https://wa.me/254710147434?text=I'd%20like%20to%20book%20a%20room%20at%20Laquinta."
                   target="_blank"
                   rel="noopener noreferrer"
                 >

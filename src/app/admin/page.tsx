@@ -13,10 +13,11 @@ import { type Booking, type Room, type EstablishmentImage } from "@/lib/data";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Info } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from '@/context/auth-context';
 import { useEffect, useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function AdminDashboard({
     bookings,
@@ -38,6 +39,17 @@ function AdminDashboard({
               Manage website content here.
             </p>
           </div>
+
+          <Alert className="mb-8">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Admin Access</AlertTitle>
+              <AlertDescription>
+                <p>To access the admin panel, you need to be logged in with an authorized admin account.</p>
+                <p className="mt-2">You can create an account through the normal sign-up process. Then, to grant admin privileges, you will need to manually modify the user's record in your authentication provider (e.g., Firebase Authentication) to add a custom claim or role (e.g., `admin: true`).</p>
+                <p className="mt-2">The admin URL is <a href="/admin" className="font-bold underline">/admin</a>.</p>
+              </AlertDescription>
+          </Alert>
+
           <div className="grid gap-8">
             <Card>
               <CardHeader>
@@ -236,7 +248,7 @@ function AdminDashboard({
                       <form action={addOrUpdateEstablishmentImage} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="src">Image URL</Label>
-                          <Input id="src" name="src" placeholder="https://example.com/image.png" required />
+                          <Input id="src" name="src" placeholder="https://example.com/image.png or Google Drive link" required />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="description">Description</Label>
@@ -298,21 +310,31 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [images, setImages] = useState<EstablishmentImage[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      const loadData = async () => {
-        const [bookingsData, roomsData, imagesData] = await Promise.all([
-            fetchBookings(),
-            getRooms(),
-            getEstablishmentImages(),
-        ]);
-        setBookings(bookingsData);
-        setRooms(roomsData);
-        setImages(imagesData);
-      }
-      loadData();
+    async function checkAdminStatus() {
+        if (user) {
+            const idTokenResult = await user.getIdTokenResult();
+            if (idTokenResult.claims.admin) {
+                setIsAdmin(true);
+                const loadData = async () => {
+                    const [bookingsData, roomsData, imagesData] = await Promise.all([
+                        fetchBookings(),
+                        getRooms(),
+                        getEstablishmentImages(),
+                    ]);
+                    setBookings(bookingsData);
+                    setRooms(roomsData);
+                    setImages(imagesData);
+                }
+                loadData();
+            } else {
+                setIsAdmin(false);
+            }
+        }
     }
+    checkAdminStatus();
   }, [user]);
 
   if (loading) {
@@ -323,7 +345,7 @@ export default function AdminPage() {
       )
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
@@ -332,8 +354,15 @@ export default function AdminPage() {
             <div className="text-center">
               <h1 className="font-headline text-4xl font-bold">Admin Panel</h1>
               <p className="mt-4 text-lg text-muted-foreground">
-                You must be logged in to view this page.
+                You must be logged in as an administrator to view this page.
               </p>
+                 <Alert className="mt-8 text-left">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Admin Access Information</AlertTitle>
+                  <AlertDescription>
+                    <p>To gain admin access, please sign up for an account. After signing up, contact the system super-administrator to elevate your account to have admin privileges. This is a manual security step to protect site data.</p>
+                  </AlertDescription>
+              </Alert>
             </div>
           </div>
         </main>
@@ -344,5 +373,3 @@ export default function AdminPage() {
 
   return <AdminDashboard bookings={bookings} rooms={rooms} images={images} />;
 }
-
-    

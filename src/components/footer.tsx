@@ -28,7 +28,7 @@ export default function Footer() {
             <ul className="mt-4 space-y-2">
                 <li className='flex items-center gap-2 text-sm'>
                     <Phone className="h-4 w-4" />
-                    <a href="tel:0759713882" className="hover:text-primary">0759713882</a>
+                    <a href="tel:+254710147434" className="hover:text-primary">0710 147 434</a>
                 </li>
                 <li className='flex items-center gap-2 text-sm'>
                     <MapPin className="h-4 w-4" />

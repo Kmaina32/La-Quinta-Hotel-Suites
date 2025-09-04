@@ -1,12 +1,25 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails } from '@/lib/actions';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage } from '@/lib/actions';
 import type { Room, EstablishmentImage } from '@/lib/types';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from "@/components/ui/use-toast"
+
+const defaultRoom: Omit<Room, 'id'> = {
+  name: 'New Room',
+  description: '',
+  price: 100,
+  capacity: 2,
+  beds: 1,
+  baths: 1,
+  imageUrl: '',
+  images: [],
+};
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
@@ -16,6 +29,7 @@ export default function AdminPage() {
   const [galleryImages, setGalleryImages] = useState<EstablishmentImage[]>([]);
   const [heroImage, setHeroImage] = useState('');
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
+  const { toast } = useToast()
 
   useEffect(() => {
     const checkAuth = () => {
@@ -23,8 +37,9 @@ export default function AdminPage() {
       if (auth === 'true') {
         setIsAuthenticated(true);
         fetchData();
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     };
     checkAuth();
   }, []);
@@ -37,11 +52,13 @@ export default function AdminPage() {
         getEstablishmentImages(),
       ]);
       setRooms(roomsData);
-      setGalleryImages(galleryData);
-      const hero = galleryData.find(img => img.id === 'hero-image');
+      const sortedGallery = galleryData.sort((a, b) => a.id.localeCompare(b.id));
+      setGalleryImages(sortedGallery);
+      const hero = sortedGallery.find(img => img.id === 'hero-image');
       setHeroImage(hero?.src || '');
     } catch (error) {
         console.error("Failed to fetch admin data:", error);
+        toast({ title: "Error", description: "Failed to fetch admin data.", variant: "destructive" });
         setHeroImage('');
     } finally {
         setLoading(false);
@@ -55,7 +72,7 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       fetchData();
     } else {
-      alert('Incorrect password');
+      toast({ title: "Login Failed", description: "Incorrect password", variant: "destructive" });
     }
   };
   
@@ -119,16 +136,86 @@ export default function AdminPage() {
         if (image) await updateGalleryImage(id, image.src);
       } else if (type === 'room') {
         const room = rooms.find(r => r.id === id);
-        if (room) await updateRoomDetails(id, room);
+        if (room) {
+          const { id: roomId, ...roomData } = room;
+          await updateRoomDetails(roomId, roomData);
+        }
       }
-      alert('Saved successfully!');
+      toast({ title: "Success", description: "Saved successfully!"});
     } catch (error) {
       console.error('Failed to save:', error);
-      alert('Failed to save changes.');
+      toast({ title: "Error", description: "Failed to save changes.", variant: "destructive" });
     } finally {
        setSavingStates(prev => ({...prev, [id]: false}));
     }
   };
+
+  const handleCreateRoom = async () => {
+    setSavingStates(prev => ({...prev, ['new-room']: true}));
+    try {
+      const newRoomId = await addRoom(defaultRoom);
+      setRooms([...rooms, { id: newRoomId, ...defaultRoom }]);
+      toast({ title: "Success", description: "New room created. You can now edit it below." });
+    } catch(error) {
+      console.error('Failed to create room:', error);
+      toast({ title: "Error", description: "Failed to create a new room.", variant: "destructive" });
+    } finally {
+      setSavingStates(prev => ({...prev, ['new-room']: false}));
+    }
+  };
+
+  const handleDeleteRoom = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this room? This action cannot be undone.')) return;
+    setSavingStates(prev => ({...prev, [id]: true}));
+    try {
+      await deleteRoom(id);
+      setRooms(rooms.filter(room => room.id !== id));
+      toast({ title: "Success", description: "Room deleted successfully." });
+    } catch (error) {
+      console.error('Failed to delete room:', error);
+      toast({ title: "Error", description: "Failed to delete room.", variant: "destructive" });
+    } finally {
+      setSavingStates(prev => ({...prev, [id]: false}));
+    }
+  };
+
+  const handleAddGalleryImage = async () => {
+    const newImage: Omit<EstablishmentImage, 'id'> = {
+      src: '',
+      alt: 'Gallery Image',
+      'data-ai-hint': 'hotel interior',
+    };
+     setSavingStates(prev => ({...prev, ['new-gallery-image']: true}));
+    try {
+        const newId = await addGalleryImage(newImage);
+        setGalleryImages([...galleryImages, { ...newImage, id: newId }]);
+        toast({ title: "Success", description: "New gallery image added. You can now add the URL and save." });
+    } catch (error) {
+        console.error('Failed to add gallery image:', error);
+        toast({ title: "Error", description: "Failed to add new gallery image.", variant: "destructive" });
+    } finally {
+        setSavingStates(prev => ({...prev, ['new-gallery-image']: false}));
+    }
+  };
+
+  const handleDeleteGalleryImage = async (id: string) => {
+    if (id === 'hero-image') {
+        toast({ title: "Error", description: "Cannot delete the main hero image.", variant: "destructive" });
+        return;
+    }
+    if (!confirm('Are you sure you want to delete this gallery image?')) return;
+    setSavingStates(prev => ({...prev, [id]: true}));
+    try {
+      await deleteGalleryImage(id);
+      setGalleryImages(galleryImages.filter(img => img.id !== id));
+      toast({ title: "Success", description: "Gallery image deleted." });
+    } catch (error) {
+      console.error('Failed to delete gallery image:', error);
+      toast({ title: "Error", description: "Failed to delete gallery image.", variant: "destructive" });
+    } finally {
+       setSavingStates(prev => ({...prev, [id]: false}));
+    }
+  }
 
 
   if (loading && !isAuthenticated) {
@@ -141,7 +228,7 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto py-12 flex justify-center items-center">
+      <div className="container mx-auto py-12 flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-center">Admin Login</CardTitle>
@@ -184,8 +271,12 @@ export default function AdminPage() {
       </Card>
 
       <Card className="mb-8">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Our Gallery</CardTitle>
+           <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image']}>
+                {savingStates['new-gallery-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                Add Image
+            </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {galleryImages.filter(img => img.id !== 'hero-image').map(image => (
@@ -196,19 +287,33 @@ export default function AdminPage() {
                 {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Save
               </Button>
+              <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}>
+                 <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           ))}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Rooms</CardTitle>
+          <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room']}>
+             {savingStates['new-room'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :  <PlusCircle className="mr-2 h-4 w-4" />}
+             Create New Room
+          </Button>
         </CardHeader>
         <CardContent className="space-y-8">
           {rooms.map(room => (
-            <div key={room.id} className="border p-4 rounded-lg space-y-4">
-              <h3 className="text-2xl font-semibold">{room.name}</h3>
+            <div key={room.id} className="border p-4 rounded-lg space-y-4 relative">
+              <div className="flex justify-between items-start">
+                <h3 className="text-2xl font-semibold">{room.name}</h3>
+                 <Button variant="destructive" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id]}>
+                    {savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :  <Trash2 className="mr-2 h-4 w-4" />}
+                    Delete Room
+                </Button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="font-medium">Name</label>

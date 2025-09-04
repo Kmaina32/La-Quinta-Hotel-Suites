@@ -15,7 +15,7 @@ export function getDb(): admin.firestore.Firestore {
 
   // Check if the app is already initialized
   if (!admin.apps.length) {
-      // Check for necessary environment variables
+      // Check for necessary environment variables from .env.local
       const projectId = process.env.FIREBASE_PROJECT_ID;
       const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
       const privateKey = process.env.FIREBASE_PRIVATE_KEY;

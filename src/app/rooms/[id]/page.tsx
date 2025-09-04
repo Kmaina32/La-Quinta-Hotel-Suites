@@ -108,56 +108,17 @@ function RoomDetailsContent({ room, allRooms }: { room: Room, allRooms: Room[] }
   );
 }
 
-export default function RoomDetailsPage({ params }: { params: { id: string } }) {
-  const [room, setRoom] = useState<Room | null>(null);
-  const [allRooms, setAllRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchRoomData = async () => {
-      try {
-        setLoading(true);
-        const roomsData = await getRooms();
-        const currentRoom = roomsData.find((r) => r.id === params.id);
-        
-        if (currentRoom) {
-          setRoom(currentRoom);
-          setAllRooms(roomsData);
-        } else {
-          setError('Room not found.');
-        }
-      } catch (e) {
-        console.error(e);
-        setError('Failed to load room details.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoomData();
-  }, [params.id]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
+export default async function RoomDetailsPage({ params }: { params: { id: string } }) {
+  const roomsData = await getRooms();
+  const currentRoom = roomsData.find((r) => r.id === params.id);
   
-  if (error) {
+  if (!currentRoom) {
      return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <p className="text-destructive">{error}</p>
+            <p className="text-destructive">Room not found.</p>
         </div>
      )
   }
 
-  if (!room) {
-    // This can be a more formal not found page
-    return <p>Room not found.</p>;
-  }
-
-  return <RoomDetailsContent room={room} allRooms={allRooms} />;
+  return <RoomDetailsContent room={currentRoom} allRooms={roomsData} />;
 }

@@ -1,7 +1,4 @@
 
-
-'use client';
-
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +13,6 @@ import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Trash2, Loader2, Info } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function AdminDashboard({
@@ -308,35 +304,12 @@ function AdminDashboard({
 }
 
 
-export default function AdminPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [images, setImages] = useState<EstablishmentImage[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadData = async () => {
-        setLoading(true);
-        const [bookingsData, roomsData, imagesData] = await Promise.all([
-            fetchBookings(),
-            getRooms(),
-            getEstablishmentImages(),
-        ]);
-        setBookings(bookingsData);
-        setRooms(roomsData);
-        setImages(imagesData);
-        setLoading(false);
-    }
-    loadData();
-  }, []);
-
-  if (loading) {
-      return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-      )
-  }
+export default async function AdminPage() {
+  const [bookings, rooms, images] = await Promise.all([
+      fetchBookings(),
+      getRooms(),
+      getEstablishmentImages(),
+  ]);
 
   return <AdminDashboard bookings={bookings} rooms={rooms} images={images} />;
 }

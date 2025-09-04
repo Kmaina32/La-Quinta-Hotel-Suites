@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { PT_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"] });
+const ptSans = PT_Sans({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
 
 export const metadata: Metadata = {
-  title: "La Quita",
+  title: "La Quinta",
   description: "Boutique Hotel & Suites",
 };
 
@@ -18,10 +22,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${inter.className} flex flex-col h-full`}>
+      <body className={`${ptSans.className} flex flex-col h-full`}>
         <Header />
         <main className="flex-grow">{children}</main>
         <Footer />
+        <Toaster />
       </body>
     </html>
   );

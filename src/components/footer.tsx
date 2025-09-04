@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, MapPin, Phone } from 'lucide-react';
+import { Facebook, Twitter, Instagram, MapPin, Phone, MessageSquare } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -7,10 +7,10 @@ export default function Footer() {
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-12 md:grid-cols-4 md:px-6">
         <div className="flex flex-col gap-2">
           <Link href="/" className="flex items-center">
-            <span className="font-headline text-xl font-bold">La Quita Hotel & Suites</span>
+            <span className="font-headline text-xl font-bold">La Quita</span>
           </Link>
           <p className="max-w-xs text-muted-foreground">
-            Experience comfort and luxury at La Quita Hotel & Suites, Nakuru.
+            Experience comfort and luxury at La Quita, Nakuru.
           </p>
         </div>
         <div>
@@ -27,8 +27,12 @@ export default function Footer() {
            <h4 className="font-headline font-semibold">Contact Us</h4>
             <ul className="mt-4 space-y-2">
                 <li className='flex items-center gap-2 text-sm'>
+                    <MessageSquare className="h-4 w-4" />
+                    <a href="tel:+254710147434" className="hover:text-primary">WhatsApp: 0710 147 434</a>
+                </li>
+                 <li className='flex items-center gap-2 text-sm'>
                     <Phone className="h-4 w-4" />
-                    <a href="tel:+254710147434" className="hover:text-primary">0710 147 434</a>
+                    <a href="tel:+254759713882" className="hover:text-primary">Reception: 0759 713 882</a>
                 </li>
                 <li className='flex items-center gap-2 text-sm'>
                     <MapPin className="h-4 w-4" />
@@ -64,7 +68,7 @@ export default function Footer() {
       <div className="border-t">
         <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} La Quita Hotel & Suites. All rights reserved.
+            &copy; {new Date().getFullYear()} La Quita. All rights reserved.
           </p>
         </div>
       </div>

@@ -130,7 +130,7 @@ export default function AdminPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
-              <Image src={heroImage} alt="Hero" width={100} height={60} className="rounded-md object-cover" />
+              {heroImage && <Image src={heroImage} alt="Hero" width={100} height={60} className="rounded-md object-cover" />}
               <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Enter image URL" />
           </div>
           <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image']}>

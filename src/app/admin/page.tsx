@@ -47,15 +47,16 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roomsData, galleryData] = await Promise.all([
+      const [roomsData, establishmentData] = await Promise.all([
         getRooms(),
         getEstablishmentImages(),
       ]);
       setRooms(roomsData);
-      const sortedGallery = galleryData.sort((a, b) => a.id.localeCompare(b.id));
+      
+      const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
       setGalleryImages(sortedGallery);
-      const hero = sortedGallery.find(img => img.id === 'hero-image');
-      setHeroImage(hero?.src || '');
+      setHeroImage(establishmentData.heroImage?.src || '');
+
     } catch (error) {
         console.error("Failed to fetch admin data:", error);
         toast({ title: "Error", description: "Failed to fetch admin data.", variant: "destructive" });
@@ -279,7 +280,7 @@ export default function AdminPage() {
             </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {galleryImages.filter(img => img.id !== 'hero-image').map(image => (
+          {galleryImages.map(image => (
             <div key={image.id} className="flex items-center gap-4">
               {image.src && <Image src={image.src} alt={image.alt} width={100} height={60} className="rounded-md object-cover" />}
               <Input value={image.src} onChange={(e) => handleGalleryImageChange(image.id, e.target.value)} placeholder="Enter image URL" />

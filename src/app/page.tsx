@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Bath, BedDouble, User } from 'lucide-react';
 import { getRooms, getEstablishmentImages } from '@/lib/actions';
+import { GalleryCarousel } from '@/components/gallery-carousel';
 
 export default async function Home() {
   const rooms = await getRooms();
@@ -41,19 +42,8 @@ export default async function Home() {
       <section id="gallery" className="py-16 bg-secondary">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">Our Gallery</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {galleryImages.map((image) => (
-              <div key={image.id} className="relative h-64 w-full rounded-lg overflow-hidden shadow-lg">
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  className="hover:scale-105 transition-transform duration-300"
-                  data-ai-hint={image['data-ai-hint']}
-                />
-              </div>
-            ))}
+           <div className="max-w-4xl mx-auto">
+            <GalleryCarousel images={galleryImages} />
           </div>
         </div>
       </section>
@@ -61,7 +51,7 @@ export default async function Home() {
       {/* Rooms Section */}
       <section id="rooms" className="py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Our Rooms</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">Our Rooms & Facilities</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {rooms.filter(room => room.imageUrl).map((room) => (
               <Card key={room.id} className="overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
@@ -94,7 +84,7 @@ export default async function Home() {
                     </div>
                     <div className="flex justify-between items-center">
                       <p className="text-lg font-semibold">
-                        KES {room.price} <span className="text-sm font-normal text-muted-foreground">/ night</span>
+                        KES {room.price} <span className="text-sm font-normal text-muted-foreground">/ {room.type === 'room' ? 'night' : 'day'}</span>
                       </p>
                       <Button asChild>
                         <Link href={`/rooms/${room.id}`}>View Details</Link>

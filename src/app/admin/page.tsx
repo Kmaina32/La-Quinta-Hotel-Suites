@@ -9,6 +9,7 @@ import type { Room, EstablishmentImage } from '@/lib/types';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const defaultRoom: Omit<Room, 'id'> = {
   name: 'New Room',
@@ -19,6 +20,7 @@ const defaultRoom: Omit<Room, 'id'> = {
   baths: 1,
   imageUrl: '',
   images: [],
+  type: 'room',
 };
 
 export default function AdminPage() {
@@ -298,10 +300,10 @@ export default function AdminPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Rooms</CardTitle>
+          <CardTitle>Rooms & Facilities</CardTitle>
           <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room']}>
              {savingStates['new-room'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :  <PlusCircle className="mr-2 h-4 w-4" />}
-             Create New Room
+             Create New
           </Button>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -311,7 +313,7 @@ export default function AdminPage() {
                 <h3 className="text-2xl font-semibold">{room.name}</h3>
                  <Button variant="destructive" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id]}>
                     {savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :  <Trash2 className="mr-2 h-4 w-4" />}
-                    Delete Room
+                    Delete
                 </Button>
               </div>
 
@@ -321,21 +323,40 @@ export default function AdminPage() {
                     <Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} />
                 </div>
                  <div>
-                    <label className="font-medium">Price</label>
+                    <label className="font-medium">Price (per night/day)</label>
                     <Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} />
+                </div>
+                <div>
+                    <label className="font-medium">Type</label>
+                    <Select
+                      value={room.type || 'room'}
+                      onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="room">Room</SelectItem>
+                        <SelectItem value="conference">Conference Room</SelectItem>
+                      </SelectContent>
+                    </Select>
                 </div>
                  <div>
                     <label className="font-medium">Capacity</label>
                     <Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} />
                 </div>
-                 <div>
-                    <label className="font-medium">Beds</label>
-                    <Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} />
-                </div>
-                 <div>
-                    <label className="font-medium">Baths</label>
-                    <Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} />
-                </div>
+                {room.type !== 'conference' && (
+                  <>
+                    <div>
+                        <label className="font-medium">Beds</label>
+                        <Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} />
+                    </div>
+                    <div>
+                        <label className="font-medium">Baths</label>
+                        <Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} />
+                    </div>
+                  </>
+                )}
                 <div className="md:col-span-2">
                     <label className="font-medium">Description</label>
                     <Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} />
@@ -348,7 +369,7 @@ export default function AdminPage() {
                     </div>
                 </div>
                  <div className="md:col-span-2 space-y-3">
-                    <label className="font-medium">Room Gallery Images</label>
+                    <label className="font-medium">Detail Images</label>
                     {room.images && room.images.map((img) => (
                         <div key={img.id} className="flex items-center gap-4">
                            {img.src && <Image src={img.src} alt={img.alt} width={100} height={60} className="rounded-md object-cover" />}
@@ -366,7 +387,7 @@ export default function AdminPage() {
               </div>
               <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id]}>
                  {savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save Room Details
+                Save Details
               </Button>
             </div>
           ))}

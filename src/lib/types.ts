@@ -8,6 +8,7 @@ export interface Room {
   baths: number;
   imageUrl: string;
   images: { id: string; src: string; alt: string }[];
+  type: 'room' | 'conference';
 }
 
 export interface EstablishmentImage {

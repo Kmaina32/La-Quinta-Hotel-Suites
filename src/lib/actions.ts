@@ -38,7 +38,7 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
     const gallerySnapshot = await establishmentCollection.get();
     const galleryImages = gallerySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
-        .filter(img => img.id !== 'hero-image');
+        .filter(img => img.id !== 'hero-image' && img.src);
 
     return { heroImage, galleryImages };
 }
@@ -46,7 +46,8 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
 export async function updateHeroImage(src: string) {
     const db = getDb();
     const heroDocRef = db.collection('establishment').doc('hero-image');
-    await heroDocRef.update({ src });
+    // Use set with merge to create the document if it doesn't exist, or update it if it does.
+    await heroDocRef.set({ src, alt: 'Hero Image', 'data-ai-hint': 'hotel exterior' }, { merge: true });
     revalidatePath('/');
     revalidatePath('/admin');
 }

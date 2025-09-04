@@ -31,11 +31,20 @@ export async function getRoom(id: string): Promise<Room | null> {
 export async function getEstablishmentImages(): Promise<EstablishmentImage[]> {
   const db = getDb();
   const establishmentCollection = db.collection('establishment');
-  const establishmentSnapshot = await establishmentCollection.orderBy('id').get();
-  const imagesList = establishmentSnapshot.docs.map(doc => ({
+  
+  // Fetch hero image first
+  const heroDoc = await establishmentCollection.doc('hero-image').get();
+  const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
+
+  // Fetch other images, excluding hero
+  const otherImagesSnapshot = await establishmentCollection.where('id', '!=', 'hero-image').get();
+  const otherImages = otherImagesSnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
   })) as EstablishmentImage[];
+
+  const imagesList = heroImage ? [heroImage, ...otherImages] : otherImages;
+
   return imagesList;
 }
 

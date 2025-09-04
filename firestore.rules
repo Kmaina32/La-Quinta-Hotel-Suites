@@ -2,10 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Allow public read and write access for all collections
-    // This is for demonstration purposes and should be secured in production
-    match /{collection}/{id} {
+    match /{document=**} {
       allow read, write: if true;
     }
   }

@@ -1,9 +1,3 @@
-# Firebase Studio
+# La Quita Hotel & Suites
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
-       
-
-       Run firebase login to authenticate.
-Run firebase deploy --only firestore:rules to deploy the rules.
+This is a Next.js project for the La Quita Hotel & Suites booking website, built in Firebase Studio.

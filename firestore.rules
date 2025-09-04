@@ -1,30 +1,29 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Allow public read access to rooms and establishment data
+    // Allow public read access to rooms and establishment images
     match /rooms/{roomId} {
       allow read: if true;
       allow write: if request.auth.token.admin == true;
     }
-    
+
     match /establishment/{imageId} {
       allow read: if true;
       allow write: if request.auth.token.admin == true;
     }
 
-    // Bookings rules
+    // Allow users to manage their own bookings, and admins to manage all bookings
     match /bookings/{bookingId} {
-      // Allow users to create their own bookings
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // Allow users to read their own bookings, and admins to read all bookings
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || (request.auth.token.admin == true);
-      
-      // Allow only admins to update or delete bookings
-      allow update, delete: if request.auth.token.admin == true;
+      allow create: if request.auth.uid != null && request.auth.uid == request.resource.data.userId;
+      allow read, update: if request.auth.uid == resource.data.userId;
+      // Admins can perform any action on any booking
+      allow read, write, delete: if request.auth.token.admin == true;
+    }
+
+    // Admins can list all bookings
+    match /bookings/{bookingId=**} {
+        allow list: if request.auth.token.admin == true;
     }
   }
 }

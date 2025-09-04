@@ -50,7 +50,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
     return null; // notFound() is called in useEffect
   }
 
-  const nights = date?.to && date?.from ? (date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24) : 0;
+  const nights = date?.to && date?.from ? Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24)) : 0;
   const totalCost = nights * room.price;
 
   return (
@@ -107,7 +107,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
             <CardHeader>
               <CardTitle className="text-2xl">Book Your Stay</CardTitle>
               <CardDescription>
-                 <span className="text-3xl font-bold text-foreground">${room.price}</span>
+                 <span className="text-3xl font-bold text-foreground">KES {room.price}</span>
                  <span className="text-base font-normal text-muted-foreground"> / night</span>
               </CardDescription>
             </CardHeader>
@@ -156,7 +156,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                   <div className="grid gap-2 text-sm">
                     <div className="flex justify-between">
                       <span>{nights} night{nights > 1 ? 's' : ''}</span>
-                      <span>${totalCost.toFixed(2)}</span>
+                      <span>KES {totalCost.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between">
                       <span className="text-muted-foreground">Taxes & Fees</span>

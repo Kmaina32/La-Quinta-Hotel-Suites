@@ -19,8 +19,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type Booking, type Room } from '@/lib/data';
 import { saveBooking } from '@/app/bookings/actions';
-import { useAuth } from '@/context/auth-context';
-import AuthDialog from './auth-dialog';
 
 export default function BookingForm({ rooms }: { rooms: Room[] }) {
   const router = useRouter();
@@ -29,8 +27,6 @@ export default function BookingForm({ rooms }: { rooms: Room[] }) {
   const searchParams = useSearchParams();
   
   const room = rooms.find(r => r.id === params.id);
-  const { user } = useAuth();
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   const [date, setDate] = useState<DateRange | undefined>(() => {
       const from = searchParams.get('from');
@@ -89,11 +85,6 @@ export default function BookingForm({ rooms }: { rooms: Room[] }) {
         }, 100);
         return;
     }
-
-    if (!user) {
-      setIsAuthDialogOpen(true);
-      return;
-    }
     
     if (!room) {
       console.error("Room data not found for booking.");
@@ -114,7 +105,7 @@ export default function BookingForm({ rooms }: { rooms: Room[] }) {
 
   const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!date?.from || !date?.to || !room || !user) return;
+    if (!date?.from || !date?.to || !room) return;
 
     setIsBooking(true);
     const nights = differenceInDays(date.to, date.from);
@@ -123,7 +114,7 @@ export default function BookingForm({ rooms }: { rooms: Room[] }) {
     
     // Note: 'id' is omitted, Firestore will generate it.
     const newBooking: Omit<Booking, 'id'> = {
-      userId: user.uid,
+      userId: 'anonymous', // User is anonymous
       roomId: room.id,
       roomName: roomName,
       checkIn: format(date.from, 'yyyy-MM-dd'),
@@ -144,15 +135,6 @@ export default function BookingForm({ rooms }: { rooms: Room[] }) {
         setIsBooking(false);
     }
   };
-
-  useEffect(() => {
-    if(user && isAuthDialogOpen) {
-      setIsAuthDialogOpen(false);
-      if(isRoomPage) {
-        handleBookingAttempt();
-      }
-    }
-  }, [user, isAuthDialogOpen, isRoomPage]);
 
   return (
     <>
@@ -254,8 +236,6 @@ export default function BookingForm({ rooms }: { rooms: Room[] }) {
           )}
         </CardContent>
       </Card>
-
-      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
 
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent>

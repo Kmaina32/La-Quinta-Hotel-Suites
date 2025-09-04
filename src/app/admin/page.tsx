@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Trash2, Loader2, Info } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAuth } from '@/context/auth-context';
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -45,8 +44,7 @@ function AdminDashboard({
               <Info className="h-4 w-4" />
               <AlertTitle>Admin Access</AlertTitle>
               <AlertDescription>
-                <p>To access the admin panel, you need to be logged in with an authorized admin account.</p>
-                <p className="mt-2">You can create an account through the normal sign-up process. Then, to grant admin privileges, you will need to manually modify the user's record in your authentication provider (e.g., Firebase Authentication) to add a custom claim or role (e.g., `admin: true`).</p>
+                <p>This admin panel is publicly accessible. Anyone with the URL can make changes to the site.</p>
                 <p className="mt-2">The admin URL is <a href="/admin" className="font-bold underline">/admin</a>.</p>
               </AlertDescription>
           </Alert>
@@ -311,36 +309,26 @@ function AdminDashboard({
 
 
 export default function AdminPage() {
-  const { user, loading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [images, setImages] = useState<EstablishmentImage[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkAdminStatus() {
-        if (user) {
-            const idTokenResult = await user.getIdTokenResult();
-            if (idTokenResult.claims.admin) {
-                setIsAdmin(true);
-                const loadData = async () => {
-                    const [bookingsData, roomsData, imagesData] = await Promise.all([
-                        fetchBookings(),
-                        getRooms(),
-                        getEstablishmentImages(),
-                    ]);
-                    setBookings(bookingsData);
-                    setRooms(roomsData);
-                    setImages(imagesData);
-                }
-                loadData();
-            } else {
-                setIsAdmin(false);
-            }
-        }
+    const loadData = async () => {
+        setLoading(true);
+        const [bookingsData, roomsData, imagesData] = await Promise.all([
+            fetchBookings(),
+            getRooms(),
+            getEstablishmentImages(),
+        ]);
+        setBookings(bookingsData);
+        setRooms(roomsData);
+        setImages(imagesData);
+        setLoading(false);
     }
-    checkAdminStatus();
-  }, [user]);
+    loadData();
+  }, []);
 
   if (loading) {
       return (
@@ -348,32 +336,6 @@ export default function AdminPage() {
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
       )
-  }
-
-  if (!user || !isAdmin) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1 bg-secondary">
-          <div className="container mx-auto px-4 py-12 md:px-6 md:py-16">
-            <div className="text-center">
-              <h1 className="font-headline text-4xl font-bold">Admin Panel</h1>
-              <p className="mt-4 text-lg text-muted-foreground">
-                You must be logged in as an administrator to view this page.
-              </p>
-                 <Alert className="mt-8 text-left">
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>Admin Access Information</AlertTitle>
-                  <AlertDescription>
-                    <p>To gain admin access, please sign up for an account. After signing up, contact the system super-administrator to elevate your account to have admin privileges. This is a manual security step to protect site data.</p>
-                  </AlertDescription>
-              </Alert>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
   }
 
   return <AdminDashboard bookings={bookings} rooms={rooms} images={images} />;

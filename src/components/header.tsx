@@ -4,14 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, UserCircle } from 'lucide-react';
-import { useAuth } from '@/context/auth-context';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-import AuthDialog from './auth-dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { useState } from 'react';
+import { Menu } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -22,21 +15,6 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/');
-    router.refresh();
-  };
-
-  const handleAuthSuccess = () => {
-    setIsAuthDialogOpen(false);
-    router.refresh();
-  }
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -55,33 +33,6 @@ export default function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="icon" className="rounded-full">
-                    <UserCircle className="h-5 w-5" />
-                    <span className="sr-only">Toggle user menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                      <p className="text-sm font-medium leading-none">My Account</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/bookings')}>Bookings</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/support')}>Support</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={handleAuthSuccess}>
-                <Button variant="ghost" onClick={() => setIsAuthDialogOpen(true)}>Login</Button>
-              </AuthDialog>
-            )}
-          </div>
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
@@ -106,22 +57,6 @@ export default function Header() {
                       </Link>
                     ))}
                   </nav>
-                  <div className="mt-4">
-                    {user ? (
-                      <div className='flex flex-col gap-2'>
-                        <div className="text-sm text-center">
-                          Signed in as <span className='font-semibold'>{user.email}</span>
-                        </div>
-                        <Button className="w-full" onClick={handleLogout}>Logout</Button>
-                      </div>
-                    ) : (
-                      <div className="w-full">
-                         <AuthDialog onAuthSuccess={handleAuthSuccess}>
-                            <Button className="w-full">Login / Sign Up</Button>
-                        </AuthDialog>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </SheetContent>
             </Sheet>

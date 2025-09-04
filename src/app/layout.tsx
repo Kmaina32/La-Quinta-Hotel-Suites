@@ -4,7 +4,6 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import WhatsappButton from '@/components/whatsapp-button';
-import { AuthProvider } from '@/context/auth-context';
 import { PT_Sans } from 'next/font/google';
 import React from 'react';
 
@@ -15,8 +14,8 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'La Quita Hotel & Suites',
-  description: 'A hotel booking platform for La Quita Hotel & Suites in Nakuru.',
+  title: 'La Quita',
+  description: 'A hotel booking platform for La Quita in Nakuru.',
 };
 
 export default function RootLayout({
@@ -32,13 +31,11 @@ export default function RootLayout({
           ptSans.variable
         )}
       >
-        <AuthProvider>
-            <React.Suspense fallback={<div>Loading...</div>}>
-                {children}
-            </React.Suspense>
-            <Toaster />
-            <WhatsappButton />
-        </AuthProvider>
+        <React.Suspense fallback={<div>Loading...</div>}>
+            {children}
+        </React.Suspense>
+        <Toaster />
+        <WhatsappButton />
       </body>
     </html>
   );

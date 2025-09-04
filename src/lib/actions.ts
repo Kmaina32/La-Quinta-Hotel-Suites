@@ -1,15 +1,20 @@
 
 'use server';
 
-import { adminDb } from '@/lib/firebase-admin';
+import { getDb } from '@/lib/firebase-admin';
 import type { Room, EstablishmentImage } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
-export async function getRooms(): Promise<Room[]> {
-  if (!adminDb) {
-    console.error('Firestore not initialized');
-    return [];
+async function getAdminDb() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error('Firestore not initialized');
   }
+  return db;
+}
+
+export async function getRooms(): Promise<Room[]> {
+  const adminDb = await getAdminDb();
   const roomsCollection = adminDb.collection('rooms');
   const roomsSnapshot = await roomsCollection.orderBy('price').get();
   const roomsList = roomsSnapshot.docs.map(doc => ({
@@ -20,10 +25,7 @@ export async function getRooms(): Promise<Room[]> {
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
-    if (!adminDb) {
-    console.error('Firestore not initialized');
-    return null;
-  }
+  const adminDb = await getAdminDb();
   const roomDoc = adminDb.collection('rooms').doc(id);
   const roomSnapshot = await roomDoc.get();
 
@@ -35,10 +37,7 @@ export async function getRoom(id: string): Promise<Room | null> {
 }
 
 export async function getEstablishmentImages(): Promise<EstablishmentImage[]> {
-    if (!adminDb) {
-    console.error('Firestore not initialized');
-    return [];
-  }
+  const adminDb = await getAdminDb();
   const establishmentCollection = adminDb.collection('establishment');
   const establishmentSnapshot = await establishmentCollection.orderBy('id').get();
   const imagesList = establishmentSnapshot.docs.map(doc => ({
@@ -49,7 +48,7 @@ export async function getEstablishmentImages(): Promise<EstablishmentImage[]> {
 }
 
 export async function updateHeroImage(src: string) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     const heroDocRef = adminDb.collection('establishment').doc('hero-image');
     await heroDocRef.update({ src });
     revalidatePath('/');
@@ -57,7 +56,7 @@ export async function updateHeroImage(src: string) {
 }
 
 export async function updateGalleryImage(id: string, src: string) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     const imageDocRef = adminDb.collection('establishment').doc(id);
     await imageDocRef.update({ src });
     revalidatePath('/');
@@ -65,18 +64,16 @@ export async function updateGalleryImage(id: string, src: string) {
 }
 
 export async function addGalleryImage(newImage: Omit<EstablishmentImage, 'id'>) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     const newImageRef = await adminDb.collection('establishment').add(newImage);
-    //
     await newImageRef.update({ id: newImageRef.id });
-
     revalidatePath('/');
     revalidatePath('/admin');
     return newImageRef.id;
 }
 
 export async function deleteGalleryImage(id: string) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     if (id === 'hero-image') return; // Cannot delete hero
     const imageDocRef = adminDb.collection('establishment').doc(id);
     await imageDocRef.delete();
@@ -85,7 +82,7 @@ export async function deleteGalleryImage(id: string) {
 }
 
 export async function updateRoomDetails(id: string, room: Omit<Room, 'id'>) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     const roomDocRef = adminDb.collection('rooms').doc(id);
     await roomDocRef.update(room);
     revalidatePath('/');
@@ -94,7 +91,7 @@ export async function updateRoomDetails(id: string, room: Omit<Room, 'id'>) {
 }
 
 export async function addRoom(newRoom: Omit<Room, 'id'>) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     const roomRef = await adminDb.collection('rooms').add(newRoom);
     revalidatePath('/');
     revalidatePath('/admin');
@@ -102,7 +99,7 @@ export async function addRoom(newRoom: Omit<Room, 'id'>) {
 }
 
 export async function deleteRoom(id: string) {
-    if (!adminDb) throw new Error('Firestore not initialized');
+    const adminDb = await getAdminDb();
     const roomDocRef = adminDb.collection('rooms').doc(id);
     await roomDocRef.delete();
     revalidatePath('/');

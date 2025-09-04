@@ -8,9 +8,7 @@ import { getRooms, getEstablishmentImages } from '@/lib/actions';
 
 export default async function Home() {
   const rooms = await getRooms();
-  const establishmentImages = await getEstablishmentImages();
-  const heroImage = establishmentImages.find(img => img.id === 'hero-image');
-  const galleryImages = establishmentImages.filter(img => img.id !== 'hero-image');
+  const { heroImage, galleryImages } = await getEstablishmentImages();
 
 
   return (
@@ -96,7 +94,7 @@ export default async function Home() {
                     </div>
                     <div className="flex justify-between items-center">
                       <p className="text-lg font-semibold">
-                        ${room.price} <span className="text-sm font-normal text-muted-foreground">/ night</span>
+                        KES {room.price} <span className="text-sm font-normal text-muted-foreground">/ night</span>
                       </p>
                       <Button asChild>
                         <Link href={`/rooms/${room.id}`}>View Details</Link>

@@ -28,24 +28,19 @@ export async function getRoom(id: string): Promise<Room | null> {
   return { id: roomSnapshot.id, ...roomSnapshot.data() } as Room;
 }
 
-export async function getEstablishmentImages(): Promise<EstablishmentImage[]> {
-  const db = getDb();
-  const establishmentCollection = db.collection('establishment');
-  
-  // Fetch hero image first
-  const heroDoc = await establishmentCollection.doc('hero-image').get();
-  const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
+export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
+    const db = getDb();
+    const establishmentCollection = db.collection('establishment');
 
-  // Fetch other images, excluding hero
-  const otherImagesSnapshot = await establishmentCollection.where('id', '!=', 'hero-image').get();
-  const otherImages = otherImagesSnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as EstablishmentImage[];
+    const heroDoc = await establishmentCollection.doc('hero-image').get();
+    const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
+    
+    const gallerySnapshot = await establishmentCollection.get();
+    const galleryImages = gallerySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
+        .filter(img => img.id !== 'hero-image');
 
-  const imagesList = heroImage ? [heroImage, ...otherImages] : otherImages;
-
-  return imagesList;
+    return { heroImage, galleryImages };
 }
 
 export async function updateHeroImage(src: string) {

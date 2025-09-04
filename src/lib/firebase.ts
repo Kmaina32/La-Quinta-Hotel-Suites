@@ -1,10 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
-// This will be populated by the 'RequestFirebaseProjectWithConfig' tool
 const firebaseConfig = {
   "projectId": "la-quinta-reservations",
   "appId": "1:255227966364:web:c9fb4b35a07e35e9380e59",
@@ -17,7 +15,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
 const db = getFirestore(app);
 
-export { app, auth, db };
+export { app, db };

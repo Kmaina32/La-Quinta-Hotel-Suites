@@ -20,7 +20,8 @@ export default function Footer() {
             <ul className="space-y-2 text-sm opacity-80">
               <li>123 Luxury Lane, Metropolis</li>
               <li>Email: contact@laquita.com</li>
-              <li>Phone: +1 (234) 567-890</li>
+              <li>WhatsApp: 0710 147 434</li>
+              <li>Reception: 0759713882</li>
             </ul>
           </div>
           <div>

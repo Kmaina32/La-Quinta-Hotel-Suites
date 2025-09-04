@@ -1,16 +1,40 @@
-'use client'
-
+'use client';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { rooms } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { Bath, BedDouble, User } from 'lucide-react';
+import { Bath, BedDouble, User, Loader2 } from 'lucide-react';
+import { getRoom } from '@/lib/actions';
+import type { Room } from '@/lib/types';
+
 
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
-  const room = rooms.find((r) => r.id === params.id);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRoom = async () => {
+      setLoading(true);
+      const roomData = await getRoom(params.id);
+      if (!roomData) {
+        notFound();
+      }
+      setRoom(roomData);
+      setLoading(false);
+    };
+    fetchRoom();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-16 w-16 animate-spin" />
+      </div>
+    );
+  }
 
   if (!room) {
-    notFound();
+    return null; // notFound() is called in useEffect
   }
 
   return (
@@ -27,7 +51,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
             data-ai-hint="hotel room interior"
           />
         </div>
-        {room.images.map(image => (
+        {room.images && room.images.map(image => (
           <div key={image.id} className="relative h-48 w-full rounded-lg overflow-hidden">
              <Image
                 src={image.src}
@@ -40,7 +64,6 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
           </div>
         ))}
       </div>
-
 
       {/* Room Details & Booking */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

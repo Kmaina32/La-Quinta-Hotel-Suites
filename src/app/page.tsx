@@ -2,16 +2,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { rooms } from '@/lib/data';
 import { Bath, BedDouble, User } from 'lucide-react';
+import { getRooms, getEstablishmentImages } from '@/lib/actions';
 
-export default function Home() {
-  const establishmentImages = [
-    { id: 1, src: "https://picsum.photos/800/600?random=1", alt: "Hotel exterior", "data-ai-hint": "hotel exterior" },
-    { id: 2, src: "https://picsum.photos/800/600?random=2", alt: "Lobby", "data-ai-hint": "hotel lobby" },
-    { id: 3, src: "https://picsum.photos/800/600?random=3", alt: "Swimming pool", "data-ai-hint": "swimming pool" },
-    { id: 4, src: "https://picsum.photos/800/600?random=4", alt: "Restaurant", "data-ai-hint": "hotel restaurant" },
-  ]
+export default async function Home() {
+  const rooms = await getRooms();
+  const establishmentImages = await getEstablishmentImages();
 
   return (
     <>
@@ -78,7 +74,7 @@ export default function Home() {
                   </div>
                   <div className="p-6">
                     <h3 className="text-2xl font-bold mb-2">{room.name}</h3>
-                    <p className="text-muted-foreground mb-4">{room.description}</p>
+                    <p className="text-muted-foreground mb-4 line-clamp-2">{room.description}</p>
                     <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
                       <div className="flex items-center gap-2">
                         <User size={16} />

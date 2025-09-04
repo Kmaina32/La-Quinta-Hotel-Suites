@@ -14,12 +14,12 @@ export default async function Home() {
       {/* Hero Section */}
       <section className="relative h-[50vh] md:h-[70vh] w-full flex items-center justify-center text-white">
         <Image
-          src="https://picsum.photos/1600/900?random=10"
-          alt="Luxury hotel facade at dusk"
+          src="/hero-image.jpg"
+          alt="La Quita Hotel & Suites exterior"
           fill
           style={{ objectFit: 'cover' }}
           className="brightness-50"
-          data-ai-hint="hotel facade dusk"
+          data-ai-hint="hotel exterior"
         />
         <div className="relative z-10 text-center p-4">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">

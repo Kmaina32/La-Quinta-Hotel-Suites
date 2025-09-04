@@ -2,16 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /rooms/{roomId} {
-      // Allow anyone to read the list of rooms and individual room details.
       allow get, list: if true;
     }
     match /establishment/{imageId} {
-      // Allow anyone to read the list of establishment images and individual image details.
       allow get, list: if true;
-    }
-    match /bookings/{bookingId} {
-      // For now, keep bookings locked down. We will build this out later.
-      allow read, write: if false;
     }
   }
 }

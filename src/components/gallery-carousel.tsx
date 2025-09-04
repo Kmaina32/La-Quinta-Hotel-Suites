@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -23,6 +24,16 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
     Autoplay({ delay: 3000, stopOnInteraction: true })
   );
 
+  if (!images || images.length === 0) {
+    return (
+        <Card>
+            <CardContent className="flex aspect-video items-center justify-center p-6">
+                <p>No gallery images to display.</p>
+            </CardContent>
+        </Card>
+    );
+  }
+
   return (
     <Carousel
       plugins={[plugin.current]}
@@ -35,7 +46,7 @@ export function GalleryCarousel({ images }: GalleryCarouselProps) {
           <CarouselItem key={image.id}>
             <div className="p-1">
               <Card className="overflow-hidden">
-                <CardContent className="flex aspect-video items-center justify-center p-0">
+                <CardContent className="flex aspect-video items-center justify-center p-0 relative">
                   <Image
                     src={image.src}
                     alt={image.alt}

@@ -1,48 +1,42 @@
 
 import admin from 'firebase-admin';
 
-let db: admin.firestore.Firestore | null = null;
+let db: admin.firestore.Firestore;
 
-async function initializeAdmin(): Promise<admin.firestore.Firestore> {
+export function getDb(): admin.firestore.Firestore {
   if (db) {
     return db;
   }
 
-  // Correctly format the private key by replacing escaped newlines.
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (
+    !process.env.FIREBASE_PROJECT_ID ||
+    !process.env.FIREBASE_CLIENT_EMAIL ||
+    !process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    throw new Error(
+      'CRITICAL: Firebase environment variables are not set. Please add FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY to your .env.local file.'
+    );
+  }
 
   const serviceAccount = {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: privateKey,
+    privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
   };
-
-  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-    console.error('Firebase service account credentials are not set in .env.local');
-    throw new Error('Firebase service account credentials are not set in .env.local');
-  }
-
+  
   try {
     if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-      console.log('Firebase Admin app initialized successfully.');
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+        console.log('Firebase Admin app initialized successfully.');
+    } else {
+        console.log('Using existing Firebase Admin app.');
     }
     db = admin.firestore();
-    console.log('Firestore instance obtained.');
     return db;
   } catch (error: any) {
     console.error('Firebase admin initialization error:', error.stack);
-    throw new Error('Firebase admin initialization failed.');
+    throw new Error('Firebase admin initialization failed. Check your service account credentials.');
   }
-}
-
-let dbPromise: Promise<admin.firestore.Firestore> | null = null;
-
-export function getDb(): Promise<admin.firestore.Firestore> {
-  if (!dbPromise) {
-    dbPromise = initializeAdmin();
-  }
-  return dbPromise;
 }

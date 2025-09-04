@@ -10,13 +10,17 @@ const serviceAccount = {
 };
 
 if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  } catch (error: any) {
-    console.error('Firebase admin initialization error', error.stack);
+  if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    } catch (error: any) {
+      console.error('Firebase admin initialization error', error.stack);
+    }
+  } else {
+    console.error('Firebase service account credentials are not set in .env. Skipping initialization.');
   }
 }
 
-export const adminDb = admin.firestore();
+export const adminDb = admin.apps.length ? admin.firestore() : null;

@@ -17,7 +17,7 @@ export default async function Home() {
       {/* Hero Section */}
       <section className="relative h-[50vh] md:h-[70vh] w-full flex items-center justify-center text-white">
         <Image
-          src={heroImage?.src || "/hero-image.jpg"}
+          src={heroImage?.src || "https://picsum.photos/1200/800"}
           alt={heroImage?.alt || "La Quita Hotel & Suites exterior"}
           fill
           style={{ objectFit: 'cover' }}

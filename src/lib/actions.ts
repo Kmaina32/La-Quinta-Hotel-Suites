@@ -1,12 +1,11 @@
 'use server';
 
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Room, EstablishmentImage } from '@/lib/types';
 
 export async function getRooms(): Promise<Room[]> {
-  const roomsCollection = collection(db, 'rooms');
-  const roomsSnapshot = await getDocs(roomsCollection);
+  const roomsCollection = adminDb.collection('rooms');
+  const roomsSnapshot = await roomsCollection.get();
   const roomsList = roomsSnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
@@ -15,10 +14,10 @@ export async function getRooms(): Promise<Room[]> {
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
-  const roomDoc = doc(db, 'rooms', id);
-  const roomSnapshot = await getDoc(roomDoc);
+  const roomDoc = adminDb.collection('rooms').doc(id);
+  const roomSnapshot = await roomDoc.get();
 
-  if (!roomSnapshot.exists()) {
+  if (!roomSnapshot.exists) {
     return null;
   }
 
@@ -26,8 +25,8 @@ export async function getRoom(id: string): Promise<Room | null> {
 }
 
 export async function getEstablishmentImages(): Promise<EstablishmentImage[]> {
-  const establishmentCollection = collection(db, 'establishment');
-  const establishmentSnapshot = await getDocs(establishmentCollection);
+  const establishmentCollection = adminDb.collection('establishment');
+  const establishmentSnapshot = await establishmentCollection.get();
   const imagesList = establishmentSnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),

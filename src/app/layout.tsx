@@ -15,8 +15,8 @@ const ptSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'La Quinta Hotel & Suites',
-  description: 'A hotel booking platform for La Quinta Hotel & Suites in Nakuru.',
+  title: 'La Quita Hotel & Suites',
+  description: 'A hotel booking platform for La Quita Hotel & Suites in Nakuru.',
 };
 
 export default function RootLayout({
@@ -43,5 +43,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

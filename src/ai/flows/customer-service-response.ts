@@ -30,7 +30,7 @@ const prompt = ai.definePrompt({
   name: 'customerServicePrompt',
   input: {schema: CustomerServiceInputSchema},
   output: {schema: CustomerServiceOutputSchema},
-  prompt: `You are an AI-powered customer service agent for Laquinta Hotel & Suites in Nakuru.
+  prompt: `You are an AI-powered customer service agent for La Quita Hotel & Suites in Nakuru.
 
 You will use the provided booking details to answer the customer inquiry.
 

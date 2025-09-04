@@ -42,6 +42,7 @@ export default function AdminPage() {
       setHeroImage(hero?.src || '');
     } catch (error) {
         console.error("Failed to fetch admin data:", error);
+        setHeroImage('');
         // Optionally, show a toast or other error message to the user
     } finally {
         setLoading(false);

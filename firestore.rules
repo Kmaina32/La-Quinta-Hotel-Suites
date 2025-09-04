@@ -1,11 +1,13 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /rooms/{roomId} {
-      allow get, list: if true;
-    }
-    match /establishment/{imageId} {
-      allow get, list: if true;
+    // Allow public read access to all documents
+    // and restrict writes completely.
+    match /{document=**} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

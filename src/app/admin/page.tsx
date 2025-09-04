@@ -31,15 +31,21 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [roomsData, galleryData] = await Promise.all([
-      getRooms(),
-      getEstablishmentImages(),
-    ]);
-    setRooms(roomsData);
-    setGalleryImages(galleryData);
-    const hero = galleryData.find(img => img.id === 'hero-image');
-    setHeroImage(hero?.src || '');
-    setLoading(false);
+    try {
+      const [roomsData, galleryData] = await Promise.all([
+        getRooms(),
+        getEstablishmentImages(),
+      ]);
+      setRooms(roomsData);
+      setGalleryImages(galleryData);
+      const hero = galleryData.find(img => img.id === 'hero-image');
+      setHeroImage(hero?.src || '');
+    } catch (error) {
+        console.error("Failed to fetch admin data:", error);
+        // Optionally, show a toast or other error message to the user
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleLogin = (e: React.FormEvent) => {

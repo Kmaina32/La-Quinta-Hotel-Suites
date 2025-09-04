@@ -8,18 +8,22 @@ import { getRooms, getEstablishmentImages } from '@/lib/actions';
 export default async function Home() {
   const rooms = await getRooms();
   const establishmentImages = await getEstablishmentImages();
+  const heroImage = establishmentImages.find(img => img.id === 'hero-image');
+  const galleryImages = establishmentImages.filter(img => img.id !== 'hero-image');
+
 
   return (
     <>
       {/* Hero Section */}
       <section className="relative h-[50vh] md:h-[70vh] w-full flex items-center justify-center text-white">
         <Image
-          src="/hero-image.jpg"
-          alt="La Quita Hotel & Suites exterior"
+          src={heroImage?.src || "/hero-image.jpg"}
+          alt={heroImage?.alt || "La Quita Hotel & Suites exterior"}
           fill
           style={{ objectFit: 'cover' }}
           className="brightness-50"
           data-ai-hint="hotel exterior"
+          priority
         />
         <div className="relative z-10 text-center p-4">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
@@ -39,7 +43,7 @@ export default async function Home() {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">Our Gallery</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {establishmentImages.map((image) => (
+            {galleryImages.map((image) => (
               <div key={image.id} className="relative h-64 w-full rounded-lg overflow-hidden shadow-lg">
                 <Image
                   src={image.src}
@@ -80,14 +84,14 @@ export default async function Home() {
                         <User size={16} />
                         <span>{room.capacity} Guests</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                       {room.beds > 0 && <div className="flex items-center gap-2">
                         <BedDouble size={16} />
                         <span>{room.beds} Bed(s)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
+                      </div>}
+                      {room.baths > 0 && <div className="flex items-center gap-2">
                         <Bath size={16} />
                         <span>{room.baths} Bath(s)</span>
-                      </div>
+                      </div>}
                     </div>
                     <div className="flex justify-between items-center">
                       <p className="text-lg font-semibold">

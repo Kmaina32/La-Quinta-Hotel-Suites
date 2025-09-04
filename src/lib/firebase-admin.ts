@@ -1,7 +1,4 @@
 import admin from 'firebase-admin';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
@@ -9,18 +6,24 @@ const serviceAccount = {
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 };
 
+let adminDb: admin.firestore.Firestore | null = null;
+
 if (!admin.apps.length) {
   if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
     try {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
+      adminDb = admin.firestore();
     } catch (error: any) {
       console.error('Firebase admin initialization error', error.stack);
     }
   } else {
-    console.error('Firebase service account credentials are not set in .env. Skipping initialization.');
+    console.log('Firebase service account credentials are not set in .env.local. Skipping initialization.');
   }
+} else {
+    adminDb = admin.firestore();
 }
 
-export const adminDb = admin.apps.length ? admin.firestore() : null;
+
+export { adminDb };

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails } from '@/lib/actions';
 import type { Room, EstablishmentImage } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminPage() {
@@ -43,7 +43,6 @@ export default function AdminPage() {
     } catch (error) {
         console.error("Failed to fetch admin data:", error);
         setHeroImage('');
-        // Optionally, show a toast or other error message to the user
     } finally {
         setLoading(false);
     }
@@ -71,6 +70,44 @@ export default function AdminPage() {
   const handleRoomChange = (id: string, field: keyof Room, value: any) => {
     setRooms(rooms.map(room => room.id === id ? { ...room, [field]: value } : room));
   };
+  
+  const handleRoomImageChange = (roomId: string, imageId: string, newSrc: string) => {
+    setRooms(rooms.map(room => {
+      if (room.id === roomId) {
+        return {
+          ...room,
+          images: room.images.map(img => img.id === imageId ? { ...img, src: newSrc } : img)
+        }
+      }
+      return room;
+    }));
+  };
+
+  const addRoomImage = (roomId: string) => {
+     setRooms(rooms.map(room => {
+      if (room.id === roomId) {
+        const newImage = { id: `img-${Date.now()}`, src: '', alt: room.name };
+        return {
+          ...room,
+          images: [...(room.images || []), newImage]
+        }
+      }
+      return room;
+    }));
+  };
+  
+  const removeRoomImage = (roomId: string, imageId: string) => {
+    setRooms(rooms.map(room => {
+      if (room.id === roomId) {
+        return {
+          ...room,
+          images: room.images.filter(img => img.id !== imageId)
+        }
+      }
+      return room;
+    }));
+  };
+
 
   const handleSave = async (type: 'hero' | 'gallery' | 'room', id: string) => {
     setSavingStates(prev => ({...prev, [id]: true}));
@@ -130,7 +167,6 @@ export default function AdminPage() {
     <div className="container mx-auto py-12">
       <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
       
-      {/* Hero Image Management */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Hero Image</CardTitle>
@@ -147,7 +183,6 @@ export default function AdminPage() {
         </CardContent>
       </Card>
 
-      {/* Gallery Management */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Our Gallery</CardTitle>
@@ -155,7 +190,7 @@ export default function AdminPage() {
         <CardContent className="space-y-4">
           {galleryImages.filter(img => img.id !== 'hero-image').map(image => (
             <div key={image.id} className="flex items-center gap-4">
-              <Image src={image.src} alt={image.alt} width={100} height={60} className="rounded-md object-cover" />
+              {image.src && <Image src={image.src} alt={image.alt} width={100} height={60} className="rounded-md object-cover" />}
               <Input value={image.src} onChange={(e) => handleGalleryImageChange(image.id, e.target.value)} placeholder="Enter image URL" />
               <Button onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id]}>
                 {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -166,7 +201,6 @@ export default function AdminPage() {
         </CardContent>
       </Card>
 
-      {/* Rooms Management */}
       <Card>
         <CardHeader>
           <CardTitle>Rooms</CardTitle>
@@ -203,9 +237,25 @@ export default function AdminPage() {
                 <div className="md:col-span-2">
                     <label className="font-medium">Main Image URL</label>
                     <div className="flex items-center gap-4">
-                        <Image src={room.imageUrl} alt={room.name} width={100} height={60} className="rounded-md object-cover" />
+                        {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={100} height={60} className="rounded-md object-cover" />}
                         <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} />
                     </div>
+                </div>
+                 <div className="md:col-span-2 space-y-3">
+                    <label className="font-medium">Room Gallery Images</label>
+                    {room.images && room.images.map((img) => (
+                        <div key={img.id} className="flex items-center gap-4">
+                           {img.src && <Image src={img.src} alt={img.alt} width={100} height={60} className="rounded-md object-cover" />}
+                            <Input value={img.src} onChange={(e) => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Enter image URL" />
+                             <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </div>
+                    ))}
+                     <Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Image
+                    </Button>
                 </div>
               </div>
               <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id]}>

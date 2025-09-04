@@ -3,11 +3,11 @@
 
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Room } from '@/lib/data';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { Check, Loader2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import BookingForm from '@/components/booking-form';
 import { getRooms } from '@/app/admin/actions';
 

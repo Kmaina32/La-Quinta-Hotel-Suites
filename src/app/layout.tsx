@@ -12,6 +12,7 @@ const ptSans = PT_Sans({
   weight: ["400", "700"],
 });
 
+const siteUrl = "https://la-quita-reservations.web.app"; // Replace with your actual domain
 const siteDescription = "Hotel, lounge and suites in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
 
 export const metadata: Metadata = {
@@ -23,15 +24,16 @@ export const metadata: Metadata = {
   openGraph: {
     title: "La Quita - Hotel, Lounge & Suites",
     description: siteDescription,
-    url: "https://la-quita-reservations.web.app/", // Replace with your actual domain
+    url: siteUrl,
     siteName: "La Quita",
-    // images: [ // Add a default image for sharing
-    //   {
-    //     url: 'https://picsum.photos/seed/laquita-og/1200/630', // Replace with your logo or hero image URL
-    //     width: 1200,
-    //     height: 630,
-    //   },
-    // ],
+    images: [ 
+      {
+        url: `${siteUrl}/og-image.png`, // Using a local image
+        width: 1200,
+        height: 630,
+        alt: "La Quita Hotel & Suites"
+      },
+    ],
     locale: 'en_US',
     type: 'website',
   },
@@ -39,8 +41,35 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "La Quita - Hotel, Lounge & Suites",
     description: siteDescription,
-    // images: ['https://picsum.photos/seed/laquita-og/1200/630'], // Replace with your logo or hero image URL
+    images: [`${siteUrl}/og-image.png`],
   },
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": siteUrl,
+  "name": "La Quita - Hotel, Lounge & Suites",
+  "potentialAction": [
+    {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteUrl}/search?q={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    },
+    {
+      "@type": "ViewAction",
+      "name": "Explore Rooms",
+      "target": `${siteUrl}/#rooms`
+    },
+    {
+      "@type": "ViewAction",
+      "name": "Book Now",
+      "target": `${siteUrl}/#rooms`
+    }
+  ]
 };
 
 
@@ -51,6 +80,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
+       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      </head>
       <body className={`${ptSans.className} flex flex-col min-h-screen`}>
         <AuthProvider>
           <Header />

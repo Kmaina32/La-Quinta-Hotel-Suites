@@ -17,6 +17,7 @@ import { format, addDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
   const [room, setRoom] = useState<Room | null>(null);
@@ -24,6 +25,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
   const [isBooking, setIsBooking] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
@@ -44,6 +46,16 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
   }, [params.id]);
 
   const handleBooking = async (paymentMethod: string) => {
+    if (!user) {
+       toast({
+          title: "Please Login",
+          description: "You need to be logged in to make a booking.",
+          variant: "destructive",
+       });
+       router.push('/login');
+       return;
+    }
+    
     if (!room || !date?.from || !date?.to) {
         toast({
             title: "Booking Error",
@@ -59,6 +71,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
         const totalCost = nights * room.price;
 
         const bookingData = {
+            userId: user.uid,
             roomId: room.id,
             roomName: room.name,
             roomImage: room.imageUrl,
@@ -245,14 +258,14 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                     </div>
                     <Button size="lg" className="w-full" onClick={() => handleBooking('Credit Card')} disabled={isBooking || nights <= 0}>
                       {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Reserve Now
+                      { user ? 'Reserve Now' : 'Login to Book' }
                     </Button>
                   </TabsContent>
                    <TabsContent value="paypal" className="mt-4 text-center">
                       <p className="text-sm text-muted-foreground mb-4">You will be redirected to PayPal to complete your payment.</p>
                        <Button size="lg" className="w-full" onClick={() => handleBooking('PayPal')} disabled={isBooking || nights <= 0}>
                         {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Pay with PayPal
+                        { user ? 'Pay with PayPal' : 'Login to Book' }
                       </Button>
                    </TabsContent>
                    <TabsContent value="mpesa" className="mt-4 space-y-4">
@@ -262,7 +275,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                       </div>
                        <Button size="lg" className="w-full" onClick={() => handleBooking('M-Pesa')} disabled={isBooking || nights <= 0}>
                         {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Pay with M-Pesa
+                        { user ? 'Pay with M-Pesa' : 'Login to Book' }
                       </Button>
                    </TabsContent>
                 </Tabs>

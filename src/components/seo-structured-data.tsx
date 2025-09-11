@@ -11,13 +11,13 @@ export function SeoStructuredData() {
     const structuredData = {
         "@context": "https://schema.org",
         "@type": "Hotel",
-        "name": "La Quita - Hotel, Lounge & Suites",
+        "name": "La Quita Hotel and Suites",
         "description": "Hotel, lounge and suites in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.",
         "url": siteUrl,
         "telephone": "+254759713882",
         "address": {
             "@type": "PostalAddress",
-            "streetAddress": "Pipeline Road",
+            "streetAddress": "Elementaita road",
             "addressLocality": "Nakuru",
             "addressCountry": "KE"
         },

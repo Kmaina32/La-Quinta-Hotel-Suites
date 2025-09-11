@@ -3,6 +3,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -10,7 +11,7 @@ const firebaseConfig = {
   authDomain: "la-quinta-reservations.firebaseapp.com",
   databaseURL: "https://la-quinta-reservations-default-rtdb.firebaseio.com",
   projectId: "la-quinta-reservations",
-  storageBucket: "la-quinta-reservations.firebasestorage.app",
+  storageBucket: "la-quinta-reservations.appspot.com",
   messagingSenderId: "255227966364",
   appId: "1:255227966364:web:c258d7ddb330ac7f380e59"
 };
@@ -20,6 +21,7 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
-export { app, db, auth, googleProvider };
+export { app, db, auth, storage, googleProvider };

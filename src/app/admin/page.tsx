@@ -1,12 +1,12 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage } from '@/lib/actions';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage } from '@/lib/actions';
 import type { Room, EstablishmentImage } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -31,7 +31,15 @@ export default function AdminPage() {
   const [galleryImages, setGalleryImages] = useState<EstablishmentImage[]>([]);
   const [heroImage, setHeroImage] = useState('');
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
+  const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const { toast } = useToast()
+
+  // Refs for file inputs
+  const heroFileRef = useRef<HTMLInputElement>(null);
+  const galleryFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const roomMainFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const roomDetailFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
 
   useEffect(() => {
     const checkAuth = () => {
@@ -77,6 +85,26 @@ export default function AdminPage() {
     } else {
       toast({ title: "Login Failed", description: "Incorrect password", variant: "destructive" });
     }
+  };
+
+  const handleFileUpload = async (file: File, uploadId: string, onUploadComplete: (url: string) => void) => {
+      if (!file) {
+          toast({ title: "Upload Error", description: "Please select a file to upload.", variant: "destructive" });
+          return;
+      }
+      setUploadingStates(prev => ({...prev, [uploadId]: true}));
+      try {
+          const formData = new FormData();
+          formData.append('file', file);
+          const imageUrl = await uploadImage(formData);
+          onUploadComplete(imageUrl);
+          toast({ title: "Upload Successful", description: "Image is ready to be saved." });
+      } catch (error) {
+          console.error('File upload failed:', error);
+          toast({ title: "Upload Failed", description: "Could not upload the image.", variant: "destructive" });
+      } finally {
+          setUploadingStates(prev => ({...prev, [uploadId]: false}));
+      }
   };
   
   const handleHeroImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,10 +290,18 @@ export default function AdminPage() {
           <CardTitle>Hero Image</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-              {heroImage && <Image src={heroImage} alt="Hero" width={100} height={60} className="rounded-md object-cover" />}
-              <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Enter image URL" />
+           {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
+           <div className="flex items-center gap-4">
+              <Input type="file" ref={heroFileRef} className="max-w-xs" />
+              <Button 
+                onClick={() => handleFileUpload(heroFileRef.current?.files?.[0] as File, 'hero-upload', (url) => setHeroImage(url))}
+                disabled={uploadingStates['hero-upload']}
+              >
+                {uploadingStates['hero-upload'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Upload
+              </Button>
           </div>
+          <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
           <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image']}>
             {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save Hero Image
@@ -281,18 +317,30 @@ export default function AdminPage() {
                 Add Image
             </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {galleryImages.map(image => (
-            <div key={image.id} className="flex items-center gap-4">
-              {image.src && <Image src={image.src} alt={image.alt} width={100} height={60} className="rounded-md object-cover" />}
-              <Input value={image.src} onChange={(e) => handleGalleryImageChange(image.id, e.target.value)} placeholder="Enter image URL" />
-              <Button onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id]}>
-                {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save
-              </Button>
-              <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}>
-                 <Trash2 className="h-4 w-4" />
-              </Button>
+            <div key={image.id} className="space-y-3">
+              {image.src && <Image src={image.src} alt={image.alt} width={200} height={120} className="rounded-md object-cover" />}
+              <div className="flex items-center gap-4">
+                  <Input type="file" ref={ref => galleryFileRefs.current[image.id] = ref} className="max-w-xs"/>
+                  <Button 
+                      onClick={() => handleFileUpload(galleryFileRefs.current[image.id]?.files?.[0] as File, `gallery-${image.id}`, (url) => handleGalleryImageChange(image.id, url))}
+                      disabled={uploadingStates[`gallery-${image.id}`]}
+                  >
+                     {uploadingStates[`gallery-${image.id}`] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                     Upload
+                  </Button>
+              </div>
+              <Input value={image.src} onChange={(e) => handleGalleryImageChange(image.id, e.target.value)} placeholder="Or paste image URL" />
+              <div className="flex items-center gap-2">
+                <Button onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id]}>
+                  {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Save
+                </Button>
+                <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}>
+                   <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </CardContent>
@@ -361,22 +409,42 @@ export default function AdminPage() {
                     <label className="font-medium">Description</label>
                     <Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} />
                 </div>
-                <div className="md:col-span-2">
-                    <label className="font-medium">Main Image URL</label>
+
+                <div className="md:col-span-2 space-y-3">
+                    <label className="font-medium">Main Image</label>
+                    {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={200} height={120} className="rounded-md object-cover" />}
                     <div className="flex items-center gap-4">
-                        {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={100} height={60} className="rounded-md object-cover" />}
-                        <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} />
+                        <Input type="file" ref={ref => roomMainFileRefs.current[room.id] = ref} className="max-w-xs" />
+                        <Button
+                            onClick={() => handleFileUpload(roomMainFileRefs.current[room.id]?.files?.[0] as File, `room-main-${room.id}`, (url) => handleRoomChange(room.id, 'imageUrl', url))}
+                            disabled={uploadingStates[`room-main-${room.id}`]}
+                        >
+                            {uploadingStates[`room-main-${room.id}`] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                            Upload
+                        </Button>
                     </div>
+                    <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" />
                 </div>
+
                  <div className="md:col-span-2 space-y-3">
                     <label className="font-medium">Detail Images</label>
                     {room.images && room.images.map((img) => (
-                        <div key={img.id} className="flex items-center gap-4">
-                           {img.src && <Image src={img.src} alt={img.alt} width={100} height={60} className="rounded-md object-cover" />}
-                            <Input value={img.src} onChange={(e) => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Enter image URL" />
-                             <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                        <div key={img.id} className="border-t pt-4">
+                           {img.src && <Image src={img.src} alt={img.alt} width={200} height={120} className="rounded-md object-cover mb-2" />}
+                            <div className="flex items-center gap-4">
+                                <Input type="file" ref={ref => roomDetailFileRefs.current[img.id] = ref} className="max-w-xs" />
+                                <Button
+                                    onClick={() => handleFileUpload(roomDetailFileRefs.current[img.id]?.files?.[0] as File, `room-detail-${img.id}`, (url) => handleRoomImageChange(room.id, img.id, url))}
+                                    disabled={uploadingStates[`room-detail-${img.id}`]}
+                                >
+                                    {uploadingStates[`room-detail-${img.id}`] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                    Upload
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                           <Input value={img.src} onChange={(e) => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" />
                         </div>
                     ))}
                      <Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}>

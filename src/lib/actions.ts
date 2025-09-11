@@ -25,12 +25,11 @@ export async function uploadImage(formData: FormData) {
         },
     });
 
-    const [publicUrl] = await fileUpload.getSignedUrl({
-        action: 'read',
-        expires: '01-01-2500', // Far-future expiration date
-    });
+    // Make the file publicly accessible
+    await fileUpload.makePublic();
     
-    return publicUrl;
+    // Return the public URL
+    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
 export async function getRooms(): Promise<Room[]> {
@@ -112,6 +111,7 @@ export async function updateRoomDetails(id: string, room: Omit<Room, 'id'>) {
     revalidatePath('/');
     revalidatePath(`/rooms/${id}`);
     revalidatePath('/admin');
+    revalidatePath('/#rooms');
 }
 
 export async function addRoom(newRoom: Omit<Room, 'id'>) {
@@ -119,6 +119,7 @@ export async function addRoom(newRoom: Omit<Room, 'id'>) {
     const roomRef = await db.collection('rooms').add(newRoom);
     revalidatePath('/');
     revalidatePath('/admin');
+    revalidatePath('/#rooms');
     return roomRef.id;
 }
 
@@ -127,7 +128,9 @@ export async function deleteRoom(id: string) {
     const roomDocRef = db.collection('rooms').doc(id);
     await roomDocRef.delete();
     revalidatePath('/');
+    revalidatePath(`/rooms/${id}`);
     revalidatePath('/admin');
+    revalidatePath('/#rooms');
 }
 
 

@@ -1,3 +1,4 @@
+
 import { Facebook, Instagram, Twitter, BedDouble, Mail, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ export default function Footer() {
               <li>
                 <a href="https://www.google.com/maps/search/?api=1&query=-0.3293644,36.0619809" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
                   <MapPin size={14} />
-                  <span>-0.3293644,36.0619809,12z</span>
+                  <span>Get Directions</span>
                 </a>
               </li>
               <li>

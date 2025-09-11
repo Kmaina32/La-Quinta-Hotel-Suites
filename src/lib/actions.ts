@@ -120,10 +120,9 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
 export async function getBookings(userId: string): Promise<Booking[]> {
   const db = getDb();
   const bookingsCollection = db.collection('bookings');
-  // Filter bookings by userId and order by check-in date
+  // Filter bookings by userId
   const bookingsSnapshot = await bookingsCollection
     .where('userId', '==', userId)
-    .orderBy('checkIn', 'desc')
     .get();
   
   const bookingsList = bookingsSnapshot.docs.map(doc => ({
@@ -131,5 +130,6 @@ export async function getBookings(userId: string): Promise<Booking[]> {
     ...doc.data(),
   })) as Booking[];
   
-  return bookingsList;
+  // Sort the bookings by check-in date in descending order
+  return bookingsList.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
 }

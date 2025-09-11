@@ -12,7 +12,7 @@ const ptSans = PT_Sans({
   weight: ["400", "700"],
 });
 
-const siteUrl = "https://la-quita-reservations.web.app"; // Replace with your actual domain
+const siteUrl = "https://www.laquitahotel.com/"; 
 const siteDescription = "Hotel, lounge and suites in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: "La Quita",
     images: [ 
       {
-        url: `${siteUrl}/og-image.png`, // Using a local image
+        url: `${siteUrl}og-image.png`, // Using a local image
         width: 1200,
         height: 630,
         alt: "La Quita Hotel & Suites"
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "La Quita - Hotel, Lounge & Suites",
     description: siteDescription,
-    images: [`${siteUrl}/og-image.png`],
+    images: [`${siteUrl}og-image.png`],
   },
 };
 
@@ -55,19 +55,19 @@ const structuredData = {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": `${siteUrl}/search?q={search_term_string}`
+        "urlTemplate": `${siteUrl}search?q={search_term_string}`
       },
       "query-input": "required name=search_term_string"
     },
     {
       "@type": "ViewAction",
       "name": "Explore Rooms",
-      "target": `${siteUrl}/#rooms`
+      "target": `${siteUrl}#rooms`
     },
     {
       "@type": "ViewAction",
       "name": "Book Now",
-      "target": `${siteUrl}/#rooms`
+      "target": `${siteUrl}#rooms`
     }
   ]
 };

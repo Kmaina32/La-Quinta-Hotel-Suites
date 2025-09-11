@@ -1,9 +1,37 @@
 
 'use server';
 
-import { getDb } from '@/lib/firebase-admin';
+import { getDb, getStorage } from '@/lib/firebase-admin';
 import type { Room, EstablishmentImage, Booking } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+
+// == Image Upload ==
+export async function uploadImage(formData: FormData) {
+    const file = formData.get('file') as File;
+    if (!file) {
+        throw new Error('No file provided.');
+    }
+
+    const storage = getStorage();
+    const bucket = storage.bucket();
+
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const fileName = `images/${Date.now()}-${file.name}`;
+    const fileUpload = bucket.file(fileName);
+
+    await fileUpload.save(fileBuffer, {
+        metadata: {
+            contentType: file.type,
+        },
+    });
+
+    const [publicUrl] = await fileUpload.getSignedUrl({
+        action: 'read',
+        expires: '01-01-2500', // Far-future expiration date
+    });
+    
+    return publicUrl;
+}
 
 export async function getRooms(): Promise<Room[]> {
   const db = getDb();
@@ -35,10 +63,10 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
     const heroDoc = await establishmentCollection.doc('hero-image').get();
     const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
     
-    const gallerySnapshot = await establishmentCollection.where('id', '!=', 'hero-image').get();
+    const gallerySnapshot = await establishmentCollection.where('src', '!=', '').get();
     const galleryImages = gallerySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
-        .filter(img => img.src);
+        .filter(img => img.id !== 'hero-image' && img.src);
 
     return { heroImage, galleryImages };
 }

@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Twitter, BedDouble } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Footer() {
   return (
@@ -26,16 +27,22 @@ export default function Footer() {
           </div>
           <div>
             <h3 className="text-sm font-semibold mb-2">Follow Us</h3>
-            <div className="flex justify-center md:justify-start space-x-3">
-              <Link href="#" className="opacity-80 hover:opacity-100">
-                <Facebook size={20} />
-              </Link>
-              <Link href="#" className="opacity-80 hover:opacity-100">
-                <Instagram size={20} />
-              </Link>
-              <Link href="#" className="opacity-80 hover:opacity-100">
-                <Twitter size={20} />
-              </Link>
+            <div className="flex justify-center md:justify-start space-x-2">
+              <Button size="icon" variant="ghost" asChild>
+                <Link href="#" aria-label="Facebook">
+                  <Facebook size={20} />
+                </Link>
+              </Button>
+              <Button size="icon" variant="ghost" asChild>
+                <Link href="#" aria-label="Instagram">
+                  <Instagram size={20} />
+                </Link>
+              </Button>
+              <Button size="icon" variant="ghost" asChild>
+                <Link href="#" aria-label="Twitter">
+                  <Twitter size={20} />
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

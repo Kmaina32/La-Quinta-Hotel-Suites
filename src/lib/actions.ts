@@ -2,7 +2,7 @@
 'use server';
 
 import { getDb } from '@/lib/firebase-admin';
-import type { Room, EstablishmentImage } from '@/lib/types';
+import type { Room, EstablishmentImage, Booking } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
 export async function getRooms(): Promise<Room[]> {
@@ -13,7 +13,7 @@ export async function getRooms(): Promise<Room[]> {
     id: doc.id,
     ...doc.data(),
   })) as Room[];
-  return roomsList;
+  return roomsList.filter(room => room.imageUrl);
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
@@ -101,4 +101,33 @@ export async function deleteRoom(id: string) {
     await roomDocRef.delete();
     revalidatePath('/');
     revalidatePath('/admin');
+}
+
+
+// == Bookings ==
+export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'>) {
+    const db = getDb();
+    const newBooking = {
+        ...bookingData,
+        bookedOn: new Date().toISOString(),
+    };
+    const bookingRef = await db.collection('bookings').add(newBooking);
+    
+    revalidatePath('/bookings');
+    
+    return { id: bookingRef.id, ...newBooking };
+}
+
+export async function getBookings(): Promise<Booking[]> {
+  const db = getDb();
+  const bookingsCollection = db.collection('bookings');
+  // Order by check-in date, with future dates first
+  const bookingsSnapshot = await bookingsCollection.orderBy('checkIn', 'desc').get();
+  
+  const bookingsList = bookingsSnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Booking[];
+  
+  return bookingsList;
 }

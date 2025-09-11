@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${ptSans.className} flex flex-col h-full`}>
+      <body className={`${ptSans.className} flex flex-col min-h-screen`}>
         <Header />
         <main className="flex-grow">{children}</main>
         <Footer />

@@ -105,7 +105,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
             data-ai-hint="hotel room interior"
           />
         </div>
-        {room.images && room.images.map(image => (
+        {room.images && room.images.filter(image => image.src).map(image => (
           <div key={image.id} className="relative h-48 w-full rounded-lg overflow-hidden">
              <Image
                 src={image.src}

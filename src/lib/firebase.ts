@@ -1,17 +1,19 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  "projectId": "la-quinta-reservations",
-  "appId": "1:255227966364:web:c9fb4b35a07e35e9380e59",
-  "storageBucket": "la-quinta-reservations.firebasestorage.app",
-  "apiKey": "AIzaSyCymxOo3XZxxiboayLWA5x1XNbwtbeNO7c",
-  "authDomain": "la-quinta-reservations.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "255227966364"
+  apiKey: "AIzaSyCymxOo3XZxxiboayLWA5x1XNbwtbeNO7c",
+  authDomain: "la-quinta-reservations.firebaseapp.com",
+  databaseURL: "https://la-quinta-reservations-default-rtdb.firebaseio.com",
+  projectId: "la-quinta-reservations",
+  storageBucket: "la-quinta-reservations.firebasestorage.app",
+  messagingSenderId: "255227966364",
+  appId: "1:255227966364:web:c258d7ddb330ac7f380e59"
 };
+
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

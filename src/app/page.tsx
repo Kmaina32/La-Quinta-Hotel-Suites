@@ -15,16 +15,18 @@ export default async function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative h-[50vh] md:h-[70vh] w-full flex items-center justify-center text-white">
-        <Image
-          src={heroImage?.src || "https://picsum.photos/1200/800"}
-          alt={heroImage?.alt || "La Quita Hotel & Suites exterior"}
-          fill
-          style={{ objectFit: 'cover' }}
-          className="brightness-50"
-          data-ai-hint="hotel exterior"
-          priority
-        />
+      <section className="relative h-[60vh] md:h-[80vh] w-full flex items-center justify-center text-white p-4">
+        <div className="absolute inset-4 md:inset-8 rounded-2xl overflow-hidden">
+          <Image
+            src={heroImage?.src || "https://picsum.photos/1200/800"}
+            alt={heroImage?.alt || "La Quita Hotel & Suites exterior"}
+            fill
+            style={{ objectFit: 'cover' }}
+            className="brightness-50"
+            data-ai-hint="hotel exterior"
+            priority
+          />
+        </div>
         <div className="relative z-10 text-center p-4">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
             Welcome to La Quita

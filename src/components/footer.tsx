@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-primary-foreground mt-auto">
+    <footer className="bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
           <div className="flex flex-col items-center md:items-start">
@@ -18,7 +18,7 @@ export default function Footer() {
           <div className="text-xs opacity-80">
             <h3 className="text-sm font-semibold mb-2">Contact Us</h3>
             <ul className="space-y-1">
-              <li>M4CV+7Q Nakuru</li>
+              <li>-0.3293644,36.0619809,12z</li>
               <li>Email: contact@laquita.com</li>
               <li>Reception: 0759713882</li>
               <li>WhatsApp: 0710147434</li>

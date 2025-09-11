@@ -17,12 +17,12 @@ const siteDescription = "Hotel, lounge and suites in Nakuru, Kenya along Pipelin
 
 export const metadata: Metadata = {
   title: {
-    default: "La Quita - Hotel, Lounge & Suites",
-    template: "%s | La Quita",
+    default: "La Quita Hotel & Suites | Nakuru, Kenya | Official Site",
+    template: "%s | La Quita Hotel & Suites",
   },
   description: siteDescription,
   openGraph: {
-    title: "La Quita - Hotel, Lounge & Suites",
+    title: "La Quita Hotel & Suites | Nakuru, Kenya | Official Site",
     description: siteDescription,
     url: siteUrl,
     siteName: "La Quita",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "La Quita - Hotel, Lounge & Suites",
+    title: "La Quita Hotel & Suites | Nakuru, Kenya | Official Site",
     description: siteDescription,
     images: [`${siteUrl}og-image.png`],
   },

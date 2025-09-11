@@ -1,25 +1,66 @@
 
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { getBookings } from '@/lib/actions';
+import type { Booking } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
-export default async function BookingsPage() {
-  const bookings = await getBookings();
+export default function BookingsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      const fetchBookings = async () => {
+        setLoading(true);
+        const userBookings = await getBookings(user.uid);
+        setBookings(userBookings);
+        setLoading(false);
+      };
+      fetchBookings();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
+
+  if (loading || authLoading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+        <Loader2 className="h-16 w-16 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+       <div className="container mx-auto py-12 text-center">
+         <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
+         <p className="text-muted-foreground mb-8">Please log in to view your bookings.</p>
+         <Button asChild>
+          <Link href="/login">Login</Link>
+         </Button>
+      </div>
+    );
+  }
+
   const now = new Date();
-
   const upcomingBookings = bookings.filter(b => new Date(b.checkIn) >= now);
   const pastBookings = bookings.filter(b => new Date(b.checkIn) < now);
 
   return (
     <div className="container mx-auto py-12">
-      <h1 className="text-3xl font-bold mb-8">My Bookings</h1>
-      
-      <div className="mb-8">
-        <p className="text-muted-foreground">
-          Welcome! Here are your upcoming and past reservations.
-        </p>
-      </div>
+      <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
+      <p className="text-muted-foreground mb-8">
+        Welcome, {user.email}! Here are your upcoming and past reservations.
+      </p>
 
       <div className="space-y-12">
         <section>

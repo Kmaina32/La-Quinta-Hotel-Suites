@@ -35,10 +35,10 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
     const heroDoc = await establishmentCollection.doc('hero-image').get();
     const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
     
-    const gallerySnapshot = await establishmentCollection.get();
+    const gallerySnapshot = await establishmentCollection.where('id', '!=', 'hero-image').get();
     const galleryImages = gallerySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
-        .filter(img => img.id !== 'hero-image' && img.src);
+        .filter(img => img.src);
 
     return { heroImage, galleryImages };
 }
@@ -46,7 +46,6 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
 export async function updateHeroImage(src: string) {
     const db = getDb();
     const heroDocRef = db.collection('establishment').doc('hero-image');
-    // Use set with merge to create the document if it doesn't exist, or update it if it does.
     await heroDocRef.set({ src, alt: 'Hero Image', 'data-ai-hint': 'hotel exterior' }, { merge: true });
     revalidatePath('/');
     revalidatePath('/admin');
@@ -118,11 +117,14 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
     return { id: bookingRef.id, ...newBooking };
 }
 
-export async function getBookings(): Promise<Booking[]> {
+export async function getBookings(userId: string): Promise<Booking[]> {
   const db = getDb();
   const bookingsCollection = db.collection('bookings');
-  // Order by check-in date, with future dates first
-  const bookingsSnapshot = await bookingsCollection.orderBy('checkIn', 'desc').get();
+  // Filter bookings by userId and order by check-in date
+  const bookingsSnapshot = await bookingsCollection
+    .where('userId', '==', userId)
+    .orderBy('checkIn', 'desc')
+    .get();
   
   const bookingsList = bookingsSnapshot.docs.map(doc => ({
     id: doc.id,

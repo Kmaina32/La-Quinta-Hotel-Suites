@@ -21,6 +21,7 @@ export interface EstablishmentImage {
 
 export interface Booking {
     id: string;
+    userId: string; // Added to associate booking with a user
     roomId: string;
     roomName: string;
     roomImage: string;
@@ -30,5 +31,4 @@ export interface Booking {
     totalCost: number;
     paymentMethod: string;
     bookedOn: string; // ISO string
-    // In a real app, you'd have a userId here
 }

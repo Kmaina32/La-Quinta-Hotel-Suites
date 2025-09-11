@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Bath, BedDouble, User } from 'lucide-react';
 import { getRooms, getEstablishmentImages } from '@/lib/actions';
 import { GalleryCarousel } from '@/components/gallery-carousel';
+import { SeoStructuredData } from '@/components/seo-structured-data';
 
 export default async function Home() {
   const rooms = await getRooms();
@@ -14,6 +15,7 @@ export default async function Home() {
 
   return (
     <>
+      <SeoStructuredData />
       {/* Hero Section */}
       <section className="relative h-[60vh] md:h-[80vh] w-full flex items-center justify-center text-white p-4">
         <div className="absolute inset-4 md:inset-8 rounded-2xl overflow-hidden">

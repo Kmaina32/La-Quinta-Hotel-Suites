@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Twitter, BedDouble } from 'lucide-react';
+import { Facebook, Instagram, Twitter, BedDouble, Mail, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -16,13 +16,33 @@ export default function Footer() {
               Experience the finest hospitality and create unforgettable memories.
             </p>
           </div>
-          <div className="text-xs opacity-80">
+          <div>
             <h3 className="text-sm font-semibold mb-2">Contact Us</h3>
-            <ul className="space-y-1">
-              <li>-0.3293644,36.0619809,12z</li>
-              <li>Email: contact@laquita.com</li>
-              <li>Reception: 0759713882</li>
-              <li>WhatsApp: 0710147434</li>
+            <ul className="space-y-2 text-xs opacity-80">
+              <li>
+                <a href="https://www.google.com/maps/search/?api=1&query=-0.3293644,36.0619809" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
+                  <MapPin size={14} />
+                  <span>-0.3293644,36.0619809,12z</span>
+                </a>
+              </li>
+              <li>
+                <a href="mailto:contact@laquita.com" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
+                  <Mail size={14} />
+                  <span>contact@laquita.com</span>
+                </a>
+              </li>
+              <li>
+                <a href="tel:0759713882" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
+                  <Phone size={14} />
+                  <span>Reception: 0759713882</span>
+                </a>
+              </li>
+               <li>
+                <a href="https://wa.me/254710147434" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                    <span>WhatsApp: 0710147434</span>
+                </a>
+              </li>
             </ul>
           </div>
           <div>

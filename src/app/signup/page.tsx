@@ -28,7 +28,7 @@ export default function SignupPage() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       toast({ title: "Account Created", description: "You have been successfully signed up." });
-      router.push('/bookings');
+      router.push('/');
     } catch (error: any) {
       toast({
         title: "Signup Failed",
@@ -45,7 +45,7 @@ export default function SignupPage() {
     try {
       await signInWithPopup(auth, googleProvider);
       toast({ title: "Sign Up Successful", description: "Welcome!" });
-      router.push('/bookings');
+      router.push('/');
     } catch (error: any) {
       toast({
         title: "Sign Up Failed",

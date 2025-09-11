@@ -28,7 +28,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Login Successful", description: "Welcome back!" });
-      router.push('/bookings');
+      router.push('/');
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -45,7 +45,7 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, googleProvider);
       toast({ title: "Sign In Successful", description: "Welcome!" });
-      router.push('/bookings');
+      router.push('/');
     } catch (error: any) {
       toast({
         title: "Sign In Failed",

@@ -18,6 +18,42 @@ import type { DateRange } from "react-day-picker";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import type { Metadata } from 'next';
+
+// This is a dynamic metadata function
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const room = await getRoom(params.id);
+
+  if (!room) {
+    return {
+      title: 'Room Not Found',
+    };
+  }
+
+  return {
+    title: room.name,
+    description: room.description,
+    openGraph: {
+      title: `${room.name} | La Quita`,
+      description: room.description,
+      images: [
+        {
+          url: room.imageUrl,
+          width: 1200,
+          height: 630,
+          alt: room.name,
+        },
+      ],
+    },
+     twitter: {
+      card: 'summary_large_image',
+      title: `${room.name} | La Quita`,
+      description: room.description,
+      images: [room.imageUrl],
+    },
+  };
+}
+
 
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
   const [room, setRoom] = useState<Room | null>(null);

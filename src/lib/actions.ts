@@ -6,7 +6,7 @@ import type { Room, EstablishmentImage, Booking } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
 // == Image Upload ==
-export async function uploadImage(formData: FormData) {
+export async function uploadImage(formData: FormData): Promise<string> {
     const file = formData.get('file') as File;
     if (!file) {
         throw new Error('No file provided.');
@@ -16,7 +16,7 @@ export async function uploadImage(formData: FormData) {
     const bucket = storage.bucket();
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    const fileName = `images/${Date.now()}-${file.name}`;
+    const fileName = `images/${Date.now()}-${file.name.replace(/\s/g, '_')}`;
     const fileUpload = bucket.file(fileName);
 
     await fileUpload.save(fileBuffer, {
@@ -28,7 +28,7 @@ export async function uploadImage(formData: FormData) {
     // Make the file publicly accessible
     await fileUpload.makePublic();
     
-    // Return the public URL
+    // Return the public URL as a string
     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 

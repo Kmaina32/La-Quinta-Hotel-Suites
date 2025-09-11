@@ -6,7 +6,7 @@
 // It simply injects a JSON-LD script into the head.
 
 export function SeoStructuredData() {
-    const siteUrl = "https://la-quita-reservations.web.app";
+    const siteUrl = "https://www.laquitahotel.com/";
     
     const structuredData = {
         "@context": "https://schema.org",
@@ -26,7 +26,7 @@ export function SeoStructuredData() {
             "latitude": -0.3293644,
             "longitude": 36.0619809
         },
-        "image": `${siteUrl}/og-image.png`,
+        "image": `${siteUrl}og-image.png`,
         "priceRange": "KES",
         "checkinTime": "12:00",
         "checkoutTime": "10:00"

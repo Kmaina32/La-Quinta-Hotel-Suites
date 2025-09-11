@@ -2,7 +2,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,15 +11,20 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard } from 'lucide-react';
-import { getRoom } from '@/lib/actions';
+import { getRoom, createBooking } from '@/lib/actions';
 import type { Room } from '@/lib/types';
 import { format, addDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function RoomDetailsPage({ params }: { params: { id: string } }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isBooking, setIsBooking] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 3),
@@ -37,6 +42,54 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
     };
     fetchRoom();
   }, [params.id]);
+
+  const handleBooking = async (paymentMethod: string) => {
+    if (!room || !date?.from || !date?.to) {
+        toast({
+            title: "Booking Error",
+            description: "Please select a valid date range.",
+            variant: "destructive",
+        });
+        return;
+    }
+    
+    setIsBooking(true);
+    try {
+        const nights = Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24));
+        const totalCost = nights * room.price;
+
+        const bookingData = {
+            roomId: room.id,
+            roomName: room.name,
+            roomImage: room.imageUrl,
+            checkIn: date.from.toISOString(),
+            checkOut: date.to.toISOString(),
+            nights,
+            totalCost,
+            paymentMethod,
+        };
+
+        await createBooking(bookingData);
+
+        toast({
+            title: "Booking Successful!",
+            description: `Your stay at ${room.name} has been reserved.`,
+        });
+
+        router.push('/bookings');
+
+    } catch (error) {
+        console.error("Failed to create booking:", error);
+        toast({
+            title: "Booking Failed",
+            description: "Something went wrong. Please try again.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsBooking(false);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -91,14 +144,18 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
               <User className="text-primary"/>
               <span>{room.capacity} Guests</span>
             </div>
-            <div className="flex items-center gap-2">
-              <BedDouble className="text-primary"/>
-              <span>{room.beds} Bed(s)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Bath className="text-primary"/>
-              <span>{room.baths} Bath(s)</span>
-            </div>
+            {room.type !== 'conference' && (
+              <>
+                <div className="flex items-center gap-2">
+                  <BedDouble className="text-primary"/>
+                  <span>{room.beds} Bed(s)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Bath className="text-primary"/>
+                  <span>{room.baths} Bath(s)</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -123,6 +180,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                           "w-full justify-start text-left font-normal",
                           !date && "text-muted-foreground"
                         )}
+                        disabled={isBooking}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date?.from ? (
@@ -147,6 +205,7 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                         selected={date}
                         onSelect={setDate}
                         numberOfMonths={1}
+                        disabled={(day) => day < new Date(new Date().setHours(0,0,0,0))}
                       />
                     </PopoverContent>
                   </Popover>
@@ -158,9 +217,9 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
                       <span>{nights} night{nights > 1 ? 's' : ''}</span>
                       <span>KES {totalCost.toFixed(2)}</span>
                     </div>
-                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Taxes & Fees</span>
-                      <span>Calculated at checkout</span>
+                     <div className="flex justify-between font-bold">
+                      <span>Total</span>
+                      <span>KES {totalCost.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
@@ -168,38 +227,41 @@ export default function RoomDetailsPage({ params }: { params: { id: string } }) 
             <CardFooter>
                 <Tabs defaultValue="card" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="card">Card</TabsTrigger>
-                    <TabsTrigger value="paypal">PayPal</TabsTrigger>
-                    <TabsTrigger value="mpesa">M-Pesa</TabsTrigger>
+                    <TabsTrigger value="card" disabled={isBooking}>Card</TabsTrigger>
+                    <TabsTrigger value="paypal" disabled={isBooking}>PayPal</TabsTrigger>
+                    <TabsTrigger value="mpesa" disabled={isBooking}>M-Pesa</TabsTrigger>
                   </TabsList>
                   <TabsContent value="card" className="mt-4 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
-                      <Input id="name" placeholder="Cardholder Name" />
+                      <Input id="name" placeholder="Cardholder Name" disabled={isBooking} />
                     </div>
                      <div className="space-y-2">
                       <Label htmlFor="card">Card Information</Label>
                       <div className="flex items-center gap-2 border rounded-md px-3">
                          <CreditCard className="h-5 w-5 text-muted-foreground" />
-                         <Input id="card" placeholder="Card Number" className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" />
+                         <Input id="card" placeholder="Card Number" className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" disabled={isBooking} />
                       </div>
                     </div>
-                    <Button size="lg" className="w-full">
+                    <Button size="lg" className="w-full" onClick={() => handleBooking('Credit Card')} disabled={isBooking || nights <= 0}>
+                      {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Reserve Now
                     </Button>
                   </TabsContent>
                    <TabsContent value="paypal" className="mt-4 text-center">
                       <p className="text-sm text-muted-foreground mb-4">You will be redirected to PayPal to complete your payment.</p>
-                       <Button size="lg" className="w-full">
+                       <Button size="lg" className="w-full" onClick={() => handleBooking('PayPal')} disabled={isBooking || nights <= 0}>
+                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Pay with PayPal
                       </Button>
                    </TabsContent>
                    <TabsContent value="mpesa" className="mt-4 space-y-4">
                        <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
-                        <Input id="phone" placeholder="e.g. 0712345678" />
+                        <Input id="phone" placeholder="e.g. 0712345678" disabled={isBooking} />
                       </div>
-                       <Button size="lg" className="w-full">
+                       <Button size="lg" className="w-full" onClick={() => handleBooking('M-Pesa')} disabled={isBooking || nights <= 0}>
+                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Pay with M-Pesa
                       </Button>
                    </TabsContent>

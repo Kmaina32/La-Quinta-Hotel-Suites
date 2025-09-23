@@ -30,7 +30,7 @@ export default function Footer() {
                 <h3 className="text-sm font-semibold mb-2">Contact Us</h3>
                 <ul className="space-y-2 text-xs opacity-80">
                   <li>
-                    <a href="https://www.google.com/maps/search/?api=1&query=-0.3293644,36.0619809" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
+                    <a href="https://maps.app.goo.gl/mpzfqvHyTpLaD7UQ6" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center md:justify-start gap-2 hover:opacity-100">
                       <MapPin size={14} />
                       <span>Get Directions</span>
                     </a>

@@ -243,7 +243,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                 <Tabs defaultValue="card" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="card" disabled={isBooking}>Card</TabsTrigger>
-                    <TabsTrigger value="paypal" disabled={isBooking}>PayPal</TabsTrigger>
+                    <TabsTrigger value="paystack" disabled={isBooking}>Paystack</TabsTrigger>
                     <TabsTrigger value="mpesa" disabled={isBooking}>M-Pesa</TabsTrigger>
                   </TabsList>
                   <TabsContent value="card" className="mt-4 space-y-4">
@@ -263,11 +263,11 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                       { user ? 'Reserve Now' : 'Login to Book' }
                     </Button>
                   </TabsContent>
-                   <TabsContent value="paypal" className="mt-4 text-center">
-                      <p className="text-sm text-muted-foreground mb-4">You will be redirected to PayPal to complete your payment.</p>
-                       <Button size="lg" className="w-full" onClick={() => handleBooking('PayPal')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                   <TabsContent value="paystack" className="mt-4 text-center">
+                      <p className="text-sm text-muted-foreground mb-4">You will be redirected to Paystack to complete your payment.</p>
+                       <Button size="lg" className="w-full" onClick={() => handleBooking('Paystack')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
                         {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        { user ? 'Pay with PayPal' : 'Login to Book' }
+                        { user ? 'Pay with Paystack' : 'Login to Book' }
                       </Button>
                    </TabsContent>
                    <TabsContent value="mpesa" className="mt-4 space-y-4">

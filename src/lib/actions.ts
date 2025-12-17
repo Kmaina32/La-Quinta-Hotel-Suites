@@ -2,7 +2,7 @@
 'use server';
 
 import { getDb, getStorage } from '@/lib/firebase-admin';
-import type { Room, EstablishmentImage, Booking } from '@/lib/types';
+import type { Room, EstablishmentImage, Booking, Message } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
 // == Image Upload ==
@@ -163,4 +163,25 @@ export async function getBookings(userId: string): Promise<Booking[]> {
   
   // Sort the bookings by check-in date in descending order
   return bookingsList.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+}
+
+// == Messages ==
+export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
+    const db = getDb();
+    const newMessage = {
+        ...messageData,
+        sentAt: new Date().toISOString(),
+        isRead: false,
+    };
+    await db.collection('messages').add(newMessage);
+    revalidatePath('/admin');
+}
+
+export async function getMessages(): Promise<Message[]> {
+    const db = getDb();
+    const messagesSnapshot = await db.collection('messages').orderBy('sentAt', 'desc').get();
+    return messagesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+    })) as Message[];
 }

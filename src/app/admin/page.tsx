@@ -6,13 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { createPoster } from '@/ai/flows/create-poster-flow';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
@@ -40,6 +45,16 @@ export default function AdminPage() {
   const [heroImage, setHeroImage] = useState('');
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
+  const [posterGenLoading, setPosterGenLoading] = useState(false);
+  const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
+  const [posterForm, setPosterForm] = useState({
+    title: 'Weekend Getaway',
+    subtitle: 'Special Offer',
+    occasionDate: '',
+    primaryImage: '',
+    extraDetails: 'Pool, Spa, Free Wi-Fi',
+  });
+  
   const { toast } = useToast()
 
   const router = useRouter();
@@ -78,6 +93,10 @@ export default function AdminPage() {
       const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
       setGalleryImages(sortedGallery);
       setHeroImage(establishmentData.heroImage?.src || '');
+      // Set default image for poster generator
+      const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
+      if(defaultImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+
     } catch (error) {
         console.error("Failed to fetch admin data:", error);
         toast({ title: "Error", description: "Failed to fetch admin data.", variant: "destructive" });
@@ -228,6 +247,29 @@ export default function AdminPage() {
     }
   };
 
+   const handleGeneratePoster = async () => {
+    setPosterGenLoading(true);
+    setGeneratedPoster(null);
+    try {
+      const result = await createPoster(posterForm);
+      if(result.posterUrl) {
+        setGeneratedPoster(result.posterUrl);
+        toast({ title: 'Poster Generated!', description: 'Your new poster is ready.' });
+      } else {
+        throw new Error('AI did not return a poster. Please try again.');
+      }
+    } catch (error: any) {
+      console.error("Poster generation failed:", error);
+      toast({ title: "Generation Failed", description: error.message || "Could not generate the poster.", variant: "destructive" });
+    } finally {
+      setPosterGenLoading(false);
+    }
+  };
+  
+  const handlePosterFormChange = (field: keyof typeof posterForm, value: string) => {
+    setPosterForm(prev => ({ ...prev, [field]: value }));
+  };
+
   if (loading && !isAuthenticated) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
 
   if (!isAuthenticated) {
@@ -264,6 +306,16 @@ export default function AdminPage() {
             return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1"/>Cancelled</div>;
     }
   }
+  
+  const allImages = [
+    { id: 'hero', src: heroImage, alt: 'Hero Image' },
+    ...galleryImages,
+    ...rooms.flatMap(r => ([
+        {id: `room-main-${r.id}`, src: r.imageUrl, alt: r.name},
+        ...(r.images || []).map(img => ({...img, alt: `${r.name} detail`}))
+    ]))
+  ].filter(img => img.src);
+
 
   return (
     <div className="container mx-auto py-8">
@@ -453,6 +505,86 @@ export default function AdminPage() {
           </Card>
       )}
 
+      {activeTab === 'poster-gen' && (
+         <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary"/> AI Poster Generator</CardTitle>
+                <CardDescription>Create promotional posters for events and offers using AI.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="poster-title">Title</Label>
+                        <Input id="poster-title" value={posterForm.title} onChange={e => handlePosterFormChange('title', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="poster-subtitle">Subtitle</Label>
+                        <Input id="poster-subtitle" value={posterForm.subtitle} onChange={e => handlePosterFormChange('subtitle', e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="poster-date">Occasion Date</Label>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                id="poster-date"
+                                variant={"outline"}
+                                className={cn("w-full justify-start text-left font-normal", !posterForm.occasionDate && "text-muted-foreground")}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {posterForm.occasionDate ? format(new Date(posterForm.occasionDate), "PPP") : <span>Pick a date</span>}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={posterForm.occasionDate ? new Date(posterForm.occasionDate) : undefined}
+                                onSelect={(date) => handlePosterFormChange('occasionDate', date?.toISOString() || '')}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="poster-details">Extra Details / Amenities</Label>
+                        <Textarea id="poster-details" placeholder="e.g. Live Music, Buffet, Free Entry" value={posterForm.extraDetails} onChange={e => handlePosterFormChange('extraDetails', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Primary Image</Label>
+                        <Select value={posterForm.primaryImage} onValueChange={value => handlePosterFormChange('primaryImage', value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select an image" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                                {allImages.map(image => (
+                                    <SelectItem key={image.id} value={image.src}>
+                                        <div className="flex items-center gap-2">
+                                            <Image src={image.src} alt={image.alt} width={40} height={30} className="rounded-sm object-cover" />
+                                            <span className="truncate">{image.alt}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                         {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
+                    </div>
+                    <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading}>
+                        {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
+                        Generate Poster
+                    </Button>
+                </div>
+                <div className="flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px]">
+                    {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
+                    {!posterGenLoading && generatedPoster && (
+                      <div className="relative w-full h-full aspect-[3/4]">
+                        <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
+                      </div>
+                    )}
+                     {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
+                </div>
+            </CardContent>
+         </Card>
+      )}
+
       {activeTab === 'settings' && siteSettings && (
         <Card>
             <CardHeader><CardTitle>Site Settings</CardTitle></CardHeader>
@@ -481,4 +613,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

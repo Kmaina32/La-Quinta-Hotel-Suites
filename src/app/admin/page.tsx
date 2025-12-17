@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -249,6 +249,10 @@ export default function AdminPage() {
   };
 
    const handleGeneratePoster = async () => {
+    if (!posterForm.primaryImage) {
+        toast({ title: "Image Required", description: "Please select or upload a primary image for the poster.", variant: "destructive" });
+        return;
+    }
     setPosterGenLoading(true);
     setGeneratedPoster(null);
     try {
@@ -566,18 +570,38 @@ export default function AdminPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                         <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-card px-2 text-muted-foreground">OR</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Input id="poster-upload" type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'poster-image-upload', url => handlePosterFormChange('primaryImage', url))} />
+                            {uploadingStates['poster-image-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+                        </div>
                          {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
                     </div>
-                    <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading}>
+                    <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading || uploadingStates['poster-image-upload']}>
                         {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
                         Generate Poster
                     </Button>
                 </div>
-                <div className="flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px]">
+                <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px] p-4">
                     {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
                     {!posterGenLoading && generatedPoster && (
-                      <div className="relative w-full h-full aspect-[3/4]">
-                        <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
+                      <div className="w-full flex-grow flex flex-col items-center justify-center">
+                          <div className="relative w-full flex-grow mb-4">
+                            <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
+                          </div>
+                           <Button asChild className="w-full">
+                            <a href={generatedPoster} download={`la_quita_poster_${Date.now()}.png`}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Poster
+                            </a>
+                        </Button>
                       </div>
                     )}
                      {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
@@ -614,5 +638,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
 
     

@@ -7,9 +7,15 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function AdminHeader() {
   const router = useRouter();
@@ -76,35 +82,44 @@ export default function AdminHeader() {
            <Button variant="ghost" asChild>
               <Link href="/">
                 <Home className="mr-2 h-4 w-4" />
-                View Site
+                <span className="hidden sm:inline">View Site</span>
               </Link>
             </Button>
           {isAuthenticated && (
-            <Button variant="outline" onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-            </Button>
+            <>
+              <div className="hidden md:flex">
+                <Button variant="outline" onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                </Button>
+              </div>
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-6 w-6" />
+                      <span className="sr-only">Open menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {navLinks.map(link => (
+                      <DropdownMenuItem key={link.id} onClick={() => setTab(link.id)}>
+                        <link.icon className="mr-2 h-4 w-4" />
+                        <span>{link.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
           )}
         </div>
       </div>
-       {/* Mobile Nav */}
-       {isAuthenticated && (
-          <div className="md:hidden mt-2 p-2 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg">
-            <nav className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-              {navLinks.map(link => (
-                <Button
-                  key={link.id}
-                  variant={activeTab === link.id ? 'default' : 'ghost'}
-                  onClick={() => setTab(link.id)}
-                  className={cn("transition-all w-full justify-center", activeTab === link.id && 'shadow-sm')}
-                >
-                  <link.icon className="mr-2 h-4 w-4" />
-                  {link.label}
-                </Button>
-              ))}
-            </nav>
-        </div>
-       )}
     </header>
   );
 }
+

@@ -9,8 +9,7 @@ export default function Footer() {
     <footer className="sticky bottom-0 z-50 p-2 md:p-3 mt-auto">
       <div className="container mx-auto flex justify-between items-center h-16 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg px-4">
         <Link href="/" className="flex items-center gap-2">
-          <Logo className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">L.Q</span>
+          <Logo className="h-10 w-40 text-primary" />
         </Link>
         <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground hidden sm:block">&copy; {new Date().getFullYear()} L.Q. All rights reserved.</p>

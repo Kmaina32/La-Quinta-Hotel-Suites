@@ -6,6 +6,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ContactSection } from "@/components/contact-section";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],
@@ -90,6 +91,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <main className="flex-grow">{children}</main>
+          <ContactSection />
           <Footer />
           <Toaster />
         </AuthProvider>

@@ -12,6 +12,8 @@ import { ContactSection } from "@/components/contact-section";
 import { usePathname } from "next/navigation";
 import AdminHeader from "@/components/admin-header";
 import AdminFooter from "@/components/admin-footer";
+import { useEffect, useState } from "react";
+import { getSiteSettings } from "@/lib/actions";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],
@@ -21,41 +23,6 @@ const ptSans = PT_Sans({
 const siteUrl = "https://www.laquitahotel.com/"; 
 const siteDescription = "Hotel, lounge and suits in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
 
-// Note: Metadata is now defined in a client component context, which is not ideal.
-// For a production app, this would be better handled by moving conditional logic
-// to a client component and keeping the layout as a server component.
-// However, to fulfill the request simply, we make the layout a client component.
-/*
-export const metadata: Metadata = {
-  title: {
-    default: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
-    template: "%s | La Quita Hotel & suits",
-  },
-  description: siteDescription,
-  openGraph: {
-    title: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
-    description: siteDescription,
-    url: siteUrl,
-    siteName: "La Quita",
-    images: [ 
-      {
-        url: `${siteUrl}og-image.png`, // Using a local image
-        width: 1200,
-        height: 630,
-        alt: "La Quita Hotel & suits"
-      },
-    ],
-    locale: 'en_US',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
-    description: siteDescription,
-    images: [`${siteUrl}og-image.png`],
-  },
-};
-*/
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -92,13 +59,21 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith('/admin');
+  const [theme, setTheme] = useState('default');
+
+  useEffect(() => {
+    async function fetchTheme() {
+        const settings = await getSiteSettings();
+        setTheme(settings.activeTheme || 'default');
+    }
+    fetchTheme();
+  }, [pathname]); // Re-fetch theme if path changes, e.g. after admin changes it.
 
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" data-theme={theme}>
        <head>
         <title>La Quita Hotel & suits | Nakuru, Kenya | Official Site</title>
         <meta name="description" content={siteDescription} />
-        {/* Add other head elements here as needed, since static metadata object is removed */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

@@ -10,20 +10,28 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 0 65% 50%; /* Festive Red */
-    --primary-foreground: 210 40% 98%;
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 140 60% 35%; /* Deep Green */
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 0 65% 50%; /* Festive Red */
+    --ring: 215 20.2% 65.1%;
     --radius: 0.5rem;
+  }
+
+  html[data-theme="christmas"] {
+    --primary: 0 65% 50%; /* Festive Red */
+    --primary-foreground: 210 40% 98%;
+    --accent: 140 60% 35%; /* Deep Green */
+    --accent-foreground: 210 40% 98%;
+    --ring: 0 65% 50%; /* Festive Red Ring */
   }
  
   .dark {
@@ -33,18 +41,26 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 0 65% 50%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 140 60% 35%;
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
+    --ring: 215 20.2% 65.1%;
+  }
+
+  .dark[data-theme="christmas"] {
+    --primary: 0 65% 50%;
+    --primary-foreground: 210 40% 98%;
+    --accent: 140 60% 35%;
+    --accent-foreground: 210 40% 98%;
     --ring: 0 65% 50%;
   }
 }

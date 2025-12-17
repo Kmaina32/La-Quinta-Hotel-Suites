@@ -2,7 +2,7 @@
 'use server';
 
 import { getDb, getStorage } from '@/lib/firebase-admin';
-import type { Room, EstablishmentImage, Booking, Message, UserData } from '@/lib/types';
+import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval } from 'date-fns';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -87,7 +87,7 @@ export async function deleteRoom(id: string) {
 }
 
 
-// == Establishment Images ==
+// == Establishment Images & Settings ==
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
     const db = getDb();
     const establishmentCollection = db.collection('establishment');
@@ -98,7 +98,7 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
     const gallerySnapshot = await establishmentCollection.where('src', '!=', '').get();
     const galleryImages = gallerySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
-        .filter(img => img.id !== 'hero-image' && img.src);
+        .filter(img => img.id !== 'hero-image' && img.src && img.id !== 'site-settings');
 
     return { heroImage, galleryImages };
 }
@@ -135,6 +135,24 @@ export async function deleteGalleryImage(id: string) {
     await imageDocRef.delete();
     revalidatePath('/');
     revalidatePath('/admin');
+}
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+    const db = getDb();
+    const settingsDoc = await db.collection('establishment').doc('site-settings').get();
+    if (!settingsDoc.exists) {
+        // Return default settings if none are found
+        return { activeTheme: 'default' };
+    }
+    return settingsDoc.data() as SiteSettings;
+}
+
+export async function updateSiteSettings(settings: SiteSettings) {
+    const db = getDb();
+    const settingsDocRef = db.collection('establishment').doc('site-settings');
+    await settingsDocRef.set(settings, { merge: true });
+    // Revalidate all paths to reflect theme changes
+    revalidatePath('/', 'layout');
 }
 
 

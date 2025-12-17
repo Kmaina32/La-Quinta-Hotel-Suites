@@ -21,6 +21,10 @@ export interface EstablishmentImage {
   'data-ai-hint': string;
 }
 
+export interface SiteSettings {
+  activeTheme: 'default' | 'christmas';
+}
+
 export interface Booking {
     id: string;
     userId: string; 

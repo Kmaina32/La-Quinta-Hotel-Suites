@@ -8,10 +8,20 @@ import { getRooms, getEstablishmentImages } from '@/lib/actions';
 import { GalleryCarousel } from '@/components/gallery-carousel';
 import { SeoStructuredData } from '@/components/seo-structured-data';
 import { HeroBookingForm } from '@/components/hero-booking-form';
+import type { Room, EstablishmentImage } from '@/lib/types';
+
 
 export default async function Home() {
-  const rooms = await getRooms();
-  const { heroImage, galleryImages } = await getEstablishmentImages();
+  let rooms: Room[] = [];
+  let heroImage: EstablishmentImage | null = null;
+  let galleryImages: EstablishmentImage[] = [];
+
+  try {
+    rooms = await getRooms();
+    ({ heroImage, galleryImages } = await getEstablishmentImages());
+  } catch (e) {
+    console.error('Homepage data load failed. This might be due to a Firebase configuration issue. The page will render with empty data.', e);
+  }
 
 
   return (
@@ -21,7 +31,7 @@ export default async function Home() {
       <section className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-white p-4">
         <div className="absolute inset-4 md:inset-8 rounded-2xl overflow-hidden">
           <Image
-            src={heroImage?.src || "https://picsum.photos/1200/800"}
+            src={heroImage?.src || "https://picsum.photos/seed/hero/1200/800"}
             alt={heroImage?.alt || "La Quita Hotel & suits exterior"}
             fill
             style={{ objectFit: 'cover' }}

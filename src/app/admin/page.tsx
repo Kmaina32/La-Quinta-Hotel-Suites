@@ -325,54 +325,153 @@ export default function AdminPage() {
   return (
     <div className="container mx-auto py-8">
       {activeTab === 'content' && (
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-                <Card>
-                    <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
-                    <CardContent className="space-y-3">
-                    {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
-                    <div className="flex items-center gap-2">
-                        <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
-                        {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+         <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                  <Card>
+                      <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                      {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
+                      <div className="flex items-center gap-2">
+                          <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
+                          {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+                      </div>
+                      <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
+                      <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload']}>
+                          {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
+                      </Button>
+                      </CardContent>
+                  </Card>
+              </div>
+              <div className="lg:col-span-2">
+                  <Card>
+                      <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
+                      <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image']}>
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                      </Button>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                      {galleryImages.map(image => (
+                          <div key={image.id} className="space-y-2 border-t pt-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                  {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
+                                  <div className="space-y-2">
+                                      <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Paste image URL" />
+                                      <div className="flex items-center gap-2">
+                                          <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
+                                          {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                      </div>
+                                  </div>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                  <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`]}>
+                                  {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
+                                  </Button>
+                                  <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                          </div>
+                      ))}
+                      </CardContent>
+                  </Card>
+              </div>
+          </div>
+           <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary"/> AI Poster Generator</CardTitle>
+                <CardDescription>Create promotional posters for events and offers using AI.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="poster-title">Title</Label>
+                        <Input id="poster-title" value={posterForm.title} onChange={e => handlePosterFormChange('title', e.target.value)} />
                     </div>
-                    <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
-                    <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload']}>
-                        {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
-                    </Button>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-2">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
-                    <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image']}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                    </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                    {galleryImages.map(image => (
-                        <div key={image.id} className="space-y-2 border-t pt-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                                {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
-                                <div className="space-y-2">
-                                     <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Paste image URL" />
-                                     <div className="flex items-center gap-2">
-                                        <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
-                                        {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                    </div>
-                                </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="poster-subtitle">Subtitle</Label>
+                        <Input id="poster-subtitle" value={posterForm.subtitle} onChange={e => handlePosterFormChange('subtitle', e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="poster-date">Occasion Date</Label>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                id="poster-date"
+                                variant={"outline"}
+                                className={cn("w-full justify-start text-left font-normal", !posterForm.occasionDate && "text-muted-foreground")}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {posterForm.occasionDate ? format(new Date(posterForm.occasionDate), "PPP") : <span>Pick a date</span>}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={posterForm.occasionDate ? new Date(posterForm.occasionDate) : undefined}
+                                onSelect={(date) => handlePosterFormChange('occasionDate', date?.toISOString() || '')}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="poster-details">Extra Details / Amenities</Label>
+                        <Textarea id="poster-details" placeholder="e.g. Live Music, Buffet, Free Entry" value={posterForm.extraDetails} onChange={e => handlePosterFormChange('extraDetails', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Primary Image</Label>
+                        <Select value={posterForm.primaryImage} onValueChange={value => handlePosterFormChange('primaryImage', value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select an image" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                                {allImages.map(image => (
+                                    <SelectItem key={image.id} value={image.src}>
+                                        <div className="flex items-center gap-2">
+                                            <Image src={image.src} alt={image.alt} width={40} height={30} className="rounded-sm object-cover" />
+                                            <span className="truncate">{image.alt}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                         <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
                             </div>
-                            <div className="flex items-center gap-2 mt-2">
-                                <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`]}>
-                                {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
-                                </Button>
-                                <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}><Trash2 className="h-4 w-4" /></Button>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-card px-2 text-muted-foreground">OR</span>
                             </div>
                         </div>
-                    ))}
-                    </CardContent>
-                </Card>
-            </div>
+                        <div className="flex items-center gap-2">
+                            <Input id="poster-upload" type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'poster-image-upload', url => handlePosterFormChange('primaryImage', url))} />
+                            {uploadingStates['poster-image-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+                        </div>
+                         {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
+                    </div>
+                    <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading || uploadingStates['poster-image-upload']}>
+                        {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
+                        Generate Poster
+                    </Button>
+                </div>
+                <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px] p-4">
+                    {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
+                    {!posterGenLoading && generatedPoster && (
+                      <div className="w-full flex-grow flex flex-col items-center justify-center">
+                          <div className="relative w-full flex-grow mb-4">
+                            <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
+                          </div>
+                           <Button asChild className="w-full">
+                            <a href={generatedPoster} download={`la_quita_poster_${Date.now()}.png`}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Poster
+                            </a>
+                        </Button>
+                      </div>
+                    )}
+                     {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
+                </div>
+            </CardContent>
+         </Card>
         </div>
       )}
 
@@ -508,106 +607,6 @@ export default function AdminPage() {
               ))}
             </CardContent>
           </Card>
-      )}
-
-      {activeTab === 'poster-gen' && (
-         <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary"/> AI Poster Generator</CardTitle>
-                <CardDescription>Create promotional posters for events and offers using AI.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="poster-title">Title</Label>
-                        <Input id="poster-title" value={posterForm.title} onChange={e => handlePosterFormChange('title', e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="poster-subtitle">Subtitle</Label>
-                        <Input id="poster-subtitle" value={posterForm.subtitle} onChange={e => handlePosterFormChange('subtitle', e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="poster-date">Occasion Date</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                            <Button
-                                id="poster-date"
-                                variant={"outline"}
-                                className={cn("w-full justify-start text-left font-normal", !posterForm.occasionDate && "text-muted-foreground")}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {posterForm.occasionDate ? format(new Date(posterForm.occasionDate), "PPP") : <span>Pick a date</span>}
-                            </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={posterForm.occasionDate ? new Date(posterForm.occasionDate) : undefined}
-                                onSelect={(date) => handlePosterFormChange('occasionDate', date?.toISOString() || '')}
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="poster-details">Extra Details / Amenities</Label>
-                        <Textarea id="poster-details" placeholder="e.g. Live Music, Buffet, Free Entry" value={posterForm.extraDetails} onChange={e => handlePosterFormChange('extraDetails', e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Primary Image</Label>
-                        <Select value={posterForm.primaryImage} onValueChange={value => handlePosterFormChange('primaryImage', value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an image" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                                {allImages.map(image => (
-                                    <SelectItem key={image.id} value={image.src}>
-                                        <div className="flex items-center gap-2">
-                                            <Image src={image.src} alt={image.alt} width={40} height={30} className="rounded-sm object-cover" />
-                                            <span className="truncate">{image.alt}</span>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                         <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-card px-2 text-muted-foreground">OR</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Input id="poster-upload" type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'poster-image-upload', url => handlePosterFormChange('primaryImage', url))} />
-                            {uploadingStates['poster-image-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
-                        </div>
-                         {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
-                    </div>
-                    <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading || uploadingStates['poster-image-upload']}>
-                        {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
-                        Generate Poster
-                    </Button>
-                </div>
-                <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px] p-4">
-                    {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
-                    {!posterGenLoading && generatedPoster && (
-                      <div className="w-full flex-grow flex flex-col items-center justify-center">
-                          <div className="relative w-full flex-grow mb-4">
-                            <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
-                          </div>
-                           <Button asChild className="w-full">
-                            <a href={generatedPoster} download={`la_quita_poster_${Date.now()}.png`}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Download Poster
-                            </a>
-                        </Button>
-                      </div>
-                    )}
-                     {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
-                </div>
-            </CardContent>
-         </Card>
       )}
 
       {activeTab === 'settings' && siteSettings && (

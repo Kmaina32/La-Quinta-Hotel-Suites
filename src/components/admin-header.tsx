@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, PartyPopper } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -43,7 +43,6 @@ export default function AdminHeader() {
     { id: 'rooms', label: 'Rooms', icon: Building2 },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'poster-gen', label: 'Poster Gen', icon: PartyPopper },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

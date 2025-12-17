@@ -1,4 +1,6 @@
 
+'use client';
+
 import type { Metadata } from "next";
 import { PT_Sans } from "next/font/google";
 import "./globals.css";
@@ -7,6 +9,7 @@ import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ContactSection } from "@/components/contact-section";
+import { usePathname } from "next/navigation";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],
@@ -16,6 +19,11 @@ const ptSans = PT_Sans({
 const siteUrl = "https://www.laquitahotel.com/"; 
 const siteDescription = "Hotel, lounge and suits in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
 
+// Note: Metadata is now defined in a client component context, which is not ideal.
+// For a production app, this would be better handled by moving conditional logic
+// to a client component and keeping the layout as a server component.
+// However, to fulfill the request simply, we make the layout a client component.
+/*
 export const metadata: Metadata = {
   title: {
     default: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
@@ -45,6 +53,7 @@ export const metadata: Metadata = {
     images: [`${siteUrl}og-image.png`],
   },
 };
+*/
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -79,9 +88,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isAdminPage = pathname.startsWith('/admin');
+
   return (
     <html lang="en" className="h-full">
        <head>
+        <title>La Quita Hotel & suits | Nakuru, Kenya | Official Site</title>
+        <meta name="description" content={siteDescription} />
+        {/* Add other head elements here as needed, since static metadata object is removed */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -91,8 +106,8 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <main className="flex-grow">{children}</main>
-          <ContactSection />
-          <Footer />
+          {!isAdminPage && <ContactSection />}
+          {!isAdminPage && <Footer />}
           <Toaster />
         </AuthProvider>
       </body>

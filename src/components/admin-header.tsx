@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, BookMarked } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -21,7 +21,7 @@ export default function AdminHeader() {
     // This check runs on the client and determines if the nav should be visible
     const authStatus = sessionStorage.getItem('la-quita-admin-auth') === 'true';
     setIsAuthenticated(authStatus);
-  }, [searchParams]); // Re-run when URL params change, e.g., after login/logout
+  }, [searchParams, pathname]); // Re-run when URL params change or path changes
 
 
   const activeTab = searchParams.get('tab') || 'content';
@@ -42,7 +42,7 @@ export default function AdminHeader() {
   const navLinks = [
     { id: 'content', label: 'Content', icon: ImageIcon },
     { id: 'rooms', label: 'Rooms', icon: Building2 },
-    { id: 'bookings', label: 'Bookings', icon: BookMarked },
+    { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ];
 

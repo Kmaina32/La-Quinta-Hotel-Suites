@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       <div className="flex justify-center items-center h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
             <Logo className="h-24 w-24 text-primary animate-pulse" />
-            <p className="text-muted-foreground">Loading Your Experience...</p>
+            <p className="text-muted-foreground">Preparing Your Escape...</p>
         </div>
       </div>
     );

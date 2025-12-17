@@ -9,27 +9,18 @@ let storage: admin.storage.Storage;
 function initializeAdmin() {
   if (!admin.apps.length) {
     try {
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      let serviceAccountJson: string;
 
-      const serviceAccount = {
-        "type": "service_account",
-        "project_id": process.env.FIREBASE_PROJECT_ID,
-        "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
-        "private_key": privateKey,
-        "client_email": process.env.FIREBASE_CLIENT_EMAIL,
-        "client_id": process.env.FIREBASE_CLIENT_ID,
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.FIREBASE_CLIENT_EMAIL?.replace('@', '%40')}`
-      };
-
-      if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-        throw new Error('Firebase Admin credentials not found in environment variables.');
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64) {
+        serviceAccountJson = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64, 'base64').toString('utf-8');
+      } else {
+        throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 environment variable not found.');
       }
       
+      const serviceAccount = JSON.parse(serviceAccountJson);
+
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+        credential: admin.credential.cert(serviceAccount),
         storageBucket: 'la-quinta-reservations.appspot.com',
       });
       console.log('Firebase Admin SDK initialized successfully.');

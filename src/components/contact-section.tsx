@@ -1,14 +1,46 @@
 
 'use client';
 
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { useState } from 'react';
+import { Mail, MapPin, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
+import { saveMessage } from '@/lib/actions';
 
 export function ContactSection() {
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(false);
+    const [formState, setFormState] = useState({ name: '', email: '', message: '' });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormState({ ...formState, [e.target.id]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await saveMessage(formState);
+            toast({
+                title: 'Message Sent!',
+                description: "Thank you for contacting us. We'll get back to you shortly.",
+            });
+            setFormState({ name: '', email: '', message: '' });
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to send message. Please try again later.',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <section id="contact" className="bg-secondary py-16">
             <div className="container mx-auto">
@@ -55,22 +87,25 @@ export function ContactSection() {
                         <Card>
                             <CardContent className="p-6">
                                 <h3 className="text-2xl font-semibold mb-4">Message Us</h3>
-                                <form className="space-y-4">
+                                <form onSubmit={handleSubmit} className="space-y-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="name">Name</Label>
-                                            <Input id="name" placeholder="Your Name" />
+                                            <Input id="name" placeholder="Your Name" value={formState.name} onChange={handleInputChange} required />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="email">Email</Label>
-                                            <Input id="email" type="email" placeholder="your@email.com" />
+                                            <Input id="email" type="email" placeholder="your@email.com" value={formState.email} onChange={handleInputChange} required />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="message">Message</Label>
-                                        <Textarea id="message" placeholder="Your message..." rows={5} />
+                                        <Textarea id="message" placeholder="Your message..." rows={5} value={formState.message} onChange={handleInputChange} required />
                                     </div>
-                                    <Button type="submit" className="w-full">Send Message</Button>
+                                    <Button type="submit" className="w-full" disabled={loading}>
+                                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Send Message
+                                    </Button>
                                 </form>
                             </CardContent>
                         </Card>

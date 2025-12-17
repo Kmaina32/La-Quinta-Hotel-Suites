@@ -32,3 +32,12 @@ export interface Booking {
     paymentMethod: string;
     bookedOn: string; // ISO string
 }
+
+export interface Message {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  sentAt: string; // ISO string
+  isRead: boolean;
+}

@@ -14,7 +14,7 @@ import { saveMessage } from '@/lib/actions';
 export function ContactSection() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
-    const [formState, setFormState] = useState({ name: '', email: '', message: '' });
+    const [formState, setFormState] = useState({ name: '', email: '', phone: '', message: '' });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormState({ ...formState, [e.target.id]: e.target.value });
@@ -29,7 +29,7 @@ export function ContactSection() {
                 title: 'Message Sent!',
                 description: "Thank you for contacting us. We'll get back to you shortly.",
             });
-            setFormState({ name: '', email: '', message: '' });
+            setFormState({ name: '', email: '', phone: '', message: '' });
         } catch (error) {
             toast({
                 title: 'Error',
@@ -97,6 +97,10 @@ export function ContactSection() {
                                             <Label htmlFor="email">Email</Label>
                                             <Input id="email" type="email" placeholder="your@email.com" value={formState.email} onChange={handleInputChange} required />
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone">Phone Number <span className="text-xs text-muted-foreground">(Optional)</span></Label>
+                                        <Input id="phone" type="tel" placeholder="e.g. 0712 345 678" value={formState.phone} onChange={handleInputChange} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="message">Message</Label>

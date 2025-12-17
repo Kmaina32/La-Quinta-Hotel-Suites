@@ -3,15 +3,16 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { getBookings } from '@/lib/actions';
+import { getBookingsForUser } from '@/lib/actions';
 import type { Booking } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2, Hotel, History } from 'lucide-react';
+import { Loader2, Hotel, History, CheckCircle, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 function BookingItem({ booking }: { booking: Booking }) {
     return (
@@ -20,7 +21,15 @@ function BookingItem({ booking }: { booking: Booking }) {
                 <Image src={booking.roomImage} alt={booking.roomName} fill style={{ objectFit: 'cover' }} />
             </div>
             <div className="flex-grow">
-                <p className="font-semibold">{booking.roomName}</p>
+                <div className="flex justify-between items-start">
+                    <p className="font-semibold">{booking.roomName}</p>
+                    <div className={cn("flex items-center text-xs font-semibold px-2 py-1 rounded-full",
+                        booking.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    )}>
+                        {booking.status === 'confirmed' ? <CheckCircle className="h-3 w-3 mr-1"/> : <XCircle className="h-3 w-3 mr-1"/>}
+                        {booking.status}
+                    </div>
+                </div>
                 <p className="text-sm text-muted-foreground">
                     {format(new Date(booking.checkIn), 'MMM dd, yyyy')} - {format(new Date(booking.checkOut), 'MMM dd, yyyy')}
                 </p>
@@ -39,7 +48,7 @@ export default function BookingsPage() {
     if (user) {
       const fetchBookings = async () => {
         setLoading(true);
-        const userBookings = await getBookings(user.uid);
+        const userBookings = await getBookingsForUser(user.uid);
         setBookings(userBookings);
         setLoading(false);
       };
@@ -70,8 +79,8 @@ export default function BookingsPage() {
   }
 
   const now = new Date();
-  const upcomingBookings = bookings.filter(b => new Date(b.checkIn) >= now);
-  const pastBookings = bookings.filter(b => new Date(b.checkIn) < now);
+  const upcomingBookings = bookings.filter(b => new Date(b.checkIn) >= now && b.status === 'confirmed');
+  const pastBookings = bookings.filter(b => new Date(b.checkIn) < now || b.status === 'cancelled');
 
   return (
     <div className="container mx-auto py-12">
@@ -107,7 +116,7 @@ export default function BookingsPage() {
         {/* Past Bookings */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><History className="h-6 w-6 text-muted-foreground" /> Past</CardTitle>
+            <CardTitle className="flex items-center gap-2"><History className="h-6 w-6 text-muted-foreground" /> Past & Cancelled</CardTitle>
           </CardHeader>
           <CardContent>
              {pastBookings.length > 0 ? (

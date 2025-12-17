@@ -1,19 +1,21 @@
 
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages } from '@/lib/actions';
-import type { Room, EstablishmentImage, Message } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Upload, MessageSquare, Image as ImageIcon, Building2, Eye, EyeOff } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking } from '@/lib/actions';
+import type { Room, EstablishmentImage, Message, Booking } from '@/lib/types';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import AdminHeader from '@/components/admin-header';
 
-const defaultRoom: Omit<Room, 'id'> = {
+const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
   description: '',
   price: 100,
@@ -23,7 +25,9 @@ const defaultRoom: Omit<Room, 'id'> = {
   imageUrl: '',
   images: [],
   type: 'room',
+  inventory: 1,
 };
+
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
@@ -31,17 +35,18 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [galleryImages, setGalleryImages] = useState<EstablishmentImage[]>([]);
   const [heroImage, setHeroImage] = useState('');
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const { toast } = useToast()
 
-  // Refs for file inputs
-  const heroFileRef = useRef<HTMLInputElement>(null);
-  const galleryFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const roomMainFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const roomDetailFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'content';
+
 
   useEffect(() => {
     const checkAuth = () => {
@@ -59,13 +64,15 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roomsData, establishmentData, messagesData] = await Promise.all([
+      const [roomsData, establishmentData, messagesData, bookingsData] = await Promise.all([
         getRooms(),
         getEstablishmentImages(),
         getMessages(),
+        getAllBookings(),
       ]);
       setRooms(roomsData);
       setMessages(messagesData);
+      setBookings(bookingsData);
       const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
       setGalleryImages(sortedGallery);
       setHeroImage(establishmentData.heroImage?.src || '');
@@ -124,7 +131,10 @@ export default function AdminPage() {
         if (image) await updateGalleryImage(id, image.src);
       } else if (type === 'room') {
         const room = rooms.find(r => r.id === id);
-        if (room) await updateRoomDetails(room.id, room);
+        if (room) {
+            const { id: roomId, ...roomData } = room;
+            await updateRoomDetails(roomId, roomData);
+        }
       }
       toast({ title: "Success", description: "Saved successfully!"});
     } catch (error) {
@@ -139,7 +149,7 @@ export default function AdminPage() {
     setSavingStates(prev => ({...prev, ['new-room']: true}));
     try {
       const newRoomId = await addRoom(defaultRoom);
-      setRooms([...rooms, { id: newRoomId, ...defaultRoom }]);
+      setRooms([...rooms, { id: newRoomId, ...defaultRoom, booked: {} }]);
       toast({ title: "Success", description: "New room created. You can now edit it below." });
     } catch(error) {
       console.error('Failed to create room:', error);
@@ -193,7 +203,22 @@ export default function AdminPage() {
     } finally {
        setSavingStates(prev => ({...prev, [id]: false}));
     }
-  }
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) return;
+    setSavingStates(prev => ({...prev, [bookingId]: true}));
+    try {
+      await cancelBooking(bookingId);
+      setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
+      toast({ title: 'Booking Cancelled', description: 'The booking has been successfully cancelled.' });
+    } catch (error: any) {
+      console.error("Failed to cancel booking:", error);
+      toast({ title: "Error", description: error.message || "Failed to cancel booking.", variant: "destructive" });
+    } finally {
+      setSavingStates(prev => ({...prev, [bookingId]: false}));
+    }
+  };
 
   if (loading && !isAuthenticated) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
 
@@ -213,24 +238,26 @@ export default function AdminPage() {
     );
   }
 
+  const getAvailabilityForBooking = (booking: Booking): number => {
+    const room = rooms.find(r => r.id === booking.roomId);
+    if (!room) return 0;
+    const checkInDate = format(new Date(booking.checkIn), 'yyyy-MM-dd');
+    const bookedCount = room.booked?.[checkInDate] || 0;
+    return room.inventory - bookedCount;
+  }
+
   return (
-    <div className="container mx-auto py-12">
-      <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
-      <Tabs defaultValue="content" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="content"><ImageIcon className="mr-2 h-4 w-4" />Content</TabsTrigger>
-          <TabsTrigger value="rooms"><Building2 className="mr-2 h-4 w-4" />Rooms</TabsTrigger>
-          <TabsTrigger value="messages"><MessageSquare className="mr-2 h-4 w-4" />Messages</TabsTrigger>
-        </TabsList>
-        
-        {/* Content Tab */}
-        <TabsContent value="content" className="space-y-6">
+    <>
+    <AdminHeader />
+    <div className="container mx-auto py-8">
+      {activeTab === 'content' && (
+         <div className="space-y-6">
           <Card>
             <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
               <div className="flex items-center gap-2">
-                  <Input type="file" ref={heroFileRef} className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
+                  <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
                   {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
               </div>
               <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
@@ -250,7 +277,7 @@ export default function AdminPage() {
                 <div key={image.id} className="space-y-3 border-t pt-4">
                   {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
                   <div className="flex items-center gap-2">
-                    <Input type="file" ref={ref => galleryFileRefs.current[image.id] = ref} className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
+                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
                      {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                   </div>
                   <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Or paste image URL" />
@@ -264,11 +291,11 @@ export default function AdminPage() {
               ))}
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        {/* Rooms Tab */}
-        <TabsContent value="rooms">
-          <Card>
+        </div>
+      )}
+
+      {activeTab === 'rooms' && (
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Rooms & Facilities</CardTitle>
               <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room']}><PlusCircle className="mr-2 h-4 w-4" />Create New</Button>
             </CardHeader>
@@ -289,6 +316,7 @@ export default function AdminPage() {
                       </Select>
                     </div>
                     <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} /></div>
+                     <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} /></div>
                     {room.type !== 'conference' && <>
                       <div className="space-y-1"><label className="text-sm font-medium">Beds</label><Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} /></div>
                       <div className="space-y-1"><label className="text-sm font-medium">Baths</label><Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} /></div>
@@ -298,7 +326,7 @@ export default function AdminPage() {
                       <label className="text-sm font-medium">Main Image</label>
                       {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={150} height={90} className="rounded-md object-cover" />}
                       <div className="flex items-center gap-2">
-                        <Input type="file" ref={ref => roomMainFileRefs.current[room.id] = ref} className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
+                        <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
                         {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                       </div>
                       <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" />
@@ -309,7 +337,7 @@ export default function AdminPage() {
                         <div key={img.id} className="border-t pt-3 space-y-2">
                           {img.src && <Image src={img.src} alt={img.alt} width={150} height={90} className="rounded-md object-cover" />}
                           <div className="flex items-center gap-2">
-                              <Input type="file" ref={ref => roomDetailFileRefs.current[img.id] = ref} className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${img.id}`, url => handleRoomImageChange(room.id, img.id, url))} />
+                              <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${img.id}`, url => handleRoomImageChange(room.id, img.id, url))} />
                               {uploadingStates[`room-detail-${img.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                               <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
@@ -323,10 +351,68 @@ export default function AdminPage() {
               ))}
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        {/* Messages Tab */}
-        <TabsContent value="messages">
+      )}
+
+      {activeTab === 'bookings' && (
+        <Card>
+            <CardHeader>
+                <CardTitle>Booking Management</CardTitle>
+                <CardDescription>View and manage all reservations.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {bookings.length === 0 && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
+                {bookings.map(booking => {
+                    const availability = getAvailabilityForBooking(booking);
+                    return (
+                        <Card key={booking.id} className={cn("p-4 transition-colors", booking.status === 'cancelled' && 'bg-muted/50')}>
+                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="md:col-span-2 space-y-2">
+                                    <div className="flex items-start justify-between">
+                                        <CardTitle className="text-xl">{booking.roomName}</CardTitle>
+                                        <div className={cn("flex items-center text-sm font-semibold px-2 py-1 rounded-full",
+                                            booking.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                        )}>
+                                            {booking.status === 'confirmed' ? <CheckCircle className="h-4 w-4 mr-1"/> : <XCircle className="h-4 w-4 mr-1"/>}
+                                            {booking.status}
+                                        </div>
+                                    </div>
+                                    
+                                    <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
+                                    <div className="flex items-center gap-4 text-sm">
+                                        <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4"/><span>{format(new Date(booking.checkIn), 'PP')} to {format(new Date(booking.checkOut), 'PP')}</span></div>
+                                        <div className="flex items-center gap-2"><Users className="h-4 w-4"/><span>{booking.nights} night(s)</span></div>
+                                    </div>
+                                    <p className="text-sm">Booked {formatDistanceToNow(new Date(booking.bookedOn), { addSuffix: true })}</p>
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <div className="font-semibold">Total Cost: KES {booking.totalCost.toFixed(2)}</div>
+                                    <div className="text-muted-foreground">Payment: {booking.paymentMethod}</div>
+                                    <div className="flex items-center gap-2">
+                                        <Bed className="h-4 w-4"/>
+                                        <span>Rooms available: {availability}</span>
+                                    </div>
+                                    {booking.status === 'confirmed' && (
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm" 
+                                            className="w-full mt-2" 
+                                            onClick={() => handleCancelBooking(booking.id)}
+                                            disabled={savingStates[booking.id]}
+                                        >
+                                          {savingStates[booking.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
+                                          Cancel Booking
+                                        </Button>
+                                    )}
+                                </div>
+                           </div>
+                        </Card>
+                    )
+                })}
+            </CardContent>
+        </Card>
+      )}
+      
+      {activeTab === 'messages' && (
           <Card>
             <CardHeader><CardTitle>Guest Messages</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -336,6 +422,7 @@ export default function AdminPage() {
                       <div className="flex justify-between items-start">
                           <div>
                               <p className="font-semibold">{message.name} <span className="text-sm font-normal text-muted-foreground">&lt;{message.email}&gt;</span></p>
+                              {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
                               <p className="text-xs text-muted-foreground">{format(new Date(message.sentAt), 'PPp')}</p>
                           </div>
                       </div>
@@ -344,8 +431,8 @@ export default function AdminPage() {
               ))}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      )}
     </div>
+    </>
   );
 }

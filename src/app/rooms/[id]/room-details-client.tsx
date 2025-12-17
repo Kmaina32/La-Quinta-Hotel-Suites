@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard } from 'lucide-react';
+import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle } from 'lucide-react';
 import { createBooking } from '@/lib/actions';
 import type { Room } from '@/lib/types';
-import { format, addDays } from "date-fns";
+import { format, addDays, eachDayOfInterval } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,6 +30,25 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     to: addDays(new Date(), 3),
   });
 
+    const isRoomAvailable = useMemo(() => {
+        if (!date?.from || !date?.to) return false;
+
+        const bookingDates = eachDayOfInterval({
+            start: date.from,
+            end: date.to
+        });
+
+        for (const day of bookingDates) {
+            const dateString = format(day, 'yyyy-MM-dd');
+            const bookedCount = room.booked?.[dateString] || 0;
+            if (bookedCount >= room.inventory) {
+                return false; // Not available on this day
+            }
+        }
+        return true; // Available for all selected dates
+    }, [date, room.booked, room.inventory]);
+
+
   const handleBooking = async (paymentMethod: string) => {
     if (!user) {
        toast({
@@ -42,21 +61,28 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     }
     
     if (!room || !date?.from || !date?.to) {
-        toast({
-            title: "Booking Error",
-            description: "Please select a valid date range.",
-            variant: "destructive",
-        });
+        toast({ title: "Booking Error", description: "Please select a valid date range.", variant: "destructive" });
+        return;
+    }
+
+    if (!isRoomAvailable) {
+        toast({ title: "Not Available", description: "This room is fully booked for the selected dates. Please choose different dates.", variant: "destructive" });
         return;
     }
     
     setIsBooking(true);
     try {
         const nights = Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24));
+        if (nights <= 0) {
+            toast({ title: "Invalid Date Range", description: "Check-out date must be after check-in date.", variant: "destructive"});
+            setIsBooking(false);
+            return;
+        }
         const totalCost = nights * room.price;
 
         const bookingData = {
             userId: user.uid,
+            userEmail: user.email!,
             roomId: room.id,
             roomName: room.name,
             roomImage: room.imageUrl,
@@ -76,11 +102,11 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
 
         router.push('/bookings');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to create booking:", error);
         toast({
             title: "Booking Failed",
-            description: "Something went wrong. Please try again.",
+            description: error.message || "Something went wrong. Please try again.",
             variant: "destructive",
         });
     } finally {
@@ -88,12 +114,11 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     }
   };
 
-  const nights = date?.to && date?.from ? Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24)) : 0;
+  const nights = date?.to && date?.from ? Math.max(0, Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24))) : 0;
   const totalCost = nights * room.price;
 
   return (
     <div className="container mx-auto py-12 px-4">
-      {/* Image Gallery */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-8">
         <div className="relative h-96 w-full rounded-lg overflow-hidden md:col-span-2">
           <Image
@@ -119,7 +144,6 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
         ))}
       </div>
 
-      {/* Room Details & Booking */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2">
           <h1 className="text-4xl font-bold mb-4">{room.name}</h1>
@@ -208,6 +232,12 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     </div>
                   </div>
                 )}
+                {!isRoomAvailable && nights > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-destructive font-semibold bg-destructive/10 p-2 rounded-md">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>Unavailable for selected dates</span>
+                    </div>
+                )}
             </CardContent>
             <CardFooter>
                 <Tabs defaultValue="card" className="w-full">
@@ -228,14 +258,14 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                          <Input id="card" placeholder="Card Number" className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" disabled={isBooking} />
                       </div>
                     </div>
-                    <Button size="lg" className="w-full" onClick={() => handleBooking('Credit Card')} disabled={isBooking || nights <= 0}>
+                    <Button size="lg" className="w-full" onClick={() => handleBooking('Credit Card')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
                       {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       { user ? 'Reserve Now' : 'Login to Book' }
                     </Button>
                   </TabsContent>
                    <TabsContent value="paypal" className="mt-4 text-center">
                       <p className="text-sm text-muted-foreground mb-4">You will be redirected to PayPal to complete your payment.</p>
-                       <Button size="lg" className="w-full" onClick={() => handleBooking('PayPal')} disabled={isBooking || nights <= 0}>
+                       <Button size="lg" className="w-full" onClick={() => handleBooking('PayPal')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
                         {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         { user ? 'Pay with PayPal' : 'Login to Book' }
                       </Button>
@@ -245,7 +275,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                         <Label htmlFor="phone">Phone Number</Label>
                         <Input id="phone" placeholder="e.g. 0712345678" disabled={isBooking} />
                       </div>
-                       <Button size="lg" className="w-full" onClick={() => handleBooking('M-Pesa')} disabled={isBooking || nights <= 0}>
+                       <Button size="lg" className="w-full" onClick={() => handleBooking('M-Pesa')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
                         {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         { user ? 'Pay with M-Pesa' : 'Login to Book' }
                       </Button>

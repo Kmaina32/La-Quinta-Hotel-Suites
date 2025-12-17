@@ -6,8 +6,8 @@ import { Logo } from './logo';
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-primary-foreground">
-      <div className="container mx-auto px-4 py-6">
+    <footer className="p-2 md:p-3">
+      <div className="container mx-auto px-4 py-6 bg-primary text-primary-foreground rounded-xl shadow-lg">
         {/* Centered Brand on Mobile, Start-aligned on Desktop */}
         <div className="flex flex-col items-center md:items-start mb-4">
             <Link href="/" className="flex items-center gap-2 mb-2">

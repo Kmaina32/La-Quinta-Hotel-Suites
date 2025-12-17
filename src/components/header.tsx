@@ -27,9 +27,9 @@ export default function Header() {
   const adminEmail = 'gmaina424@gmail.com';
 
   const navLinks = [
-    { href: '/about', label: 'About' },
-    { href: '/#gallery', label: 'Gallery' },
     { href: '/#rooms', label: 'Rooms' },
+    { href: '/#gallery', label: 'Gallery' },
+    { href: '/about', label: 'About' },
     ...(user ? [{ href: '/bookings', label: 'My Bookings' }] : []),
     ...(user ? [{ href: '/profile', label: 'My Profile' }] : []),
     ...(user && user.email === adminEmail ? [{ href: '/admin', label: 'Admin' }] : []),

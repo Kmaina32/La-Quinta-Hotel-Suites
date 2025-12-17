@@ -3,26 +3,34 @@
 
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
 import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, BookMarked } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 export default function AdminHeader() {
-  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // This check runs on the client and determines if the nav should be visible
+    const authStatus = sessionStorage.getItem('la-quita-admin-auth') === 'true';
+    setIsAuthenticated(authStatus);
+  }, [searchParams]); // Re-run when URL params change, e.g., after login/logout
+
 
   const activeTab = searchParams.get('tab') || 'content';
 
   const handleSignOut = async () => {
     sessionStorage.removeItem('la-quita-admin-auth');
     await signOut(auth);
-    router.push('/');
+    setIsAuthenticated(false); // Update state immediately
+    router.push('/admin'); // Redirect to login
   };
 
   const setTab = (tab: string) => {
@@ -46,20 +54,22 @@ export default function AdminHeader() {
             <Logo className="h-10 w-40 text-primary" />
              <span className="font-semibold text-lg hidden sm:inline border-l pl-4">Admin Panel</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-1 rounded-lg p-1 bg-muted">
-            {navLinks.map(link => (
-              <Button
-                key={link.id}
-                variant={activeTab === link.id ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setTab(link.id)}
-                className={cn("transition-all", activeTab === link.id && 'shadow-sm')}
-              >
-                <link.icon className="mr-2 h-4 w-4" />
-                {link.label}
-              </Button>
-            ))}
-          </nav>
+          {isAuthenticated && (
+            <nav className="hidden md:flex items-center gap-1 rounded-lg p-1 bg-muted">
+              {navLinks.map(link => (
+                <Button
+                  key={link.id}
+                  variant={activeTab === link.id ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setTab(link.id)}
+                  className={cn("transition-all", activeTab === link.id && 'shadow-sm')}
+                >
+                  <link.icon className="mr-2 h-4 w-4" />
+                  {link.label}
+                </Button>
+              ))}
+            </nav>
+          )}
         </div>
         
         <nav className="flex items-center gap-2">
@@ -69,7 +79,7 @@ export default function AdminHeader() {
                 View Site
               </Link>
             </Button>
-          {user && (
+          {isAuthenticated && (
             <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
@@ -78,21 +88,23 @@ export default function AdminHeader() {
         </nav>
       </div>
        {/* Mobile Nav */}
-       <div className="md:hidden mt-2 p-2 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg">
-          <nav className="grid grid-cols-2 gap-2">
-            {navLinks.map(link => (
-              <Button
-                key={link.id}
-                variant={activeTab === link.id ? 'default' : 'ghost'}
-                onClick={() => setTab(link.id)}
-                className={cn("transition-all w-full justify-center", activeTab === link.id && 'shadow-sm')}
-              >
-                <link.icon className="mr-2 h-4 w-4" />
-                {link.label}
-              </Button>
-            ))}
-          </nav>
-       </div>
+       {isAuthenticated && (
+          <div className="md:hidden mt-2 p-2 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg">
+            <nav className="grid grid-cols-2 gap-2">
+              {navLinks.map(link => (
+                <Button
+                  key={link.id}
+                  variant={activeTab === link.id ? 'default' : 'ghost'}
+                  onClick={() => setTab(link.id)}
+                  className={cn("transition-all w-full justify-center", activeTab === link.id && 'shadow-sm')}
+                >
+                  <link.icon className="mr-2 h-4 w-4" />
+                  {link.label}
+                </Button>
+              ))}
+            </nav>
+        </div>
+       )}
     </header>
   );
 }

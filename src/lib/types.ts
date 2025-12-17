@@ -10,6 +10,8 @@ export interface Room {
   imageUrl: string;
   images: { id: string; src: string; alt: string }[];
   type: 'room' | 'conference';
+  inventory: number; // Total number of this room type available
+  booked: Record<string, number>; // Maps date string (YYYY-MM-DD) to number of rooms booked
 }
 
 export interface EstablishmentImage {
@@ -21,7 +23,8 @@ export interface EstablishmentImage {
 
 export interface Booking {
     id: string;
-    userId: string; // Added to associate booking with a user
+    userId: string; 
+    userEmail: string; // Keep user's email for display
     roomId: string;
     roomName: string;
     roomImage: string;
@@ -31,13 +34,20 @@ export interface Booking {
     totalCost: number;
     paymentMethod: string;
     bookedOn: string; // ISO string
+    status: 'confirmed' | 'cancelled';
 }
 
 export interface Message {
-  id: string;
+  id:string;
   name: string;
   email: string;
+  phone?: string; // Optional phone number
   message: string;
   sentAt: string; // ISO string
   isRead: boolean;
+}
+
+export interface UserData {
+    uid: string;
+    email: string | null;
 }

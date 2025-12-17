@@ -2,8 +2,10 @@
 'use server';
 
 import { getDb, getStorage } from '@/lib/firebase-admin';
-import type { Room, EstablishmentImage, Booking, Message } from '@/lib/types';
+import type { Room, EstablishmentImage, Booking, Message, UserData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { format, eachDayOfInterval } from 'date-fns';
+import { FieldValue } from 'firebase-admin/firestore';
 
 // == Image Upload ==
 export async function uploadImage(formData: FormData): Promise<string> {
@@ -25,13 +27,12 @@ export async function uploadImage(formData: FormData): Promise<string> {
         },
     });
 
-    // Make the file publicly accessible
     await fileUpload.makePublic();
     
-    // Return the public URL as a string
     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
+// == Rooms ==
 export async function getRooms(): Promise<Room[]> {
   const db = getDb();
   const roomsCollection = db.collection('rooms');
@@ -55,6 +56,38 @@ export async function getRoom(id: string): Promise<Room | null> {
   return { id: roomSnapshot.id, ...roomSnapshot.data() } as Room;
 }
 
+export async function updateRoomDetails(id: string, room: Partial<Room>) {
+    const db = getDb();
+    const roomDocRef = db.collection('rooms').doc(id);
+    await roomDocRef.update(room);
+    revalidatePath('/');
+    revalidatePath(`/rooms/${id}`);
+    revalidatePath('/admin');
+    revalidatePath('/#rooms');
+}
+
+export async function addRoom(newRoom: Omit<Room, 'id'>) {
+    const db = getDb();
+    const roomRef = await db.collection('rooms').add(newRoom);
+    await roomRef.update({ id: roomRef.id, inventory: 1, booked: {} });
+    revalidatePath('/');
+    revalidatePath('/admin');
+    revalidatePath('/#rooms');
+    return roomRef.id;
+}
+
+export async function deleteRoom(id: string) {
+    const db = getDb();
+    const roomDocRef = db.collection('rooms').doc(id);
+    await roomDocRef.delete();
+    revalidatePath('/');
+    revalidatePath(`/rooms/${id}`);
+    revalidatePath('/admin');
+    revalidatePath('/#rooms');
+}
+
+
+// == Establishment Images ==
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
     const db = getDb();
     const establishmentCollection = db.collection('establishment');
@@ -104,55 +137,58 @@ export async function deleteGalleryImage(id: string) {
     revalidatePath('/admin');
 }
 
-export async function updateRoomDetails(id: string, room: Omit<Room, 'id'>) {
-    const db = getDb();
-    const roomDocRef = db.collection('rooms').doc(id);
-    await roomDocRef.update(room);
-    revalidatePath('/');
-    revalidatePath(`/rooms/${id}`);
-    revalidatePath('/admin');
-    revalidatePath('/#rooms');
-}
-
-export async function addRoom(newRoom: Omit<Room, 'id'>) {
-    const db = getDb();
-    const roomRef = await db.collection('rooms').add(newRoom);
-    revalidatePath('/');
-    revalidatePath('/admin');
-    revalidatePath('/#rooms');
-    return roomRef.id;
-}
-
-export async function deleteRoom(id: string) {
-    const db = getDb();
-    const roomDocRef = db.collection('rooms').doc(id);
-    await roomDocRef.delete();
-    revalidatePath('/');
-    revalidatePath(`/rooms/${id}`);
-    revalidatePath('/admin');
-    revalidatePath('/#rooms');
-}
-
 
 // == Bookings ==
-export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'>) {
+export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn' | 'status'>) {
     const db = getDb();
-    const newBooking = {
-        ...bookingData,
-        bookedOn: new Date().toISOString(),
-    };
-    const bookingRef = await db.collection('bookings').add(newBooking);
+    const roomRef = db.collection('rooms').doc(bookingData.roomId);
+    
+    const transactionError = await db.runTransaction(async (transaction) => {
+        const roomDoc = await transaction.get(roomRef);
+        if (!roomDoc.exists) {
+            return "Room does not exist.";
+        }
+
+        const room = roomDoc.data() as Room;
+        const bookingDates = eachDayOfInterval({
+            start: new Date(bookingData.checkIn),
+            end: new Date(bookingData.checkOut)
+        });
+
+        const updates: Record<string, FieldValue> = {};
+        for (const day of bookingDates) {
+            const dateString = format(day, 'yyyy-MM-dd');
+            const currentBookings = room.booked?.[dateString] || 0;
+            if (currentBookings >= room.inventory) {
+                return `Room is fully booked on ${dateString}.`;
+            }
+            updates[`booked.${dateString}`] = FieldValue.increment(1);
+        }
+        
+        transaction.update(roomRef, updates);
+
+        const newBookingRef = db.collection('bookings').doc();
+        transaction.set(newBookingRef, {
+            ...bookingData,
+            bookedOn: new Date().toISOString(),
+            status: 'confirmed',
+        });
+        
+        return null;
+    });
+
+    if (transactionError) {
+        throw new Error(transactionError);
+    }
     
     revalidatePath('/bookings');
-    
-    return { id: bookingRef.id, ...newBooking };
+    revalidatePath('/admin');
 }
 
-export async function getBookings(userId: string): Promise<Booking[]> {
+
+export async function getBookingsForUser(userId: string): Promise<Booking[]> {
   const db = getDb();
-  const bookingsCollection = db.collection('bookings');
-  // Filter bookings by userId
-  const bookingsSnapshot = await bookingsCollection
+  const bookingsSnapshot = await db.collection('bookings')
     .where('userId', '==', userId)
     .get();
   
@@ -161,9 +197,52 @@ export async function getBookings(userId: string): Promise<Booking[]> {
     ...doc.data(),
   })) as Booking[];
   
-  // Sort the bookings by check-in date in descending order
   return bookingsList.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
 }
+
+export async function getAllBookings(): Promise<Booking[]> {
+    const db = getDb();
+    const bookingsSnapshot = await db.collection('bookings').orderBy('bookedOn', 'desc').get();
+    return bookingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Booking);
+}
+
+export async function cancelBooking(bookingId: string) {
+    const db = getDb();
+    const bookingRef = db.collection('bookings').doc(bookingId);
+
+    const transactionError = await db.runTransaction(async (transaction) => {
+        const bookingDoc = await transaction.get(bookingRef);
+        if (!bookingDoc.exists) return "Booking not found.";
+        
+        const booking = bookingDoc.data() as Booking;
+        if (booking.status === 'cancelled') return "Booking already cancelled.";
+
+        const roomRef = db.collection('rooms').doc(booking.roomId);
+        const roomDoc = await transaction.get(roomRef);
+        if (!roomDoc.exists) return "Room associated with booking not found.";
+
+        const bookingDates = eachDayOfInterval({
+            start: new Date(booking.checkIn),
+            end: new Date(booking.checkOut)
+        });
+
+        const updates: Record<string, FieldValue> = {};
+        for (const day of bookingDates) {
+            const dateString = format(day, 'yyyy-MM-dd');
+            updates[`booked.${dateString}`] = FieldValue.increment(-1);
+        }
+
+        transaction.update(roomRef, updates);
+        transaction.update(bookingRef, { status: 'cancelled' });
+        return null;
+    });
+    
+    if (transactionError) throw new Error(transactionError);
+    
+    revalidatePath('/bookings');
+    revalidatePath('/admin');
+}
+
 
 // == Messages ==
 export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {

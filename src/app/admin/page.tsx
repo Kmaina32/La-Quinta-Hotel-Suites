@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import AdminHeader from '@/components/admin-header';
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
@@ -247,8 +246,6 @@ export default function AdminPage() {
   }
 
   return (
-    <>
-    <AdminHeader />
     <div className="container mx-auto py-8">
       {activeTab === 'content' && (
          <div className="space-y-6">
@@ -433,6 +430,7 @@ export default function AdminPage() {
           </Card>
       )}
     </div>
-    </>
   );
 }
+
+    

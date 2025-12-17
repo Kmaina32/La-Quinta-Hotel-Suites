@@ -13,16 +13,16 @@ const ptSans = PT_Sans({
 });
 
 const siteUrl = "https://www.laquitahotel.com/"; 
-const siteDescription = "Hotel, lounge and suites in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
+const siteDescription = "Hotel, lounge and suits in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
 
 export const metadata: Metadata = {
   title: {
-    default: "La Quita Hotel & Suites | Nakuru, Kenya | Official Site",
-    template: "%s | La Quita Hotel & Suites",
+    default: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
+    template: "%s | La Quita Hotel & suits",
   },
   description: siteDescription,
   openGraph: {
-    title: "La Quita Hotel & Suites | Nakuru, Kenya | Official Site",
+    title: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
     description: siteDescription,
     url: siteUrl,
     siteName: "La Quita",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
         url: `${siteUrl}og-image.png`, // Using a local image
         width: 1200,
         height: 630,
-        alt: "La Quita Hotel & Suites"
+        alt: "La Quita Hotel & suits"
       },
     ],
     locale: 'en_US',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "La Quita Hotel & Suites | Nakuru, Kenya | Official Site",
+    title: "La Quita Hotel & suits | Nakuru, Kenya | Official Site",
     description: siteDescription,
     images: [`${siteUrl}og-image.png`],
   },
@@ -49,7 +49,7 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "url": siteUrl,
-  "name": "La Quita - Hotel, Lounge & Suites",
+  "name": "La Quita - Hotel, Lounge & suits",
   "potentialAction": [
     {
       "@type": "SearchAction",

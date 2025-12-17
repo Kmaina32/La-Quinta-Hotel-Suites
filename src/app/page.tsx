@@ -21,7 +21,7 @@ export default async function Home() {
         <div className="absolute inset-4 md:inset-8 rounded-2xl overflow-hidden">
           <Image
             src={heroImage?.src || "https://picsum.photos/1200/800"}
-            alt={heroImage?.alt || "La Quita Hotel & Suites exterior"}
+            alt={heroImage?.alt || "La Quita Hotel & suits exterior"}
             fill
             style={{ objectFit: 'cover' }}
             className="brightness-50"

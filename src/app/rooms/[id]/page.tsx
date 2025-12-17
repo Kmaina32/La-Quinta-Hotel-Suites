@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     title: room.name,
     description: siteDescription,
     openGraph: {
-      title: `${room.name} | La Quita Hotel & Suites`,
+      title: `${room.name} | La Quita Hotel & suits`,
       description: siteDescription,
       images: [
         {
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     },
      twitter: {
       card: 'summary_large_image',
-      title: `${room.name} | La Quita Hotel & Suites`,
+      title: `${room.name} | La Quita Hotel & suits`,
       description: siteDescription,
       images: [room.imageUrl],
     },

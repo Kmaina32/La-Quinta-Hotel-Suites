@@ -1,6 +1,5 @@
 
 import admin from 'firebase-admin';
-import 'dotenv/config';
 
 // This is a singleton to ensure we only initialize the app once.
 let db: admin.firestore.Firestore;
@@ -13,8 +12,9 @@ function initializeAdmin() {
         throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 environment variable not found.');
       }
 
-      const serviceAccountJson = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64, 'base64').toString('utf-8');
-      const serviceAccount = JSON.parse(serviceAccountJson);
+      const serviceAccountJsonString = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64, 'base64').toString('utf-8');
+      
+      const serviceAccount = JSON.parse(serviceAccountJsonString.replace(/\\n/g, '\n'));
 
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),

@@ -6,11 +6,29 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { getBookings } from '@/lib/actions';
 import type { Booking } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Hotel, History } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
+function BookingItem({ booking }: { booking: Booking }) {
+    return (
+        <div className="flex items-start gap-4 py-4">
+            <div className="relative h-24 w-24 rounded-lg overflow-hidden flex-shrink-0">
+                <Image src={booking.roomImage} alt={booking.roomName} fill style={{ objectFit: 'cover' }} />
+            </div>
+            <div className="flex-grow">
+                <p className="font-semibold">{booking.roomName}</p>
+                <p className="text-sm text-muted-foreground">
+                    {format(new Date(booking.checkIn), 'MMM dd, yyyy')} - {format(new Date(booking.checkOut), 'MMM dd, yyyy')}
+                </p>
+                <p className="text-sm text-muted-foreground">{booking.nights} night(s) &bull; KES {booking.totalCost.toFixed(2)}</p>
+            </div>
+        </div>
+    )
+}
 
 export default function BookingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -59,81 +77,52 @@ export default function BookingsPage() {
     <div className="container mx-auto py-12">
       <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
       <p className="text-muted-foreground mb-8">
-        Welcome, {user.email}! Here are your upcoming and past reservations.
+        Welcome, {user.email}! Here are your reservations.
       </p>
 
-      <div className="space-y-12">
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Upcoming Bookings</h2>
-          {upcomingBookings.length > 0 ? (
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingBookings.map(booking => (
-                <Card key={booking.id} className="overflow-hidden">
-                   <CardContent className="p-0">
-                    <div className="relative h-56 w-full">
-                       <Image src={booking.roomImage} alt={booking.roomName} fill style={{ objectFit: 'cover' }} />
-                    </div>
-                  </CardContent>
-                  <CardHeader>
-                    <CardTitle>{booking.roomName}</CardTitle>
-                    <CardDescription>
-                      {format(new Date(booking.checkIn), 'EEE, MMM dd, yyyy')} - {format(new Date(booking.checkOut), 'EEE, MMM dd, yyyy')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter className="flex justify-between text-sm">
-                    <p className="font-semibold">Total: KES {booking.totalCost.toFixed(2)}</p>
-                    <p className="text-muted-foreground">{booking.nights} night(s)</p>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>No Upcoming Bookings</CardTitle>
-                <CardDescription>
-                  You have no upcoming reservations. Why not book a stay with us?
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-        </section>
+      <div className="grid gap-8 md:grid-cols-2">
+        {/* Upcoming Bookings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Hotel className="h-6 w-6 text-primary" /> Upcoming</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcomingBookings.length > 0 ? (
+                <div className="divide-y">
+                    {upcomingBookings.map((booking, index) => (
+                        <BookingItem key={booking.id} booking={booking}/>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">You have no upcoming reservations.</p>
+                    <Button asChild>
+                        <Link href="/#rooms">Book a Stay</Link>
+                    </Button>
+                </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Past Bookings</h2>
-           {pastBookings.length > 0 ? (
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {pastBookings.map(booking => (
-                 <Card key={booking.id} className="overflow-hidden opacity-75">
-                   <CardContent className="p-0">
-                    <div className="relative h-56 w-full">
-                       <Image src={booking.roomImage} alt={booking.roomName} fill style={{ objectFit: 'cover' }} />
-                    </div>
-                  </CardContent>
-                  <CardHeader>
-                    <CardTitle>{booking.roomName}</CardTitle>
-                    <CardDescription>
-                      {format(new Date(booking.checkIn), 'EEE, MMM dd, yyyy')} - {format(new Date(booking.checkOut), 'EEE, MMM dd, yyyy')}
-                    </CardDescription>
-                  </CardHeader>
-                   <CardFooter className="flex justify-between text-sm">
-                    <p className="font-semibold">Total: KES {booking.totalCost.toFixed(2)}</p>
-                    <p className="text-muted-foreground">{booking.nights} night(s)</p>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="opacity-70">
-              <CardHeader>
-                <CardTitle>No Past Bookings</CardTitle>
-                <CardDescription>
-                  You have no past reservations. We hope to see you soon!
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-        </section>
+        {/* Past Bookings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><History className="h-6 w-6 text-muted-foreground" /> Past</CardTitle>
+          </CardHeader>
+          <CardContent>
+             {pastBookings.length > 0 ? (
+                 <div className="divide-y">
+                    {pastBookings.map(booking => (
+                        <BookingItem key={booking.id} booking={booking}/>
+                    ))}
+                </div>
+             ) : (
+                <div className="text-center py-8">
+                    <p className="text-muted-foreground">You have no past reservations.</p>
+                </div>
+             )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

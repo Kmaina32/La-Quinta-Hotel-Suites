@@ -5,13 +5,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -29,9 +37,8 @@ export default function Header() {
   const navLinks = [
     { href: '/#rooms', label: 'Rooms' },
     { href: '/#gallery', label: 'Gallery' },
-    { href: '/about', label: 'About' },
     ...(user ? [{ href: '/bookings', label: 'Bookings' }] : []),
-    ...(user ? [{ href: '/profile', label: 'Profile' }] : []),
+    { href: '/about', label: 'About' },
     ...(user && user.email === adminEmail ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 
@@ -66,7 +73,20 @@ export default function Header() {
 
         <div className="hidden md:flex items-center gap-2">
             {user ? (
-              <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                     <span className="sr-only">User menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/profile">Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" asChild>
@@ -108,6 +128,20 @@ export default function Header() {
                    {link.label}
                  </Link>
               ))}
+              {user && (
+                 <Link
+                    href='/profile'
+                    onClick={() => setIsMenuOpen(false)}
+                    className={cn(
+                      'text-lg transition-colors',
+                      pathname === '/profile'
+                        ? 'text-primary font-semibold'
+                        : 'text-muted-foreground hover:text-primary'
+                    )}
+                  >
+                   Profile
+                 </Link>
+              )}
               <div className="flex flex-col items-center gap-4 mt-4 w-full px-6">
                 {user ? (
                     <Button size="lg" variant="outline" className="w-full" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>Sign Out</Button>

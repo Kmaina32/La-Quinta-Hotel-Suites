@@ -38,22 +38,25 @@ export async function createPoster(input: CreatePosterInput): Promise<CreatePost
   return createPosterFlow(input);
 }
 
-const prompt = ai.definePrompt({
-    name: 'createPosterPrompt',
-    input: { schema: CreatePosterInputSchema },
-    output: { schema: CreatePosterOutputSchema },
-    prompt: `
+const createPosterFlow = ai.defineFlow(
+  {
+    name: 'createPosterFlow',
+    inputSchema: CreatePosterInputSchema,
+    outputSchema: CreatePosterOutputSchema,
+  },
+  async (input) => {
+    const promptText = `
       You are a professional graphic designer creating a promotional poster for a hotel named "La Quita Hotel & Suites".
       Your task is to generate a visually appealing poster based on the user's request.
 
       **Instructions:**
-      1.  **Primary Image:** Use the provided primary image as the main background or a prominent feature of the poster. The image url is {{{primaryImage}}}.
-      2.  **Logo Integration:** You MUST incorporate the hotel's logo. The logo is provided as a data URI: {{media url="${logoDataUri}"}}. Place it tastefully, for example, in a corner or at the top/bottom center.
+      1.  **Primary Image:** Use the provided primary image as the main background or a prominent feature of the poster.
+      2.  **Logo Integration:** You MUST incorporate the hotel's logo. The logo is provided as the second media part. Place it tastefully, for example, in a corner or at the top/bottom center.
       3.  **Text Content:**
-          *   **Title:** The main headline is "{{{title}}}". This should be the most prominent text.
-          *   **Subtitle:** A smaller headline is "{{{subtitle}}}".
-          *   **Occasion Date:** If provided, include this date: "{{{occasionDate}}}".
-          *   **Extra Details:** Include these details, perhaps as a list with icons or in a stylized text block: "{{{extraDetails}}}".
+          *   **Title:** The main headline is "${input.title}". This should be the most prominent text.
+          *   **Subtitle:** A smaller headline is "${input.subtitle}".
+          *   **Occasion Date:** If provided, include this date: "${input.occasionDate}".
+          *   **Extra Details:** Include these details, perhaps as a list with icons or in a stylized text block: "${input.extraDetails}".
       4.  **Style and Layout:**
           *   The overall style should be modern, elegant, and professional, suitable for a luxury hotel.
           *   Use a clear, readable font hierarchy.
@@ -62,19 +65,15 @@ const prompt = ai.definePrompt({
       
       **Final Output:**
       Generate a single poster image as a PNG and return it as a data URI.
-    `,
-});
+    `;
 
-const createPosterFlow = ai.defineFlow(
-  {
-    name: 'createPosterFlow',
-    inputSchema: CreatePosterInputSchema,
-    outputSchema: CreatePosterOutputSchema,
-  },
-  async (input) => {
     const { media } = await ai.generate({
         model: 'googleai/gemini-2.5-flash-image-preview',
-        prompt: await prompt.render({ input }),
+        prompt: [
+            { text: promptText },
+            { media: { url: input.primaryImage } },
+            { media: { url: logoDataUri } },
+        ],
         config: {
             responseModalities: ['IMAGE'],
         },

@@ -242,8 +242,6 @@ export default function AdminPage() {
   const getAvailabilityForBooking = (booking: Booking): number => {
     const room = rooms.find(r => r.id === booking.roomId);
     if (!room) return 0;
-    // For a booking, we check one of its dates. This is a simplification.
-    // A full check would verify all dates of the booking, but this gives a quick hint.
     const checkInDate = format(new Date(booking.checkIn), 'yyyy-MM-dd');
     const bookedCount = room.booked?.[checkInDate] || 0;
     return room.inventory - bookedCount;
@@ -263,46 +261,54 @@ export default function AdminPage() {
   return (
     <div className="container mx-auto py-8">
       {activeTab === 'content' && (
-         <div className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
-              <div className="flex items-center gap-2">
-                  <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
-                  {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
-              </div>
-              <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
-              <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload']}>
-                {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero Image
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
-              <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image']}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {galleryImages.map(image => (
-                <div key={image.id} className="space-y-3 border-t pt-4">
-                  {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
-                  <div className="flex items-center gap-2">
-                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
-                     {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                  </div>
-                  <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Or paste image URL" />
-                  <div className="flex items-center gap-2">
-                    <Button onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`]}>
-                      {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+                <Card>
+                    <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
+                    <CardContent className="space-y-3">
+                    {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
+                    <div className="flex items-center gap-2">
+                        <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
+                        {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+                    </div>
+                    <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
+                    <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload']}>
+                        {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
                     </Button>
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
+                    <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image']}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                    </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    {galleryImages.map(image => (
+                        <div key={image.id} className="space-y-2 border-t pt-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
+                                <div className="space-y-2">
+                                     <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Paste image URL" />
+                                     <div className="flex items-center gap-2">
+                                        <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
+                                        {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                                <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`]}>
+                                {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
+                                </Button>
+                                <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                        </div>
+                    ))}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       )}
 
@@ -442,3 +448,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

@@ -18,7 +18,7 @@ function initializeAdmin() {
 
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        storageBucket: 'la-quinta-reservations.appspot.com',
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'la-quinta-reservations.appspot.com',
       });
       console.log('Firebase Admin SDK initialized successfully.');
     } catch (error: any) {

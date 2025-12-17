@@ -139,7 +139,7 @@ export async function deleteGalleryImage(id: string) {
 
 
 // == Bookings ==
-export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn' | 'status'>) {
+export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn' | 'status'>, isReservation: boolean = false) {
     const db = getDb();
     const roomRef = db.collection('rooms').doc(bookingData.roomId);
     
@@ -156,7 +156,8 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
         });
 
         const updates: Record<string, FieldValue> = {};
-        for (const day of bookingDates) {
+        // Don't check availability for the last day (check-out day)
+        for (const day of bookingDates.slice(0, -1)) {
             const dateString = format(day, 'yyyy-MM-dd');
             const currentBookings = room.booked?.[dateString] || 0;
             if (currentBookings >= room.inventory) {
@@ -171,7 +172,7 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
         transaction.set(newBookingRef, {
             ...bookingData,
             bookedOn: new Date().toISOString(),
-            status: 'confirmed',
+            status: isReservation ? 'pending' : 'confirmed',
         });
         
         return null;
@@ -219,20 +220,27 @@ export async function cancelBooking(bookingId: string) {
 
         const roomRef = db.collection('rooms').doc(booking.roomId);
         const roomDoc = await transaction.get(roomRef);
-        if (!roomDoc.exists) return "Room associated with booking not found.";
+        // If room doesn't exist, we can still cancel the booking, but can't update inventory.
+        if (roomDoc.exists) {
+            const bookingDates = eachDayOfInterval({
+                start: new Date(booking.checkIn),
+                end: new Date(booking.checkOut)
+            });
 
-        const bookingDates = eachDayOfInterval({
-            start: new Date(booking.checkIn),
-            end: new Date(booking.checkOut)
-        });
-
-        const updates: Record<string, FieldValue> = {};
-        for (const day of bookingDates) {
-            const dateString = format(day, 'yyyy-MM-dd');
-            updates[`booked.${dateString}`] = FieldValue.increment(-1);
+            const updates: Record<string, FieldValue> = {};
+             // Don't decrement inventory for the last day (check-out day)
+            for (const day of bookingDates.slice(0, -1)) {
+                const dateString = format(day, 'yyyy-MM-dd');
+                // Decrement only if the current count is > 0
+                if ((roomDoc.data()?.booked?.[dateString] || 0) > 0) {
+                  updates[`booked.${dateString}`] = FieldValue.increment(-1);
+                }
+            }
+            if (Object.keys(updates).length > 0) {
+              transaction.update(roomRef, updates);
+            }
         }
-
-        transaction.update(roomRef, updates);
+        
         transaction.update(bookingRef, { status: 'cancelled' });
         return null;
     });

@@ -34,7 +34,7 @@ export interface Booking {
     totalCost: number;
     paymentMethod: string;
     bookedOn: string; // ISO string
-    status: 'confirmed' | 'cancelled';
+    status: 'confirmed' | 'cancelled' | 'pending';
 }
 
 export interface Message {

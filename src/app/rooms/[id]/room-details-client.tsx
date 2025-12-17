@@ -10,10 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from '@/components/ui/separator';
 import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle } from 'lucide-react';
 import { createBooking } from '@/lib/actions';
 import type { Room } from '@/lib/types';
-import { format, addDays, eachDayOfInterval } from "date-fns";
+import { format, addDays, eachDayOfInterval, differenceInCalendarDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
@@ -27,7 +28,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
-    to: addDays(new Date(), 3),
+    to: addDays(new Date(), 1),
   });
 
     const isRoomAvailable = useMemo(() => {
@@ -38,7 +39,8 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
             end: date.to
         });
 
-        for (const day of bookingDates) {
+        // Don't check availability for the last day (check-out day)
+        for (const day of bookingDates.slice(0, -1)) {
             const dateString = format(day, 'yyyy-MM-dd');
             const bookedCount = room.booked?.[dateString] || 0;
             if (bookedCount >= room.inventory) {
@@ -56,12 +58,18 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
           description: "You need to be logged in to make a booking.",
           variant: "destructive",
        });
-       router.push('/login');
+       router.push('/login?redirect=/rooms/' + room.id);
        return;
     }
     
     if (!room || !date?.from || !date?.to) {
         toast({ title: "Booking Error", description: "Please select a valid date range.", variant: "destructive" });
+        return;
+    }
+
+    const nights = differenceInCalendarDays(date.to, date.from);
+    if (nights <= 0) {
+        toast({ title: "Invalid Date Range", description: "Check-out date must be after check-in date.", variant: "destructive"});
         return;
     }
 
@@ -72,13 +80,8 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     
     setIsBooking(true);
     try {
-        const nights = Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24));
-        if (nights <= 0) {
-            toast({ title: "Invalid Date Range", description: "Check-out date must be after check-in date.", variant: "destructive"});
-            setIsBooking(false);
-            return;
-        }
         const totalCost = nights * room.price;
+        const isReservation = paymentMethod === 'Pay at Hotel';
 
         const bookingData = {
             userId: user.uid,
@@ -93,11 +96,11 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
             paymentMethod,
         };
 
-        await createBooking(bookingData);
+        await createBooking(bookingData, isReservation);
 
         toast({
-            title: "Booking Successful!",
-            description: `Your stay at ${room.name} has been reserved.`,
+            title: isReservation ? "Reservation Successful!" : "Booking Successful!",
+            description: `Your stay at ${room.name} has been ${isReservation ? 'reserved' : 'booked'}.`,
         });
 
         router.push('/bookings');
@@ -114,7 +117,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     }
   };
 
-  const nights = date?.to && date?.from ? Math.max(0, Math.round((date.to.getTime() - date.from.getTime()) / (1000 * 3600 * 24))) : 0;
+  const nights = date?.to && date?.from ? Math.max(0, differenceInCalendarDays(date.to, date.from)) : 0;
   const totalCost = nights * room.price;
 
   return (
@@ -239,7 +242,15 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     </div>
                 )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col">
+                <Button size="lg" className="w-full" onClick={() => handleBooking('Pay at Hotel')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                    {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    { user ? 'Reserve Now, Pay at Hotel' : 'Login to Reserve' }
+                </Button>
+                <div className="relative w-full my-4">
+                    <Separator />
+                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">OR PAY NOW WITH</span>
+                </div>
                 <Tabs defaultValue="card" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="card" disabled={isBooking}>Card</TabsTrigger>
@@ -260,7 +271,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     </div>
                     <Button size="lg" className="w-full" onClick={() => handleBooking('Credit Card')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
                       {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      { user ? 'Reserve Now' : 'Login to Book' }
+                      { user ? 'Pay & Book Now' : 'Login to Book' }
                     </Button>
                   </TabsContent>
                    <TabsContent value="paystack" className="mt-4 text-center">
@@ -282,7 +293,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                    </TabsContent>
                 </Tabs>
             </CardFooter>
-            <p className="text-xs text-muted-foreground text-center pb-4">You won't be charged yet</p>
+            
           </Card>
         </div>
       </div>

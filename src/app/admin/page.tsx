@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -89,6 +89,8 @@ export default function AdminPage() {
       sessionStorage.setItem('la-quita-admin-auth', 'true');
       setIsAuthenticated(true);
       fetchData();
+      // Force re-render of header
+      router.replace(pathname + '?' + searchParams.toString());
     } else {
       toast({ title: "Login Failed", description: "Incorrect password", variant: "destructive" });
     }
@@ -240,9 +242,22 @@ export default function AdminPage() {
   const getAvailabilityForBooking = (booking: Booking): number => {
     const room = rooms.find(r => r.id === booking.roomId);
     if (!room) return 0;
+    // For a booking, we check one of its dates. This is a simplification.
+    // A full check would verify all dates of the booking, but this gives a quick hint.
     const checkInDate = format(new Date(booking.checkIn), 'yyyy-MM-dd');
     const bookedCount = room.booked?.[checkInDate] || 0;
     return room.inventory - bookedCount;
+  }
+
+  const getStatusChip = (status: Booking['status']) => {
+    switch(status) {
+        case 'confirmed':
+            return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1"/>Confirmed</div>;
+        case 'pending':
+            return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1"/>Pending</div>;
+        case 'cancelled':
+            return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1"/>Cancelled</div>;
+    }
   }
 
   return (
@@ -350,11 +365,11 @@ export default function AdminPage() {
           </Card>
       )}
 
-      {activeTab === 'bookings' && (
+      {activeTab === 'transactions' && (
         <Card>
             <CardHeader>
-                <CardTitle>Booking Management</CardTitle>
-                <CardDescription>View and manage all reservations.</CardDescription>
+                <CardTitle>Transaction Management</CardTitle>
+                <CardDescription>View and manage all reservations and payments.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {bookings.length === 0 && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
@@ -366,12 +381,7 @@ export default function AdminPage() {
                                 <div className="md:col-span-2 space-y-2">
                                     <div className="flex items-start justify-between">
                                         <CardTitle className="text-xl">{booking.roomName}</CardTitle>
-                                        <div className={cn("flex items-center text-sm font-semibold px-2 py-1 rounded-full",
-                                            booking.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                        )}>
-                                            {booking.status === 'confirmed' ? <CheckCircle className="h-4 w-4 mr-1"/> : <XCircle className="h-4 w-4 mr-1"/>}
-                                            {booking.status}
-                                        </div>
+                                        {getStatusChip(booking.status)}
                                     </div>
                                     
                                     <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
@@ -388,7 +398,7 @@ export default function AdminPage() {
                                         <Bed className="h-4 w-4"/>
                                         <span>Rooms available: {availability}</span>
                                     </div>
-                                    {booking.status === 'confirmed' && (
+                                    {booking.status !== 'cancelled' && (
                                         <Button 
                                             variant="destructive" 
                                             size="sm" 

@@ -6,14 +6,49 @@ export function Logo(props: React.SVGProps<SVGSVGElement>) {
     <svg
       width="1em"
       height="1em"
-      viewBox="0 0 120 120"
+      viewBox="0 0 200 60"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-        <path d="M32 25L32 95L44 95L44 37L68 37L68 25L32 25Z" fill="currentColor" className="text-primary" />
-        <path d="M75 55C75 43.9543 83.9543 35 95 35C106.046 35 115 43.9543 115 55C115 66.0457 106.046 75 95 75C83.9543 75 75 66.0457 75 55ZM87 55C87 59.4183 90.5817 63 95 63C99.4183 63 103 59.4183 103 55C103 50.5817 99.4183 47 95 47C90.5817 47 87 50.5817 87 55Z" fill="currentColor" className="text-primary/80"/>
-        <path d="M101.998 68.9976L115.126 82.1259" stroke="currentColor" strokeWidth="6" strokeLinecap="round" className="text-primary/80"/>
+      <text 
+        x="10" 
+        y="45" 
+        fontFamily="'PT Serif', serif" 
+        fontSize="40" 
+        fontWeight="bold" 
+        fill="hsl(var(--foreground))"
+      >
+        L
+      </text>
+      <text 
+        x="40" 
+        y="45" 
+        fontFamily="'PT Serif', serif" 
+        fontSize="40" 
+        fontWeight="bold" 
+        fill="hsl(var(--primary))"
+      >
+        Q
+      </text>
+      <text 
+        x="80" 
+        y="30" 
+        fontFamily="'PT Sans', sans-serif" 
+        fontSize="16" 
+        fill="hsl(var(--foreground))"
+      >
+        Hotel
+      </text>
+      <text 
+        x="80" 
+        y="50" 
+        fontFamily="'PT Sans', sans-serif" 
+        fontSize="16" 
+        fill="hsl(var(--foreground))"
+      >
+        & Suites
+      </text>
     </svg>
   );
 }

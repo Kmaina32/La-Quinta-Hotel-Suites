@@ -7,21 +7,16 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 export default function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const authStatus = sessionStorage.getItem('la-quita-admin-auth') === 'true';
@@ -42,6 +37,7 @@ export default function AdminHeader() {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', tab);
     router.push(`${pathname}?${params.toString()}`);
+    setIsMenuOpen(false);
   };
 
   const navLinks = [
@@ -94,32 +90,50 @@ export default function AdminHeader() {
                 </Button>
               </div>
               <div className="md:hidden">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-6 w-6" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {navLinks.map(link => (
-                      <DropdownMenuItem key={link.id} onClick={() => setTab(link.id)}>
-                        <link.icon className="mr-2 h-4 w-4" />
-                        <span>{link.label}</span>
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign Out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                  {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
               </div>
             </>
           )}
         </div>
       </div>
+       {isMenuOpen && isAuthenticated && (
+        <div className="md:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
+          <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg">
+            <nav className="flex flex-col items-center gap-2 py-6">
+              {navLinks.map((link) => (
+                <button
+                  key={link.id}
+                  onClick={() => setTab(link.id)}
+                  className={cn(
+                    'flex items-center w-full justify-center text-lg transition-colors p-2',
+                    activeTab === link.id
+                      ? 'text-primary font-semibold'
+                      : 'text-muted-foreground hover:text-primary'
+                  )}
+                >
+                  <link.icon className="mr-2 h-5 w-5" />
+                  {link.label}
+                </button>
+              ))}
+              <div className="border-t w-full my-2" />
+              <Button
+                variant="ghost"
+                className="w-full text-lg text-muted-foreground hover:text-primary"
+                onClick={() => {
+                  handleSignOut();
+                  setIsMenuOpen(false);
+                }}
+              >
+                <LogOut className="mr-2 h-5 w-5" />
+                Sign Out
+              </Button>
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
-

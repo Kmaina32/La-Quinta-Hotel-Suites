@@ -15,6 +15,24 @@ function initializeAdmin() {
   // Check if the app is already initialized
   if (!admin.apps.length) {
     try {
+<<<<<<< HEAD
+=======
+      const encoded = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64;
+
+      if (!encoded) {
+        throw new Error(
+          'FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 environment variable not found.'
+        );
+      }
+
+      // Decode Base64 to a string
+      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+      
+      // IMPORTANT: Parse the decoded string into a JSON object first.
+      const serviceAccount = JSON.parse(decoded);
+
+      // Now, initialize the app, but correct the private key format within the cert object.
+>>>>>>> 1825bba (Try fixing this error: `Console SyntaxError: Bad control character in st)
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         storageBucket: 'la-quinta-reservations.appspot.com',

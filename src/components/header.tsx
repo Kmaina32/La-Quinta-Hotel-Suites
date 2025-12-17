@@ -30,8 +30,8 @@ export default function Header() {
     { href: '/#rooms', label: 'Rooms' },
     { href: '/#gallery', label: 'Gallery' },
     { href: '/about', label: 'About' },
-    ...(user ? [{ href: '/bookings', label: 'My Bookings' }] : []),
-    ...(user ? [{ href: '/profile', label: 'My Profile' }] : []),
+    ...(user ? [{ href: '/bookings', label: 'Bookings' }] : []),
+    ...(user ? [{ href: '/profile', label: 'Profile' }] : []),
     ...(user && user.email === adminEmail ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 

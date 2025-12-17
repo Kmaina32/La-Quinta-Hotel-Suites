@@ -7,6 +7,7 @@ import { Bath, BedDouble, User } from 'lucide-react';
 import { getRooms, getEstablishmentImages } from '@/lib/actions';
 import { GalleryCarousel } from '@/components/gallery-carousel';
 import { SeoStructuredData } from '@/components/seo-structured-data';
+import { HeroBookingForm } from '@/components/hero-booking-form';
 
 export default async function Home() {
   const rooms = await getRooms();
@@ -17,7 +18,7 @@ export default async function Home() {
     <>
       <SeoStructuredData />
       {/* Hero Section */}
-      <section className="relative h-[60vh] md:h-[80vh] w-full flex items-center justify-center text-white p-4">
+      <section className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-white p-4">
         <div className="absolute inset-4 md:inset-8 rounded-2xl overflow-hidden">
           <Image
             src={heroImage?.src || "https://picsum.photos/1200/800"}
@@ -29,16 +30,14 @@ export default async function Home() {
             priority
           />
         </div>
-        <div className="relative z-10 text-center p-4">
+        <div className="relative z-10 text-center p-4 flex flex-col items-center">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
             Welcome to La Quita
           </h1>
           <p className="mt-4 text-lg md:text-2xl max-w-2xl">
             Experience unparalleled luxury and comfort in the heart of the city.
           </p>
-          <Button asChild size="lg" className="mt-8">
-            <Link href="#rooms">Explore Rooms</Link>
-          </Button>
+          <HeroBookingForm />
         </div>
       </section>
 

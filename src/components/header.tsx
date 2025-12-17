@@ -39,7 +39,7 @@ export default function Header() {
       <div className="container mx-auto flex justify-between items-center h-16 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg px-4">
         <Link href="/" className="flex items-center gap-2">
           <Logo className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold">La Quita Hotel & suits</span>
+          <span className="text-2xl font-bold">L.Q</span>
         </Link>
         
         {/* Desktop Navigation */}

@@ -6,14 +6,14 @@ export function Logo(props: React.SVGProps<SVGSVGElement>) {
     <svg
       width="1em"
       height="1em"
-      viewBox="0 0 24 24"
+      viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-        <path d="M6 6V18H9V10H14V6H6Z" fill="currentColor" className="text-primary" />
-        <path d="M15 6C13.3431 6 12 7.34315 12 9V15C12 16.6569 13.3431 18 15 18H18C19.6569 18 21 16.6569 21 15V9C21 7.34315 19.6569 6 18 6H15ZM15 8H18C18.5523 8 19 8.44772 19 9V15C19 15.5523 18.5523 16 18 16H15C14.4477 16 14 15.5523 14 15V9C14 8.44772 14.4477 8 15 8Z" fill="currentColor" className="text-primary/80"/>
-        <path d="M17 15L20 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-primary/80"/>
+        <path d="M32 25L32 95L44 95L44 37L68 37L68 25L32 25Z" fill="currentColor" className="text-primary" />
+        <path d="M75 55C75 43.9543 83.9543 35 95 35C106.046 35 115 43.9543 115 55C115 66.0457 106.046 75 95 75C83.9543 75 75 66.0457 75 55ZM87 55C87 59.4183 90.5817 63 95 63C99.4183 63 103 59.4183 103 55C103 50.5817 99.4183 47 95 47C90.5817 47 87 50.5817 87 55Z" fill="currentColor" className="text-primary/80"/>
+        <path d="M101.998 68.9976L115.126 82.1259" stroke="currentColor" strokeWidth="6" strokeLinecap="round" className="text-primary/80"/>
     </svg>
   );
 }

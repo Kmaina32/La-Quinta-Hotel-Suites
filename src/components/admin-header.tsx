@@ -73,7 +73,7 @@ export default function AdminHeader() {
           )}
         </div>
         
-        <nav className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
            <Button variant="ghost" asChild>
               <Link href="/">
                 <Home className="mr-2 h-4 w-4" />
@@ -86,7 +86,7 @@ export default function AdminHeader() {
                 Sign Out
             </Button>
           )}
-        </nav>
+        </div>
       </div>
        {/* Mobile Nav */}
        {isAuthenticated && (

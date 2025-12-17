@@ -20,9 +20,11 @@ export default function Header() {
     router.push('/');
   };
 
+  const adminEmail = 'gmaina424@gmail.com';
+
   return (
-    <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b">
-      <div className="container mx-auto px-4 flex justify-between items-center h-20">
+    <header className="sticky top-0 z-50 p-4">
+      <div className="container mx-auto flex justify-between items-center h-20 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg px-6">
         <Link href="/" className="flex items-center gap-2">
           <BedDouble className="h-7 w-7 text-primary" />
           <span className="text-2xl font-bold">La Quita</span>
@@ -41,9 +43,11 @@ export default function Header() {
               My Bookings
             </Link>
           )}
-          <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors">
-            Admin
-          </Link>
+          {user && user.email === adminEmail && (
+             <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors">
+                Admin
+            </Link>
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
@@ -72,37 +76,41 @@ export default function Header() {
 
       {/* Mobile Menu Panel */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-20 left-0 w-full bg-background/95 backdrop-blur-sm z-40">
-          <nav className="flex flex-col items-center gap-6 py-6">
-            <Link href="/#gallery" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
-                Gallery
-            </Link>
-            <Link href="/#rooms" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
-                Rooms
-            </Link>
-            {user && (
-              <Link href="/bookings" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
-                  My Bookings
+        <div className="md:hidden absolute top-28 left-0 w-full px-4 z-40">
+          <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg">
+            <nav className="flex flex-col items-center gap-6 py-6">
+              <Link href="/#gallery" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
+                  Gallery
               </Link>
-            )}
-            <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
-                Admin
-            </Link>
-            <div className="flex flex-col items-center gap-4 mt-4">
-              {user ? (
-                  <Button size="lg" variant="outline" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>Sign Out</Button>
-              ) : (
-                <>
-                  <Button asChild size="lg" variant="ghost" className="w-full">
-                      <Link href="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
-                  </Button>
-                  <Button asChild size="lg" className="w-full">
-                      <Link href="/signup" onClick={() => setIsMenuOpen(false)}>Sign Up</Link>
-                  </Button>
-                </>
+              <Link href="/#rooms" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
+                  Rooms
+              </Link>
+              {user && (
+                <Link href="/bookings" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
+                    My Bookings
+                </Link>
               )}
-            </div>
-          </nav>
+              {user && user.email === adminEmail && (
+                <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="text-lg text-muted-foreground hover:text-primary transition-colors">
+                    Admin
+                </Link>
+              )}
+              <div className="flex flex-col items-center gap-4 mt-4 w-full px-6">
+                {user ? (
+                    <Button size="lg" variant="outline" className="w-full" onClick={() => { handleSignOut(); setIsMenuOpen(false); }}>Sign Out</Button>
+                ) : (
+                  <>
+                    <Button asChild size="lg" variant="ghost" className="w-full">
+                        <Link href="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                    </Button>
+                    <Button asChild size="lg" className="w-full">
+                        <Link href="/signup" onClick={() => setIsMenuOpen(false)}>Sign Up</Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+            </nav>
+          </div>
         </div>
       )}
     </header>

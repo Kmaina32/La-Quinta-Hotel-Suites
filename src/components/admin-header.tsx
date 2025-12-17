@@ -20,7 +20,7 @@ export default function AdminHeader() {
   useEffect(() => {
     const authStatus = sessionStorage.getItem('la-quita-admin-auth') === 'true';
     setIsAuthenticated(authStatus);
-  }, [searchParams, pathname]); 
+  }, [searchParams, pathname]); // Re-check on navigation
 
 
   const activeTab = searchParams.get('tab') || 'content';

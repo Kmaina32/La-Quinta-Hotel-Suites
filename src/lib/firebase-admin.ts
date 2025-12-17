@@ -7,6 +7,7 @@ let storage: admin.storage.Storage;
 
 function initializeAdmin() {
   if (!admin.apps.length) {
+    let decoded = '';
     try {
       const encoded = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64;
 
@@ -17,7 +18,7 @@ function initializeAdmin() {
       }
 
       // Decode Base64
-      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+      decoded = Buffer.from(encoded, 'base64').toString('utf-8');
 
       // IMPORTANT: do NOT modify JSON before parsing
       const serviceAccount = JSON.parse(decoded);
@@ -26,6 +27,7 @@ function initializeAdmin() {
         credential: admin.credential.cert({
           projectId: serviceAccount.project_id,
           clientEmail: serviceAccount.client_email,
+          // Only fix newlines on the private key property
           privateKey: serviceAccount.private_key.replace(/\\n/g, '\n'),
         }),
         storageBucket:
@@ -36,6 +38,10 @@ function initializeAdmin() {
       console.log('Firebase Admin SDK initialized successfully.');
     } catch (error: any) {
       console.error('Firebase admin initialization error:', error);
+      // Log the decoded string to see if it's valid JSON
+      if (decoded) {
+        console.error('Problematic decoded JSON string:', decoded);
+      }
       throw new Error(
         'Firebase admin initialization failed. Check your environment variables.'
       );

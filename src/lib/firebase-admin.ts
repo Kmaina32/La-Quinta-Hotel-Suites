@@ -8,25 +8,41 @@ let storage: admin.storage.Storage;
 function initializeAdmin() {
   if (!admin.apps.length) {
     try {
-      if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64) {
-        throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 environment variable not found.');
+      const encoded = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64;
+
+      if (!encoded) {
+        throw new Error(
+          'FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 environment variable not found.'
+        );
       }
 
-      const serviceAccountJsonString = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64, 'base64').toString('utf-8');
-      
-      const serviceAccount = JSON.parse(serviceAccountJsonString.replace(/\\n/g, '\n'));
+      // Decode Base64
+      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+
+      // IMPORTANT: do NOT modify JSON before parsing
+      const serviceAccount = JSON.parse(decoded);
 
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'la-quinta-reservations.appspot.com',
+        credential: admin.credential.cert({
+          projectId: serviceAccount.project_id,
+          clientEmail: serviceAccount.client_email,
+          privateKey: serviceAccount.private_key.replace(/\\n/g, '\n'),
+        }),
+        storageBucket:
+          process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ??
+          'la-quinta-reservations.appspot.com',
       });
+
       console.log('Firebase Admin SDK initialized successfully.');
     } catch (error: any) {
-      console.error('Firebase admin initialization error:', error.stack);
-      throw new Error('Firebase admin initialization failed. Check your environment variables.');
+      console.error('Firebase admin initialization error:', error);
+      throw new Error(
+        'Firebase admin initialization failed. Check your environment variables.'
+      );
     }
   }
 }
+
 
 /**
  * Returns an initialized Firestore database instance.

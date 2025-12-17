@@ -1,6 +1,6 @@
-# La Quita - Hotel, Lounge & Suites
+# La Quita - Hotel, Lounge & suits
 
-Welcome to the official repository for the La Quita Hotel & Suites booking website. This project is a modern, full-stack web application built with Next.js and Firebase, designed to provide a seamless booking experience for our guests and a powerful management interface for our staff.
+Welcome to the official repository for the La Quita Hotel & suits booking website. This project is a modern, full-stack web application built with Next.js and Firebase, designed to provide a seamless booking experience for our guests and a powerful management interface for our staff.
 
 This application was built with the assistance of an AI agent in Firebase Studio.
 

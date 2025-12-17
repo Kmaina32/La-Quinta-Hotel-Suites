@@ -1,7 +1,8 @@
 
-import { Facebook, Instagram, Twitter, BedDouble, Mail, MapPin, Phone } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Logo } from './logo';
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
         {/* Centered Brand on Mobile, Start-aligned on Desktop */}
         <div className="flex flex-col items-center md:items-start mb-4">
             <Link href="/" className="flex items-center gap-2 mb-2">
-              <BedDouble className="h-6 w-6" />
+              <Logo className="h-6 w-6" />
               <span className="text-xl font-bold">La Quita</span>
             </Link>
             <p className="text-xs opacity-80 max-w-xs text-center md:text-left">

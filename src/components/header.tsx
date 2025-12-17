@@ -4,11 +4,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { BedDouble, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { Logo } from './logo';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,7 +27,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 p-4">
       <div className="container mx-auto flex justify-between items-center h-20 bg-background/80 backdrop-blur-sm border rounded-xl shadow-lg px-6">
         <Link href="/" className="flex items-center gap-2">
-          <BedDouble className="h-7 w-7 text-primary" />
+          <Logo className="h-8 w-8 text-primary" />
           <span className="text-2xl font-bold">La Quita</span>
         </Link>
         

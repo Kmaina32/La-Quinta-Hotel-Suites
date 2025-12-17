@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -18,10 +18,9 @@ export default function AdminHeader() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // This check runs on the client and determines if the nav should be visible
     const authStatus = sessionStorage.getItem('la-quita-admin-auth') === 'true';
     setIsAuthenticated(authStatus);
-  }, [searchParams, pathname]); // Re-run when URL params change or path changes
+  }, [searchParams, pathname]); 
 
 
   const activeTab = searchParams.get('tab') || 'content';
@@ -29,8 +28,8 @@ export default function AdminHeader() {
   const handleSignOut = async () => {
     sessionStorage.removeItem('la-quita-admin-auth');
     await signOut(auth);
-    setIsAuthenticated(false); // Update state immediately
-    router.push('/admin'); // Redirect to login
+    setIsAuthenticated(false); 
+    router.push('/admin'); 
   };
 
   const setTab = (tab: string) => {
@@ -44,6 +43,7 @@ export default function AdminHeader() {
     { id: 'rooms', label: 'Rooms', icon: Building2 },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (

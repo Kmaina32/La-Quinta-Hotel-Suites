@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking } from '@/lib/actions';
-import type { Room, EstablishmentImage, Message, Booking } from '@/lib/types';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings } from '@/lib/actions';
+import type { Room, EstablishmentImage, Message, Booking, SiteSettings } from '@/lib/types';
 import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
@@ -36,6 +36,7 @@ export default function AdminPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [galleryImages, setGalleryImages] = useState<EstablishmentImage[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [heroImage, setHeroImage] = useState('');
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
@@ -63,15 +64,17 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roomsData, establishmentData, messagesData, bookingsData] = await Promise.all([
+      const [roomsData, establishmentData, messagesData, bookingsData, settingsData] = await Promise.all([
         getRooms(),
         getEstablishmentImages(),
         getMessages(),
         getAllBookings(),
+        getSiteSettings(),
       ]);
       setRooms(roomsData);
       setMessages(messagesData);
       setBookings(bookingsData);
+      setSiteSettings(settingsData);
       const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
       setGalleryImages(sortedGallery);
       setHeroImage(establishmentData.heroImage?.src || '');
@@ -123,7 +126,7 @@ export default function AdminPage() {
   const addRoomImage = (roomId: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: [...(room.images || []), { id: `img-${Date.now()}`, src: '', alt: room.name }] } : room));
   const removeRoomImage = (roomId: string, imageId: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: room.images.filter(img => img.id !== imageId) } : room));
 
-  const handleSave = async (type: 'hero' | 'gallery' | 'room', id: string) => {
+  const handleSave = async (type: 'hero' | 'gallery' | 'room' | 'settings', id: string) => {
     setSavingStates(prev => ({...prev, [id]: true}));
     try {
       if (type === 'hero') await updateHeroImage(heroImage);
@@ -135,6 +138,10 @@ export default function AdminPage() {
         if (room) {
             const { id: roomId, ...roomData } = room;
             await updateRoomDetails(roomId, roomData);
+        }
+      } else if (type === 'settings') {
+        if (siteSettings) {
+            await updateSiteSettings(siteSettings);
         }
       }
       toast({ title: "Success", description: "Saved successfully!"});
@@ -444,6 +451,32 @@ export default function AdminPage() {
               ))}
             </CardContent>
           </Card>
+      )}
+
+      {activeTab === 'settings' && siteSettings && (
+        <Card>
+            <CardHeader><CardTitle>Site Settings</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Active Theme</label>
+                    <Select 
+                        value={siteSettings.activeTheme} 
+                        onValueChange={(theme) => setSiteSettings(prev => prev ? { ...prev, activeTheme: theme as 'default' | 'christmas' } : null)}
+                    >
+                        <SelectTrigger className="max-w-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Default</SelectItem>
+                            <SelectItem value="christmas">Christmas</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <Button onClick={() => handleSave('settings', 'site-settings')} disabled={savingStates['site-settings']}>
+                    {savingStates['site-settings'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Settings
+                </Button>
+            </CardContent>
+        </Card>
       )}
     </div>
   );

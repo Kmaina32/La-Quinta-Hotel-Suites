@@ -10,6 +10,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ContactSection } from "@/components/contact-section";
 import { usePathname } from "next/navigation";
+import AdminHeader from "@/components/admin-header";
+import AdminFooter from "@/components/admin-footer";
 
 const ptSans = PT_Sans({
   subsets: ["latin"],
@@ -104,10 +106,14 @@ export default function RootLayout({
       </head>
       <body className={`${ptSans.className} flex flex-col min-h-screen`}>
         <AuthProvider>
-          <Header />
+          {isAdminPage ? <AdminHeader /> : <Header />}
           <main className="flex-grow">{children}</main>
-          {!isAdminPage && <ContactSection />}
-          {!isAdminPage && <Footer />}
+          {isAdminPage ? <AdminFooter /> : (
+            <>
+              <ContactSection />
+              <Footer />
+            </>
+          )}
           <Toaster />
         </AuthProvider>
       </body>

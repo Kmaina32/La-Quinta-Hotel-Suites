@@ -110,7 +110,7 @@ export default function Header() {
 
       {/* Mobile Menu Panel */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-[calc(100%-0.5rem)] left-0 w-full px-2 z-40">
+        <div className="md:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
           <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg">
             <nav className="flex flex-col items-center gap-6 py-6">
               {navLinks.map((link) => (

@@ -11,8 +11,10 @@ export default function Footer() {
         <Link href="/" className="flex items-center gap-2">
           <Logo className="h-10 w-40 text-primary" />
         </Link>
+        <div className="flex items-center justify-center flex-grow">
+            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} L.Q. All rights reserved.</p>
+        </div>
         <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground hidden sm:block">&copy; {new Date().getFullYear()} L.Q. All rights reserved.</p>
             <div className="flex space-x-1">
                 <Button size="icon" variant="ghost" asChild>
                     <Link href="#" aria-label="Facebook">

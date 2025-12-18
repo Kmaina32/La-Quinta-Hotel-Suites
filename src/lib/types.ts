@@ -26,23 +26,23 @@ export interface SiteSettings {
 }
 
 export interface Booking {
-    id: string;
-    userId: string; 
-    userEmail: string; // Keep user's email for display
-    roomId: string;
-    roomName: string;
-    roomImage: string;
-    checkIn: string; // ISO string
-    checkOut: string; // ISO string
-    nights: number;
-    totalCost: number;
-    paymentMethod: string;
-    bookedOn: string; // ISO string
-    status: 'confirmed' | 'cancelled' | 'pending';
+  id: string;
+  userId: string;
+  userEmail: string; // Keep user's email for display
+  roomId: string;
+  roomName: string;
+  roomImage: string;
+  checkIn: string; // ISO string
+  checkOut: string; // ISO string
+  nights: number;
+  totalCost: number;
+  paymentMethod: string;
+  bookedOn: string; // ISO string
+  status: 'confirmed' | 'cancelled' | 'pending';
 }
 
 export interface Message {
-  id:string;
+  id: string;
   name: string;
   email: string;
   phone?: string; // Optional phone number
@@ -52,6 +52,9 @@ export interface Message {
 }
 
 export interface UserData {
-    uid: string;
-    email: string | null;
+  uid: string;
+  email: string | null;
+  phoneNumber?: string | null;
+  photoURL?: string | null;
 }
+

@@ -290,3 +290,39 @@ export async function getMessages(): Promise<Message[]> {
         ...doc.data(),
     })) as Message[];
 }
+
+// == Paystack ==
+export async function initializePaystackTransaction(email: string, amount: number) {
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!secretKey) {
+        throw new Error('Paystack secret key is not configured.');
+    }
+
+    const params = {
+        email,
+        amount: amount * 100, // Amount in kobo
+        currency: 'KES',
+    };
+
+    try {
+        const response = await fetch('https://api.paystack.co/transaction/initialize', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${secretKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(params),
+        });
+
+        const data = await response.json();
+
+        if (!data.status) {
+            throw new Error(data.message || 'Failed to initialize Paystack transaction.');
+        }
+
+        return data.data; // Should contain access_code
+    } catch (error: any) {
+        console.error('Paystack initialization failed:', error);
+        throw new Error(error.message || 'Could not connect to Paystack.');
+    }
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, getAnalyticsData } from '@/lib/actions';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, setUserRole, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, UserRole, AnalyticsData } from '@/lib/types';
 import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck, Crown, Shield, Building } from 'lucide-react';
 import Image from 'next/image';
@@ -80,37 +80,62 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-        const promises: Promise<any>[] = [];
-        if (activeTab === 'analytics' && (role === 'owner' || role === 'admin')) promises.push(getAnalyticsData());
-        if (activeTab === 'rooms' || activeTab === 'transactions') promises.push(getRooms());
-        if (activeTab === 'content') promises.push(getEstablishmentImages());
-        if (activeTab === 'messages') promises.push(getMessages());
-        if (activeTab === 'transactions') promises.push(getAllBookings());
-        if (activeTab === 'settings' && role === 'owner') promises.push(getSiteSettings());
-        if (activeTab === 'users' && (role === 'owner' || role === 'admin')) promises.push(getAllUsers());
-        
-        const results = await Promise.all(promises);
-        let resultIndex = 0;
+    
+    const handleError = (tabName: string, error: any) => {
+        console.error(`Failed to fetch data for ${tabName}:`, error);
+        toast({ title: "Error", description: `Failed to fetch data for the ${tabName} tab.`, variant: "destructive" });
+    };
 
-        if (activeTab === 'analytics' && (role === 'owner' || role === 'admin')) setAnalyticsData(results[resultIndex++]);
-        if (activeTab === 'rooms' || activeTab === 'transactions') setRooms(results[resultIndex++]);
-        if (activeTab === 'content') {
-            const establishmentData = results[resultIndex++];
-            const sortedGallery = establishmentData.galleryImages.sort((a: any, b: any) => a.id.localeCompare(b.id));
-            setGalleryImages(sortedGallery);
-            setHeroImage(establishmentData.heroImage?.src || '');
-            const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
-            if(defaultImage && !posterForm.primaryImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+    try {
+        if (activeTab === 'analytics' && (role === 'owner' || role === 'admin')) {
+            try {
+                const data = await getAnalyticsData();
+                setAnalyticsData(data);
+            } catch (e) { handleError('analytics', e); }
         }
-        if (activeTab === 'messages') setMessages(results[resultIndex++]);
-        if (activeTab === 'transactions') setBookings(results[resultIndex++]);
-        if (activeTab === 'settings' && role === 'owner') setSiteSettings(results[resultIndex++]);
-        if (activeTab === 'users' && (role === 'owner' || role === 'admin')) setUsers(results[resultIndex++]);
-        
+        if (activeTab === 'rooms' || activeTab === 'transactions') {
+             try {
+                const data = await getRooms();
+                setRooms(data);
+            } catch (e) { handleError('rooms', e); }
+        }
+        if (activeTab === 'content') {
+             try {
+                const establishmentData = await getEstablishmentImages();
+                const sortedGallery = establishmentData.galleryImages.sort((a: any, b: any) => a.id.localeCompare(b.id));
+                setGalleryImages(sortedGallery);
+                setHeroImage(establishmentData.heroImage?.src || '');
+                const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
+                if(defaultImage && !posterForm.primaryImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+             } catch (e) { handleError('content', e); }
+        }
+        if (activeTab === 'messages') {
+             try {
+                const data = await getMessages();
+                setMessages(data);
+             } catch (e) { handleError('messages', e); }
+        }
+        if (activeTab === 'transactions') {
+             try {
+                const data = await getAllBookings();
+                setBookings(data);
+             } catch (e) { handleError('transactions', e); }
+        }
+        if (activeTab === 'settings' && role === 'owner') {
+             try {
+                const data = await getSiteSettings();
+                setSiteSettings(data);
+             } catch (e) { handleError('settings', e); }
+        }
+        if (activeTab === 'users' && (role === 'owner' || role === 'admin')) {
+             try {
+                const data = await getAllUsers();
+                setUsers(data);
+             } catch (e) { handleError('users', e); }
+        }
     } catch (error) {
-        console.error("Failed to fetch admin data:", error);
-        toast({ title: "Error", description: "Failed to fetch admin data for this tab.", variant: "destructive" });
+        console.error("An unexpected error occurred during data fetching:", error);
+        toast({ title: "Error", description: "An unexpected error occurred. Some data may not be loaded.", variant: "destructive" });
     } finally {
         setLoading(false);
     }
@@ -427,7 +452,7 @@ export default function AdminPage() {
                             </Card>
                         </div>
                     ) : (
-                        <p>No analytics data available.</p>
+                       !loading && <p className="text-muted-foreground">No analytics data available. This might be because there are no confirmed bookings yet.</p>
                     )}
                 </CardContent>
             </Card>
@@ -436,7 +461,7 @@ export default function AdminPage() {
                 <Card>
                     <CardHeader><CardTitle>Bookings per Month (Last 12 Months)</CardTitle></CardHeader>
                     <CardContent>
-                        {analyticsData && (
+                        {analyticsData && analyticsData.bookingsPerMonth.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={analyticsData.bookingsPerMonth}>
                                     <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
@@ -445,13 +470,15 @@ export default function AdminPage() {
                                     <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
+                        ) : (
+                             !loading && <p className="text-muted-foreground py-12 text-center">No monthly booking data to display.</p>
                         )}
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader><CardTitle>Revenue by Room</CardTitle></CardHeader>
                     <CardContent>
-                        {analyticsData && analyticsData.revenueByRoom.length > 0 && (
+                        {analyticsData && analyticsData.revenueByRoom.length > 0 ? (
                              <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
                                     <Pie data={analyticsData.revenueByRoom} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
@@ -463,6 +490,8 @@ export default function AdminPage() {
                                     <Legend />
                                 </PieChart>
                             </ResponsiveContainer>
+                        ) : (
+                            !loading && <p className="text-muted-foreground py-12 text-center">No room revenue data to display.</p>
                         )}
                     </CardContent>
                 </Card>
@@ -496,6 +525,7 @@ export default function AdminPage() {
                       </Button>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                      {galleryImages.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No gallery images found.</p>}
                       {galleryImages.map(image => (
                           <div key={image.id} className="space-y-2 border-t pt-3">
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
@@ -626,6 +656,7 @@ export default function AdminPage() {
               <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room'] || role === 'manager'}><PlusCircle className="mr-2 h-4 w-4" />Create New</Button>
             </CardHeader>
             <CardContent className="space-y-6">
+              {rooms.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No rooms or facilities found.</p>}
               {rooms.map(room => (
                 <Card key={room.id} className="p-4 space-y-4">
                   <div className="flex justify-between items-start">
@@ -688,7 +719,7 @@ export default function AdminPage() {
                 <CardDescription>View and manage all reservations and payments.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {bookings.length === 0 && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
+                {bookings.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
                 {bookings.map(booking => {
                     const availability = getAvailabilityForBooking(booking);
                     const isPastBooking = isPast(new Date(booking.checkIn));
@@ -794,7 +825,7 @@ export default function AdminPage() {
           <Card>
             <CardHeader><CardTitle>Guest Messages</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {messages.length === 0 && <p className="text-muted-foreground">No messages yet.</p>}
+              {messages.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No messages yet.</p>}
               {messages.map(message => (
                   <Card key={message.id} className="p-4">
                       <div className="flex justify-between items-start">
@@ -839,3 +870,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    

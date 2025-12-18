@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Bath, BedDouble, User } from 'lucide-react';
 import { getRooms, getEstablishmentImages } from '@/lib/actions';
-import { GalleryCarousel } from '@/components/gallery-carousel';
 import { SeoStructuredData } from '@/components/seo-structured-data';
 import { HeroBookingForm } from '@/components/hero-booking-form';
 import type { Room, EstablishmentImage } from '@/lib/types';
@@ -14,11 +13,10 @@ import type { Room, EstablishmentImage } from '@/lib/types';
 export default async function Home() {
   let rooms: Room[] = [];
   let heroImage: EstablishmentImage | null = null;
-  let galleryImages: EstablishmentImage[] = [];
-
+  
   try {
     rooms = await getRooms();
-    ({ heroImage, galleryImages } = await getEstablishmentImages());
+    ({ heroImage } = await getEstablishmentImages());
   } catch (e) {
     console.error('Homepage data load failed. This might be due to a Firebase configuration issue. The page will render with empty data.', e);
   }
@@ -48,16 +46,6 @@ export default async function Home() {
             Experience unparalleled luxury and comfort in the heart of the city.
           </p>
           <HeroBookingForm />
-        </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section id="gallery" className="py-16 bg-secondary">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Our Gallery</h2>
-           <div className="max-w-4xl mx-auto">
-            <GalleryCarousel images={galleryImages} />
-          </div>
         </div>
       </section>
 

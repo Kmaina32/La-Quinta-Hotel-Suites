@@ -5,11 +5,13 @@ import { useState, useEffect, createContext, useContext, ReactNode, useCallback 
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Logo } from '@/components/logo';
+import type { UserRole } from '@/lib/types';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isAdmin: boolean;
+  isAdmin: boolean; // Kept for general "is logged in as admin-level" checks
+  role: UserRole | null;
   loginAdmin: () => void;
   logoutAdmin: () => void;
 }
@@ -18,29 +20,53 @@ const AuthContext = createContext<AuthContextType>({
   user: null, 
   loading: true,
   isAdmin: false,
+  role: null,
   loginAdmin: () => {},
   logoutAdmin: () => {},
 });
 
+// This function runs only on the client and avoids flicker.
+const getInitialAdminAuth = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('la-quita-admin-auth') === 'true';
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(getInitialAdminAuth);
+  const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
-    // Regular user auth state
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        try {
+            const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+            const userRole = idTokenResult.claims.role as UserRole | undefined;
+            
+            if (userRole && ['owner', 'admin', 'manager'].includes(userRole)) {
+              setRole(userRole);
+              setIsAdmin(true);
+              sessionStorage.setItem('la-quita-admin-auth', 'true');
+            } else {
+              setRole(null);
+              setIsAdmin(false);
+              sessionStorage.removeItem('la-quita-admin-auth');
+            }
+        } catch (error) {
+            console.error("Error fetching user claims:", error);
+            setRole(null);
+            setIsAdmin(false);
+        }
+      } else {
+         setRole(null);
+         setIsAdmin(false);
+         sessionStorage.removeItem('la-quita-admin-auth');
+      }
       setLoading(false);
     });
     
-    // Admin auth state from sessionStorage on initial load
-    if (typeof window !== 'undefined') {
-        const adminAuth = sessionStorage.getItem('la-quita-admin-auth') === 'true';
-        setIsAdmin(adminAuth);
-    }
-
-    // Listen for storage changes to sync across tabs
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'la-quita-admin-auth') {
         setIsAdmin(event.newValue === 'true');
@@ -55,13 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginAdmin = useCallback(() => {
+    // This function is now mostly a placeholder for the legacy password login.
+    // The onAuthStateChanged listener is the source of truth.
+    // We can set it here optimistically.
     sessionStorage.setItem('la-quita-admin-auth', 'true');
     setIsAdmin(true);
+    // Force a token refresh on next page load or action
+    auth.currentUser?.getIdToken(true);
   }, []);
 
   const logoutAdmin = useCallback(() => {
     sessionStorage.removeItem('la-quita-admin-auth');
     setIsAdmin(false);
+    setRole(null);
+    auth.signOut(); // Also sign out from Firebase
   }, []);
 
   if (loading) {
@@ -75,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <AuthContext.Provider value={{ user, loading, isAdmin, loginAdmin, logoutAdmin }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, isAdmin, role, loginAdmin, logoutAdmin }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

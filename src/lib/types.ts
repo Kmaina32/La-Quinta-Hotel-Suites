@@ -1,4 +1,5 @@
 
+export type UserRole = 'owner' | 'admin' | 'manager';
 
 export interface Room {
   id: string;
@@ -27,7 +28,7 @@ export interface SiteSettings {
 }
 
 export interface Booking {
-  id: string;
+  id:string;
   userId: string;
   userEmail: string; // Keep user's email for display
   roomId: string;
@@ -59,6 +60,13 @@ export interface UserData {
   displayName: string | null;
   photoURL: string | null;
   metadata: any;
+  role?: UserRole;
 }
 
-
+export interface AnalyticsData {
+    totalRevenue: number;
+    totalBookings: number;
+    occupancyRate: number;
+    revenueByRoom: { name: string; revenue: number }[];
+    bookingsPerMonth: { name: string; total: number }[];
+}

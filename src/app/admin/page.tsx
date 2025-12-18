@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers } from '@/lib/actions';
-import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, setUserRole, getAnalyticsData } from '@/lib/actions';
+import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, UserRole, AnalyticsData } from '@/lib/types';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck, Crown, Shield, Building } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/logo';
-
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell, Legend } from "recharts";
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
@@ -40,12 +40,13 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
 export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { isAdmin, loginAdmin } = useAuth();
+  const { isAdmin, loginAdmin, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [galleryImages, setGalleryImages] = useState<EstablishmentImage[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [heroImage, setHeroImage] = useState('');
@@ -66,7 +67,7 @@ export default function AdminPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'content';
+  const activeTab = searchParams.get('tab') || 'analytics';
 
 
   useEffect(() => {
@@ -75,34 +76,41 @@ export default function AdminPage() {
     } else {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [isAdmin, activeTab]); // re-fetch if tab changes
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roomsData, establishmentData, messagesData, bookingsData, settingsData, usersData] = await Promise.all([
-        getRooms(),
-        getEstablishmentImages(),
-        getMessages(),
-        getAllBookings(),
-        getSiteSettings(),
-        getAllUsers(),
-      ]);
-      setRooms(roomsData);
-      setMessages(messagesData);
-      setBookings(bookingsData);
-      setSiteSettings(settingsData);
-      setUsers(usersData);
-      const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
-      setGalleryImages(sortedGallery);
-      setHeroImage(establishmentData.heroImage?.src || '');
-      // Set default image for poster generator
-      const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
-      if(defaultImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+        const promises: Promise<any>[] = [];
+        if (activeTab === 'analytics' && (role === 'owner' || role === 'admin')) promises.push(getAnalyticsData());
+        if (activeTab === 'rooms' || activeTab === 'transactions') promises.push(getRooms());
+        if (activeTab === 'content') promises.push(getEstablishmentImages());
+        if (activeTab === 'messages') promises.push(getMessages());
+        if (activeTab === 'transactions') promises.push(getAllBookings());
+        if (activeTab === 'settings' && role === 'owner') promises.push(getSiteSettings());
+        if (activeTab === 'users' && (role === 'owner' || role === 'admin')) promises.push(getAllUsers());
+        
+        const results = await Promise.all(promises);
+        let resultIndex = 0;
 
+        if (activeTab === 'analytics' && (role === 'owner' || role === 'admin')) setAnalyticsData(results[resultIndex++]);
+        if (activeTab === 'rooms' || activeTab === 'transactions') setRooms(results[resultIndex++]);
+        if (activeTab === 'content') {
+            const establishmentData = results[resultIndex++];
+            const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
+            setGalleryImages(sortedGallery);
+            setHeroImage(establishmentData.heroImage?.src || '');
+            const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
+            if(defaultImage && !posterForm.primaryImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+        }
+        if (activeTab === 'messages') setMessages(results[resultIndex++]);
+        if (activeTab === 'transactions') setBookings(results[resultIndex++]);
+        if (activeTab === 'settings' && role === 'owner') setSiteSettings(results[resultIndex++]);
+        if (activeTab === 'users' && (role === 'owner' || role === 'admin')) setUsers(results[resultIndex++]);
+        
     } catch (error) {
         console.error("Failed to fetch admin data:", error);
-        toast({ title: "Error", description: "Failed to fetch admin data.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to fetch admin data for this tab.", variant: "destructive" });
     } finally {
         setLoading(false);
     }
@@ -112,6 +120,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (password === '38448674') {
       loginAdmin();
+      router.refresh();
     } else {
       toast({ title: "Login Failed", description: "Incorrect password", variant: "destructive" });
     }
@@ -273,12 +282,26 @@ export default function AdminPage() {
     setPosterForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSetUserRole = async (uid: string, newRole: UserRole | 'none') => {
+    setSavingStates(prev => ({...prev, [uid]: true}));
+    try {
+      await setUserRole(uid, newRole === 'none' ? null : newRole);
+      setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole === 'none' ? undefined : newRole } : u));
+      toast({ title: "Role Updated", description: "User role has been changed." });
+    } catch (error: any) {
+      console.error("Failed to set user role:", error);
+      toast({ title: "Error", description: error.message || "Could not set user role.", variant: "destructive" });
+    } finally {
+      setSavingStates(prev => ({...prev, [uid]: false}));
+    }
+  };
+
   if (loading && !isAdmin) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
 
   if (!isAdmin) {
     return (
-      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-[800px]">
-        <div className="flex items-center justify-center py-12">
+      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+        <div className="flex items-center justify-center py-12 px-4">
           <div className="mx-auto grid w-[350px] gap-6">
             <div className="grid gap-2 text-center">
               <h1 className="text-3xl font-bold">Admin Login</h1>
@@ -354,6 +377,15 @@ export default function AdminPage() {
             return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1"/>Cancelled</div>;
     }
   }
+
+  const getRoleIcon = (role?: UserRole) => {
+    switch (role) {
+        case 'owner': return <Crown className="h-5 w-5 text-yellow-500" />;
+        case 'admin': return <Shield className="h-5 w-5 text-blue-500" />;
+        case 'manager': return <Building className="h-5 w-5 text-gray-500" />;
+        default: return <User className="h-5 w-5 text-muted-foreground" />;
+    }
+  }
   
   const allImages = [
     { id: 'hero', src: heroImage, alt: 'Hero Image' },
@@ -365,8 +397,75 @@ export default function AdminPage() {
   ].filter(img => img.src);
 
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-[calc(100vh-10rem)]"><Loader2 className="h-16 w-16 animate-spin" /></div>;
+  }
+
   return (
     <div className="container mx-auto py-8">
+       {activeTab === 'analytics' && (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader><CardTitle>Analytics Dashboard</CardTitle></CardHeader>
+                <CardContent>
+                    {analyticsData ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Card>
+                                <CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader>
+                                <CardContent><p className="text-3xl font-bold">KES {analyticsData.totalRevenue.toLocaleString()}</p></CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle>Total Bookings</CardTitle></CardHeader>
+                                <CardContent><p className="text-3xl font-bold">{analyticsData.totalBookings}</p></CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle>Occupancy Rate (30d)</CardTitle></CardHeader>
+                                <CardContent><p className="text-3xl font-bold">{analyticsData.occupancyRate.toFixed(1)}%</p></CardContent>
+                            </Card>
+                        </div>
+                    ) : (
+                        <p>No analytics data available.</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader><CardTitle>Bookings per Month (Last 12 Months)</CardTitle></CardHeader>
+                    <CardContent>
+                        {analyticsData && (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={analyticsData.bookingsPerMonth}>
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                    <Tooltip />
+                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader><CardTitle>Revenue by Room</CardTitle></CardHeader>
+                    <CardContent>
+                        {analyticsData && analyticsData.revenueByRoom.length > 0 && (
+                             <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie data={analyticsData.revenueByRoom} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                                       {analyticsData.revenueByRoom.map((entry, index) => (
+                                          <Cell key={`cell-${index}`} fill={`hsl(var(--primary), ${1 - (index / analyticsData.revenueByRoom.length) * 0.5})`} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      )}
       {activeTab === 'content' && (
          <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -380,7 +479,7 @@ export default function AdminPage() {
                           {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
                       </div>
                       <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
-                      <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload']}>
+                      <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload'] || role === 'manager'}>
                           {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
                       </Button>
                       </CardContent>
@@ -389,7 +488,7 @@ export default function AdminPage() {
               <div className="lg:col-span-2">
                   <Card>
                       <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
-                      <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image']}>
+                      <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image'] || role === 'manager'}>
                           <PlusCircle className="mr-2 h-4 w-4" /> Add Image
                       </Button>
                       </CardHeader>
@@ -407,10 +506,10 @@ export default function AdminPage() {
                                   </div>
                               </div>
                               <div className="flex items-center gap-2 mt-2">
-                                  <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`]}>
+                                  <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`] || role === 'manager'}>
                                   {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
                                   </Button>
-                                  <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id]}><Trash2 className="h-4 w-4" /></Button>
+                                  <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id] || role === 'manager'}><Trash2 className="h-4 w-4" /></Button>
                               </div>
                           </div>
                       ))}
@@ -521,56 +620,58 @@ export default function AdminPage() {
       {activeTab === 'rooms' && (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Rooms & Facilities</CardTitle>
-              <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room']}><PlusCircle className="mr-2 h-4 w-4" />Create New</Button>
+              <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room'] || role === 'manager'}><PlusCircle className="mr-2 h-4 w-4" />Create New</Button>
             </CardHeader>
             <CardContent className="space-y-6">
               {rooms.map(room => (
                 <Card key={room.id} className="p-4 space-y-4">
                   <div className="flex justify-between items-start">
                     <h3 className="text-xl font-semibold">{room.name}</h3>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id]}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id] || role === 'manager'}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1"><label className="text-sm font-medium">Name</label><Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} /></div>
-                    <div className="space-y-1"><label className="text-sm font-medium">Price</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">Name</label><Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">Price</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} /></div>
                     <div className="space-y-1"><label className="text-sm font-medium">Type</label>
-                      <Select value={room.type || 'room'} onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)}>
+                      <Select value={room.type || 'room'} onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)} disabled={role === 'manager'}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="room">Room</SelectItem><SelectItem value="conference">Conference</SelectItem></SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} /></div>
-                     <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                     <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} /></div>
                     {room.type !== 'conference' && <>
-                      <div className="space-y-1"><label className="text-sm font-medium">Beds</label><Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} /></div>
-                      <div className="space-y-1"><label className="text-sm font-medium">Baths</label><Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} /></div>
+                      <div className="space-y-1"><label className="text-sm font-medium">Beds</label><Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                      <div className="space-y-1"><label className="text-sm font-medium">Baths</label><Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} readOnly={role === 'manager'} /></div>
                     </>}
-                    <div className="md:col-span-3 space-y-1"><label className="text-sm font-medium">Description</label><Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} /></div>
+                    <div className="md:col-span-3 space-y-1"><label className="text-sm font-medium">Description</label><Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} readOnly={role === 'manager'} /></div>
                     <div className="md:col-span-3 space-y-3">
                       <label className="text-sm font-medium">Main Image</label>
                       {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={150} height={90} className="rounded-md object-cover" />}
-                      <div className="flex items-center gap-2">
+                       <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
                         <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
                         {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                       </div>
-                      <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" />
+                      <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
                     </div>
                     <div className="md:col-span-3 space-y-3">
-                      <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label><Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}><PlusCircle className="mr-2 h-4 w-4" />Add</Button></div>
+                      <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label>
+                        {role !== 'manager' && <Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}><PlusCircle className="mr-2 h-4 w-4" />Add</Button>}
+                      </div>
                       {room.images?.map((img) => (
                         <div key={img.id} className="border-t pt-3 space-y-2">
                           {img.src && <Image src={img.src} alt={img.alt} width={150} height={90} className="rounded-md object-cover" />}
-                          <div className="flex items-center gap-2">
+                          <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
                               <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${img.id}`, url => handleRoomImageChange(room.id, img.id, url))} />
                               {uploadingStates[`room-detail-${img.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                               <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
-                          <Input value={img.src} onChange={e => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" />
+                          <Input value={img.src} onChange={e => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" readOnly={role === 'manager'} />
                         </div>
                       ))}
                     </div>
                   </div>
-                  <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id]}>{savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Room'} </Button>
+                  <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>{savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Room'} </Button>
                 </Card>
               ))}
             </CardContent>
@@ -610,7 +711,7 @@ export default function AdminPage() {
                                         <Bed className="h-4 w-4"/>
                                         <span>Rooms available: {availability}</span>
                                     </div>
-                                    {booking.status !== 'cancelled' && (
+                                    {booking.status !== 'cancelled' && (role === 'owner' || role === 'admin') && (
                                         <Button 
                                             variant="destructive" 
                                             size="sm" 
@@ -635,7 +736,7 @@ export default function AdminPage() {
         <Card>
             <CardHeader>
                 <CardTitle>User Management</CardTitle>
-                <CardDescription>View all registered users in the system.</CardDescription>
+                <CardDescription>Assign roles to users. Only owners can change roles.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {users.length === 0 && <p className="text-muted-foreground text-center py-8">No users found.</p>}
@@ -647,10 +748,32 @@ export default function AdminPage() {
                                 <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : <User className="h-6 w-6" />}</AvatarFallback>
                             </Avatar>
                             <div className="flex-grow">
-                                <p className="font-semibold">{user.displayName || 'No Name'}</p>
+                                <p className="font-semibold flex items-center gap-2">{getRoleIcon(user.role)} {user.displayName || 'No Name'}</p>
                                 <p className="text-sm text-muted-foreground">{user.email}</p>
                             </div>
-                            <div className="text-right text-sm text-muted-foreground">
+                            {role === 'owner' ? (
+                                <div className="flex items-center gap-2">
+                                    <Select
+                                        value={user.role || 'none'}
+                                        onValueChange={(newRole: UserRole | 'none') => handleSetUserRole(user.uid, newRole)}
+                                        disabled={savingStates[user.uid]}
+                                    >
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="Role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            <SelectItem value="manager">Manager</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                            <SelectItem value="owner">Owner</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {savingStates[user.uid] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                </div>
+                            ) : (
+                                 user.role && <p className="capitalize font-semibold">{user.role}</p>
+                            )}
+                            <div className="text-right text-sm text-muted-foreground hidden md:block">
                                 <p>Last signed in:</p>
                                 <p>{user.metadata.lastSignInTime ? formatDistanceToNow(new Date(user.metadata.lastSignInTime), {addSuffix: true}) : 'Never'}</p>
                             </div>
@@ -710,9 +833,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    

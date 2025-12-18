@@ -3,42 +3,24 @@
 
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu, X } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu, X, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
-
-// This function runs only on the client and avoids the flicker.
-const getInitialAuthState = () => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    return sessionStorage.getItem('la-quita-admin-auth') === 'true';
-};
+import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // Initialize state directly from sessionStorage on the client.
-  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState);
+  const { isAdmin, logoutAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // This effect ensures the state is updated on navigation changes (e.g., after login).
-  useEffect(() => {
-    setIsAuthenticated(getInitialAuthState());
-  }, [searchParams, pathname]);
-
 
   const activeTab = searchParams.get('tab') || 'content';
 
   const handleSignOut = async () => {
-    sessionStorage.removeItem('la-quita-admin-auth');
-    await signOut(auth);
-    setIsAuthenticated(false); 
+    logoutAdmin();
     router.push('/admin'); 
   };
 
@@ -53,6 +35,7 @@ export default function AdminHeader() {
     { id: 'content', label: 'Content', icon: ImageIcon },
     { id: 'rooms', label: 'Rooms', icon: Building2 },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
+    { id: 'users', label: 'Users', icon: UserIcon },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -65,7 +48,7 @@ export default function AdminHeader() {
             <Logo className="h-10 w-40 text-primary" />
              <span className="font-semibold text-lg hidden sm:inline border-l pl-4">Admin Panel</span>
           </Link>
-          {isAuthenticated && (
+          {isAdmin && (
             <nav className="hidden md:flex items-center gap-1 rounded-lg p-1 bg-muted">
               {navLinks.map(link => (
                 <Button
@@ -90,7 +73,7 @@ export default function AdminHeader() {
                 <span className="hidden sm:inline">View Site</span>
               </Link>
             </Button>
-          {isAuthenticated && (
+          {isAdmin && (
             <>
               <div className="hidden md:flex">
                 <Button variant="outline" onClick={handleSignOut}>
@@ -108,7 +91,7 @@ export default function AdminHeader() {
           )}
         </div>
       </div>
-       {isMenuOpen && isAuthenticated && (
+       {isMenuOpen && isAdmin && (
         <div className="md:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
           <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg">
             <nav className="flex flex-col items-center gap-2 py-6">

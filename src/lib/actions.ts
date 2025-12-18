@@ -6,6 +6,7 @@ import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval } from 'date-fns';
 import { FieldValue } from 'firebase-admin/firestore';
+import crypto from 'crypto';
 
 // == Image Upload ==
 export async function uploadImage(formData: FormData): Promise<string> {
@@ -186,7 +187,11 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
         
         transaction.update(roomRef, updates);
 
-        const newBookingRef = db.collection('bookings').doc();
+        // Use the transaction reference as the booking ID if available
+        const newBookingRef = bookingData.transactionRef 
+            ? db.collection('bookings').doc(bookingData.transactionRef)
+            : db.collection('bookings').doc();
+        
         transaction.set(newBookingRef, {
             ...bookingData,
             bookedOn: new Date().toISOString(),
@@ -297,11 +302,16 @@ export async function initializePaystackTransaction(email: string, amount: numbe
     if (!secretKey) {
         throw new Error('Paystack secret key is not configured.');
     }
+    
+    // Ensure the NEXT_PUBLIC_SITE_URL is set for the callback
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002';
+    const callback_url = `${siteUrl}/bookings/status`;
 
     const params = {
         email,
         amount: amount * 100, // Amount in kobo
         currency: 'KES',
+        callback_url,
     };
 
     try {
@@ -320,9 +330,54 @@ export async function initializePaystackTransaction(email: string, amount: numbe
             throw new Error(data.message || 'Failed to initialize Paystack transaction.');
         }
 
-        return data.data; // Should contain access_code
+        return data.data; // Should contain access_code and reference
     } catch (error: any) {
         console.error('Paystack initialization failed:', error);
         throw new Error(error.message || 'Could not connect to Paystack.');
     }
+}
+
+export async function verifyPaystackTransaction(reference: string) {
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!secretKey) {
+        throw new Error('Paystack secret key is not configured.');
+    }
+
+    try {
+        const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${secretKey}`,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!data.status) {
+            throw new Error(data.message || 'Failed to verify Paystack transaction.');
+        }
+
+        return data.data; // Contains transaction status, amount, etc.
+    } catch (error: any) {
+        console.error('Paystack verification failed:', error);
+        throw new Error(error.message || 'Could not connect to Paystack to verify transaction.');
+    }
+}
+
+export async function confirmBookingFromWebhook(reference: string) {
+    const db = getDb();
+    const bookingRef = db.collection('bookings').doc(reference);
+    
+    const bookingDoc = await bookingRef.get();
+    if (!bookingDoc.exists) {
+        // This might happen if the webhook is faster than the client-side booking creation.
+        // Or if it's a fraudulent webhook call. For now, we just log it.
+        console.warn(`Webhook received for non-existent booking reference: ${reference}`);
+        return;
+    }
+
+    await bookingRef.update({ status: 'confirmed' });
+    revalidatePath('/bookings');
+    revalidatePath('/admin');
+    console.log(`Booking ${reference} confirmed via webhook.`);
 }

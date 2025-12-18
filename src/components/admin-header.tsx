@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Logo } from './logo';
-import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu, X, User as UserIcon } from 'lucide-react';
+import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard, Settings, Menu, X, User as UserIcon, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
@@ -14,10 +14,10 @@ export default function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAdmin, logoutAdmin } = useAuth();
+  const { isAdmin, logoutAdmin, role } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const activeTab = searchParams.get('tab') || 'content';
+  const activeTab = searchParams.get('tab') || 'analytics';
 
   const handleSignOut = async () => {
     logoutAdmin();
@@ -32,13 +32,14 @@ export default function AdminHeader() {
   };
 
   const navLinks = [
-    { id: 'content', label: 'Content', icon: ImageIcon },
-    { id: 'rooms', label: 'Rooms', icon: Building2 },
-    { id: 'transactions', label: 'Transactions', icon: CreditCard },
-    { id: 'users', label: 'Users', icon: UserIcon },
-    { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['owner', 'admin'] },
+    { id: 'content', label: 'Content', icon: ImageIcon, roles: ['owner', 'admin'] },
+    { id: 'rooms', label: 'Rooms', icon: Building2, roles: ['owner', 'admin'] },
+    { id: 'transactions', label: 'Transactions', icon: CreditCard, roles: ['owner', 'admin', 'manager'] },
+    { id: 'users', label: 'Users', icon: UserIcon, roles: ['owner', 'admin'] },
+    { id: 'messages', label: 'Messages', icon: MessageSquare, roles: ['owner', 'admin', 'manager'] },
+    { id: 'settings', label: 'Settings', icon: Settings, roles: ['owner'] },
+  ].filter(link => role && link.roles.includes(role));
 
   return (
     <header className="sticky top-0 z-50 p-2 md:p-3">

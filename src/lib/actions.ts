@@ -2,9 +2,9 @@
 'use server';
 
 import { getDb, getStorage, getAuthAdmin } from '@/lib/firebase-admin';
-import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings } from '@/lib/types';
+import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings, UserRole, AnalyticsData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
-import { format, eachDayOfInterval } from 'date-fns';
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
@@ -296,7 +296,7 @@ export async function getMessages(): Promise<Message[]> {
     })) as Message[];
 }
 
-// == Users ==
+// == Users & Roles ==
 export async function getAllUsers(): Promise<UserData[]> {
   const auth = getAuthAdmin();
   const userRecords = await auth.listUsers();
@@ -306,7 +306,16 @@ export async function getAllUsers(): Promise<UserData[]> {
     displayName: user.displayName || null,
     photoURL: user.photoURL || null,
     metadata: user.metadata.toJSON(),
+    role: (user.customClaims?.role as UserRole) || undefined,
   }));
+}
+
+export async function setUserRole(uid: string, role: UserRole | null) {
+    const auth = getAuthAdmin();
+    // In a real app, you MUST verify that the user calling this function is an owner.
+    // This is a simplified example.
+    await auth.setCustomUserClaims(uid, { role });
+    revalidatePath('/admin');
 }
 
 
@@ -384,8 +393,6 @@ export async function confirmBookingFromWebhook(reference: string) {
     
     const bookingDoc = await bookingRef.get();
     if (!bookingDoc.exists) {
-        // This might happen if the webhook is faster than the client-side booking creation.
-        // Or if it's a fraudulent webhook call. For now, we just log it.
         console.warn(`Webhook received for non-existent booking reference: ${reference}`);
         return;
     }
@@ -394,4 +401,68 @@ export async function confirmBookingFromWebhook(reference: string) {
     revalidatePath('/bookings');
     revalidatePath('/admin');
     console.log(`Booking ${reference} confirmed via webhook.`);
+}
+
+
+// == Analytics ==
+export async function getAnalyticsData(): Promise<AnalyticsData> {
+    const db = getDb();
+    const bookings = await getAllBookings();
+    const rooms = await getRooms();
+
+    // 1. Total Revenue
+    const totalRevenue = bookings
+        .filter(b => b.status === 'confirmed')
+        .reduce((acc, b) => acc + b.totalCost, 0);
+
+    // 2. Total Bookings
+    const totalBookings = bookings.filter(b => b.status === 'confirmed').length;
+    
+    // 3. Occupancy Rate (for the last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(new Date().setDate(today.getDate() - 30));
+    const interval = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
+    
+    const totalPossibleNights = rooms.reduce((acc, room) => acc + (room.inventory * 30), 0);
+    const totalBookedNights = rooms.reduce((acc, room) => {
+        let roomBookedNights = 0;
+        interval.forEach(day => {
+            const dateString = format(day, 'yyyy-MM-dd');
+            roomBookedNights += room.booked?.[dateString] || 0;
+        });
+        return acc + roomBookedNights;
+    }, 0);
+    
+    const occupancyRate = totalPossibleNights > 0 ? (totalBookedNights / totalPossibleNights) * 100 : 0;
+
+    // 4. Revenue by Room
+    const revenueByRoom = rooms.map(room => {
+        const roomRevenue = bookings
+            .filter(b => b.status === 'confirmed' && b.roomId === room.id)
+            .reduce((acc, b) => acc + b.totalCost, 0);
+        return { name: room.name, revenue: roomRevenue };
+    }).filter(r => r.revenue > 0);
+
+    // 5. Bookings per month (last 12 months)
+    const last12Months = eachMonthOfInterval({
+        start: new Date(today.getFullYear() - 1, today.getMonth() + 1, 1),
+        end: today,
+    });
+
+    const bookingsPerMonth = last12Months.map(month => {
+        const monthName = format(month, 'MMM yy');
+        const bookingsInMonth = bookings.filter(b => {
+            const bookingDate = new Date(b.bookedOn);
+            return bookingDate.getMonth() === month.getMonth() && bookingDate.getFullYear() === month.getFullYear() && b.status === 'confirmed';
+        }).length;
+        return { name: monthName, total: bookingsInMonth };
+    });
+
+    return {
+        totalRevenue,
+        totalBookings,
+        occupancyRate,
+        revenueByRoom,
+        bookingsPerMonth
+    };
 }

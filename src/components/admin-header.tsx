@@ -14,7 +14,7 @@ export default function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAdmin, logoutAdmin, role } = useAuth();
+  const { isAdmin, logoutAdmin, role, loading: authLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const activeTab = searchParams.get('tab') || 'analytics';
@@ -34,12 +34,12 @@ export default function AdminHeader() {
   const navLinks = [
     { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['owner', 'admin'] },
     { id: 'content', label: 'Content', icon: ImageIcon, roles: ['owner', 'admin'] },
-    { id: 'rooms', label: 'Rooms', icon: Building2, roles: ['owner', 'admin'] },
+    { id: 'rooms', label: 'Rooms', icon: Building2, roles: ['owner', 'admin', 'manager'] },
     { id: 'transactions', label: 'Transactions', icon: CreditCard, roles: ['owner', 'admin', 'manager'] },
     { id: 'users', label: 'Users', icon: UserIcon, roles: ['owner', 'admin'] },
     { id: 'messages', label: 'Messages', icon: MessageSquare, roles: ['owner', 'admin', 'manager'] },
     { id: 'settings', label: 'Settings', icon: Settings, roles: ['owner'] },
-  ].filter(link => role && link.roles.includes(role));
+  ].filter(link => !authLoading && role && link.roles.includes(role));
 
   return (
     <header className="sticky top-0 z-50 p-2 md:p-3">

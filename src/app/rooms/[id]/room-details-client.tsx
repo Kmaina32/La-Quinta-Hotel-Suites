@@ -12,16 +12,19 @@ import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from '@/components/ui/separator';
 import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle } from 'lucide-react';
-import { createBooking } from '@/lib/actions';
+import { createBooking, initializePaystackTransaction } from '@/lib/actions';
 import type { Room } from '@/lib/types';
 import { format, addDays, eachDayOfInterval, differenceInCalendarDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import PaystackPop from '@paystack/inline-js';
+
 
 export default function RoomDetailsClient({ room }: { room: Room }) {
   const [isBooking, setIsBooking] = useState(false);
+  const [activePaymentMethod, setActivePaymentMethod] = useState('');
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -51,7 +54,55 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     }, [date, room.booked, room.inventory]);
 
 
-  const handleBooking = async (paymentMethod: string) => {
+    const handleBooking = async (paymentMethod: string, transactionRef?: string) => {
+        if (!user) return; // Should be handled by UI checks already
+
+        setIsBooking(true);
+        setActivePaymentMethod(paymentMethod);
+        
+        try {
+            const nights = differenceInCalendarDays(date!.to!, date!.from!);
+            const totalCost = nights * room.price;
+            const isReservation = paymentMethod === 'Pay at Hotel';
+
+            const bookingData = {
+                userId: user.uid,
+                userEmail: user.email!,
+                roomId: room.id,
+                roomName: room.name,
+                roomImage: room.imageUrl,
+                checkIn: date!.from!.toISOString(),
+                checkOut: date!.to!.toISOString(),
+                nights,
+                totalCost,
+                paymentMethod,
+                ...(transactionRef && { transactionRef }),
+            };
+
+            await createBooking(bookingData, isReservation);
+
+            toast({
+                title: isReservation ? "Reservation Successful!" : "Booking Successful!",
+                description: `Your stay at ${room.name} has been ${isReservation ? 'reserved' : 'booked'}.`,
+            });
+
+            router.push('/bookings');
+
+        } catch (error: any) {
+            console.error("Failed to create booking:", error);
+            toast({
+                title: "Booking Failed",
+                description: error.message || "Something went wrong. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsBooking(false);
+            setActivePaymentMethod('');
+        }
+    };
+
+
+  const preBookingCheck = () => {
     if (!user) {
        toast({
           title: "Please Login",
@@ -59,63 +110,63 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
           variant: "destructive",
        });
        router.push('/login?redirect=/rooms/' + room.id);
-       return;
+       return false;
     }
     
     if (!room || !date?.from || !date?.to) {
         toast({ title: "Booking Error", description: "Please select a valid date range.", variant: "destructive" });
-        return;
+        return false;
     }
 
     const nights = differenceInCalendarDays(date.to, date.from);
     if (nights <= 0) {
         toast({ title: "Invalid Date Range", description: "Check-out date must be after check-in date.", variant: "destructive"});
-        return;
+        return false;
     }
 
     if (!isRoomAvailable) {
         toast({ title: "Not Available", description: "This room is fully booked for the selected dates. Please choose different dates.", variant: "destructive" });
-        return;
+        return false;
     }
-    
+    return true;
+  }
+
+  const handlePaystackPayment = async () => {
+    if (!preBookingCheck()) return;
+
     setIsBooking(true);
+    setActivePaymentMethod('Paystack');
+
     try {
+        const nights = differenceInCalendarDays(date!.to!, date!.from!);
         const totalCost = nights * room.price;
-        const isReservation = paymentMethod === 'Pay at Hotel';
 
-        const bookingData = {
-            userId: user.uid,
-            userEmail: user.email!,
-            roomId: room.id,
-            roomName: room.name,
-            roomImage: room.imageUrl,
-            checkIn: date.from.toISOString(),
-            checkOut: date.to.toISOString(),
-            nights,
-            totalCost,
-            paymentMethod,
-        };
-
-        await createBooking(bookingData, isReservation);
-
-        toast({
-            title: isReservation ? "Reservation Successful!" : "Booking Successful!",
-            description: `Your stay at ${room.name} has been ${isReservation ? 'reserved' : 'booked'}.`,
+        const transactionData = await initializePaystackTransaction(user!.email!, totalCost);
+        
+        const paystack = new PaystackPop();
+        paystack.newTransaction({
+            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!, // Public key from env vars
+            email: user!.email!,
+            amount: totalCost * 100,
+            access_code: transactionData.access_code,
+            onSuccess: (transaction) => {
+                // Pass the reference to the booking handler
+                handleBooking('Paystack', transaction.reference);
+            },
+            onCancel: () => {
+                toast({ title: "Payment Cancelled", description: "Your payment process was cancelled.", variant: "destructive" });
+                setIsBooking(false);
+                setActivePaymentMethod('');
+            },
         });
-
-        router.push('/bookings');
 
     } catch (error: any) {
-        console.error("Failed to create booking:", error);
-        toast({
-            title: "Booking Failed",
-            description: error.message || "Something went wrong. Please try again.",
-            variant: "destructive",
-        });
-    } finally {
+        toast({ title: "Paystack Error", description: error.message, variant: "destructive" });
         setIsBooking(false);
+        setActivePaymentMethod('');
     }
-  };
+};
+
 
   const nights = date?.to && date?.from ? Math.max(0, differenceInCalendarDays(date.to, date.from)) : 0;
   const totalCost = nights * room.price;
@@ -243,8 +294,8 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                 )}
             </CardContent>
             <CardFooter className="flex flex-col">
-                <Button size="lg" className="w-full" onClick={() => handleBooking('Pay at Hotel')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                    {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button size="lg" className="w-full" onClick={() => preBookingCheck() && handleBooking('Pay at Hotel')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                    {isBooking && activePaymentMethod === 'Pay at Hotel' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     { user ? 'Reserve Now, Pay at Hotel' : 'Login to Reserve' }
                 </Button>
                 <div className="relative w-full my-4">
@@ -269,15 +320,15 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                          <Input id="card" placeholder="Card Number" className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" disabled={isBooking} />
                       </div>
                     </div>
-                    <Button size="lg" className="w-full" onClick={() => handleBooking('Credit Card')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                      {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    <Button size="lg" className="w-full" onClick={() => preBookingCheck() && handleBooking('Credit Card')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                      {isBooking && activePaymentMethod === 'Credit Card' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       { user ? 'Pay & Book Now' : 'Login to Book' }
                     </Button>
                   </TabsContent>
                    <TabsContent value="paystack" className="mt-4 text-center">
                       <p className="text-sm text-muted-foreground mb-4">You will be redirected to Paystack to complete your payment.</p>
-                       <Button size="lg" className="w-full" onClick={() => handleBooking('Paystack')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                       <Button size="lg" className="w-full" onClick={handlePaystackPayment} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                        {isBooking && activePaymentMethod === 'Paystack' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         { user ? 'Pay with Paystack' : 'Login to Book' }
                       </Button>
                    </TabsContent>
@@ -286,8 +337,8 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                         <Label htmlFor="phone">Phone Number</Label>
                         <Input id="phone" placeholder="e.g. 0712345678" disabled={isBooking} />
                       </div>
-                       <Button size="lg" className="w-full" onClick={() => handleBooking('M-Pesa')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                        {isBooking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                       <Button size="lg" className="w-full" onClick={() => preBookingCheck() && handleBooking('M-Pesa')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                        {isBooking && activePaymentMethod === 'M-Pesa' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         { user ? 'Pay with M-Pesa' : 'Login to Book' }
                       </Button>
                    </TabsContent>

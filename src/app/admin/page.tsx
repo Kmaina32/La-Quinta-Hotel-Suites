@@ -317,7 +317,7 @@ export default function AdminPage() {
                         />
                         <button
                             type="button"
-                            onClick={()={() => setShowPassword(!showPassword)}
+                            onClick={() => setShowPassword(!showPassword)}
                             className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
@@ -709,5 +709,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
 
     

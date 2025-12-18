@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, setUserRole, getAnalyticsData } from '@/lib/actions';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, UserRole, AnalyticsData } from '@/lib/types';
 import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck, Crown, Shield, Building } from 'lucide-react';
 import Image from 'next/image';
@@ -744,7 +744,8 @@ export default function AdminPage() {
                 <CardDescription>Assign roles to users. Only owners can change roles.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {users.length === 0 && <p className="text-muted-foreground text-center py-8">No users found.</p>}
+                {users.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No users found.</p>}
+                {users.length === 0 && loading && <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin"/></div>}
                 {users.map(user => (
                     <Card key={user.uid} className="p-4">
                        <div className="flex items-center gap-4">

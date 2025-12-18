@@ -97,7 +97,7 @@ export default function AdminPage() {
         if (activeTab === 'rooms' || activeTab === 'transactions') setRooms(results[resultIndex++]);
         if (activeTab === 'content') {
             const establishmentData = results[resultIndex++];
-            const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
+            const sortedGallery = establishmentData.galleryImages.sort((a: any, b: any) => a.id.localeCompare(b.id));
             setGalleryImages(sortedGallery);
             setHeroImage(establishmentData.heroImage?.src || '');
             const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
@@ -300,7 +300,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
         <div className="flex items-center justify-center py-12 px-4">
           <div className="mx-auto grid w-[350px] gap-6">
             <div className="grid gap-2 text-center">

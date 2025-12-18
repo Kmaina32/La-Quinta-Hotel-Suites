@@ -56,7 +56,9 @@ export interface Message {
 export interface UserData {
   uid: string;
   email: string | null;
-  phoneNumber?: string | null;
-  photoURL?: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  metadata: any;
 }
+
 

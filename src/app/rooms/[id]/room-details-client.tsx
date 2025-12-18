@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import PaystackPop from '@paystack/inline-js';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Autoplay from "embla-carousel-autoplay"
 
 
 export default function RoomDetailsClient({ room }: { room: Room }) {
@@ -27,6 +29,8 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+  const plugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
+
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
@@ -174,8 +178,8 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
 
   return (
     <div className="container mx-auto py-12 px-4">
-      {/* Image Gallery Grid */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 md:gap-4 h-[300px] md:h-[550px]">
+      {/* --- Desktop Image Gallery Grid --- */}
+      <div className="mb-8 hidden md:grid md:grid-cols-4 md:grid-rows-2 md:gap-4 h-[550px]">
         {allImages.length > 0 && (
           <div className="md:col-span-2 md:row-span-2 relative rounded-lg overflow-hidden h-full">
             <Image
@@ -184,6 +188,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
               fill
               className="object-cover w-full h-full"
               priority
+              sizes="(min-width: 768px) 50vw, 100vw"
               data-ai-hint="hotel room interior"
             />
           </div>
@@ -195,6 +200,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     alt={`${room.name} detail 1`}
                     fill
                     className="object-cover w-full h-full"
+                    sizes="(min-width: 768px) 25vw, 100vw"
                     data-ai-hint="hotel room detail"
                 />
             </div>
@@ -206,6 +212,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     alt={`${room.name} detail 2`}
                     fill
                     className="object-cover w-full h-full"
+                    sizes="(min-width: 768px) 25vw, 100vw"
                     data-ai-hint="hotel room detail"
                 />
             </div>
@@ -217,6 +224,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     alt={`${room.name} detail 3`}
                     fill
                     className="object-cover w-full h-full"
+                     sizes="(min-width: 768px) 25vw, 100vw"
                     data-ai-hint="hotel room amenity"
                 />
                 {allImages.length > 4 && (
@@ -227,6 +235,35 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
             </div>
         )}
       </div>
+
+       {/* --- Mobile Image Carousel --- */}
+       <div className="md:hidden mb-8">
+         <Carousel
+            opts={{ loop: true }}
+            plugins={[plugin.current]}
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+            className="w-full"
+        >
+            <CarouselContent>
+                {allImages.map((src, index) => (
+                <CarouselItem key={index}>
+                    <div className="aspect-video relative rounded-lg overflow-hidden">
+                        <Image
+                            src={src}
+                            alt={`${room.name} image ${index + 1}`}
+                            fill
+                            className="object-cover w-full h-full"
+                            sizes="100vw"
+                        />
+                    </div>
+                </CarouselItem>
+                ))}
+            </CarouselContent>
+            <CarouselPrevious className="absolute left-4" />
+            <CarouselNext className="absolute right-4" />
+        </Carousel>
+       </div>
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

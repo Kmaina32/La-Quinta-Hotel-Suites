@@ -1,12 +1,16 @@
 
-import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Metadata } from 'next';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'About Us',
-  description: 'Learn about the history, mission, and team behind La Quita Hotel & suits.',
-};
+import { Card, CardContent } from '@/components/ui/card';
+import { Metadata } from 'next';
+import { Mail, MapPin, Phone } from 'lucide-react';
+import Image from 'next/image';
+
+// Even though this is a client component for the map, we can export metadata
+// export const metadata: Metadata = {
+//   title: 'About Us | La Quita',
+//   description: 'Learn about the history, mission, and team behind La Quita Hotel & suites.',
+// };
 
 export default function AboutPage() {
   const teamMembers = [
@@ -39,17 +43,8 @@ export default function AboutPage() {
         </p>
       </div>
 
-      {/* Our Story Section */}
+      {/* Our Story & Mission Section */}
       <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
-        <div className="relative h-96 w-full rounded-2xl overflow-hidden shadow-lg">
-          <Image
-            src="https://picsum.photos/seed/about-story/800/600"
-            alt="La Quita Hotel view"
-            fill
-            style={{ objectFit: 'cover' }}
-            data-ai-hint="hotel architecture"
-          />
-        </div>
         <div className="space-y-4">
           <h2 className="text-3xl font-semibold">Our Story</h2>
           <p className="text-muted-foreground leading-relaxed">
@@ -59,11 +54,7 @@ export default function AboutPage() {
             From the architectural design that reflects the beauty of the surrounding landscape to the meticulously curated interiors, every detail at La Quita has been thoughtfully considered to provide our guests with an unparalleled experience.
           </p>
         </div>
-      </div>
-
-      {/* Our Mission Section */}
-      <div className="grid md:grid-cols-2 gap-12 items-center mb-24 bg-secondary p-12 rounded-2xl">
-         <div className="space-y-4 md:order-2">
+         <div className="space-y-4">
           <h2 className="text-3xl font-semibold">Our Mission</h2>
           <p className="text-muted-foreground leading-relaxed">
             Our mission is to be more than just a place to stay. We aspire to be a destination where memories are made, where our guests can unwind, connect, and be inspired.
@@ -72,17 +63,42 @@ export default function AboutPage() {
             We are committed to delivering exceptional service, providing luxurious comfort, and creating authentic experiences that celebrate the rich culture and natural beauty of Kenya. Your comfort is our commitment.
           </p>
         </div>
-        <div className="relative h-96 w-full rounded-2xl overflow-hidden shadow-lg md:order-1">
-          <Image
-            src="https://picsum.photos/seed/about-mission/800/600"
-            alt="Hotel Lobby"
-            fill
-            style={{ objectFit: 'cover' }}
-            data-ai-hint="hotel lobby"
-          />
-        </div>
       </div>
       
+       {/* Location Section */}
+      <section id="location" className="mb-24">
+        <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold">Our Location</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2 rounded-2xl overflow-hidden shadow-lg h-96">
+                <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.813161390462!2d36.05940597585358!3d-0.329364399679103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1829921c87621c57%3A0x86f788b13c388f62!2sLa%20Quinta%20Hotel%2C%20Lounge%20%26%20Suites!5e0!3m2!1sen!2ske!4v1700049448101!5m2!1sen!2ske"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen={false}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                ></iframe>
+            </div>
+             <div className="flex flex-col justify-center space-y-6">
+                <a href="https://maps.app.goo.gl/mpzfqvHyTpLaD7UQ6" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 hover:text-primary transition-colors">
+                    <MapPin className="h-8 w-8 text-primary" />
+                    <span className="text-lg">Elementaita road, Nakuru, Kenya</span>
+                </a>
+                <a href="mailto:contact@laquita.com" className="flex items-center gap-4 hover:text-primary transition-colors">
+                    <Mail className="h-8 w-8 text-primary" />
+                    <span className="text-lg">contact@laquita.com</span>
+                </a>
+                <a href="tel:0759713882" className="flex items-center gap-4 hover:text-primary transition-colors">
+                    <Phone className="h-8 w-8 text-primary" />
+                    <span className="text-lg">0759713882</span>
+                </a>
+            </div>
+        </div>
+      </section>
+
       {/* Meet the Team Section */}
       <section id="team" className="text-center">
         <h2 className="text-3xl font-bold mb-8">Meet Our Team</h2>

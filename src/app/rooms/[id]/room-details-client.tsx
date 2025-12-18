@@ -170,33 +170,58 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
 
   const nights = date?.to && date?.from ? Math.max(0, differenceInCalendarDays(date.to, date.from)) : 0;
   const totalCost = nights * room.price;
+  const allImages = [room.imageUrl, ...(room.images || []).map(img => img.src)].filter(Boolean);
+
 
   return (
     <div className="container mx-auto py-12 px-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-8">
-        <div className="relative h-96 w-full rounded-lg overflow-hidden md:col-span-2">
-          <Image
-            src={room.imageUrl}
-            alt={room.name}
-            fill
-            style={{ objectFit: 'cover' }}
-            className="hover:scale-105 transition-transform duration-300"
-            data-ai-hint="hotel room interior"
-          />
-        </div>
-        {room.images && room.images.filter(image => image.src).map(image => (
-          <div key={image.id} className="relative h-48 w-full rounded-lg overflow-hidden">
+      {/* Image Gallery Grid */}
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 md:gap-4 h-[300px] md:h-[550px]">
+        {allImages.length > 0 && (
+          <div className="md:col-span-2 md:row-span-2 relative rounded-lg overflow-hidden h-full">
+            <Image
+              src={allImages[0]}
+              alt={room.name}
+              fill
+              className="object-cover w-full h-full"
+              priority
+              data-ai-hint="hotel room interior"
+            />
+          </div>
+        )}
+        {allImages.slice(1, 3).map((src, index) => (
+           <div key={index} className="relative hidden md:block rounded-lg overflow-hidden">
              <Image
-                src={image.src}
-                alt={image.alt}
+                src={src}
+                alt={`${room.name} detail ${index + 1}`}
                 fill
-                style={{ objectFit: 'cover' }}
-                className="hover:scale-105 transition-transform duration-300"
+                className="object-cover w-full h-full"
                 data-ai-hint="hotel room detail"
               />
-          </div>
+           </div>
+        ))}
+         {allImages.length > 3 && (
+            <div className="relative hidden md:block rounded-lg overflow-hidden">
+                <Image
+                    src={allImages[3]}
+                    alt={`${room.name} detail 3`}
+                    fill
+                    className="object-cover w-full h-full"
+                    data-ai-hint="hotel room amenity"
+                />
+                {allImages.length > 4 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-2xl font-bold">
+                        +{allImages.length - 4}
+                    </div>
+                )}
+            </div>
+        )}
+         {/* Fallback for when there are fewer than 4 images */}
+        {allImages.length > 0 && allImages.length <= 3 && Array.from({length: 4 - allImages.length}).map((_, i) => (
+             <div key={`placeholder-${i}`} className="hidden md:block bg-secondary rounded-lg"></div>
         ))}
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2">

@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from '@/components/ui/separator';
 import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle } from 'lucide-react';
 import { createBooking, initializePaystackTransaction } from '@/lib/actions';
@@ -189,17 +188,28 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
             />
           </div>
         )}
-        {allImages.slice(1, 3).map((src, index) => (
-           <div key={index} className="relative hidden md:block rounded-lg overflow-hidden">
-             <Image
-                src={src}
-                alt={`${room.name} detail ${index + 1}`}
-                fill
-                className="object-cover w-full h-full"
-                data-ai-hint="hotel room detail"
-              />
-           </div>
-        ))}
+        {allImages.length > 1 && (
+            <div className="relative hidden md:block rounded-lg overflow-hidden">
+                <Image
+                    src={allImages[1]}
+                    alt={`${room.name} detail 1`}
+                    fill
+                    className="object-cover w-full h-full"
+                    data-ai-hint="hotel room detail"
+                />
+            </div>
+        )}
+        {allImages.length > 2 && (
+            <div className="relative hidden md:block rounded-lg overflow-hidden">
+                <Image
+                    src={allImages[2]}
+                    alt={`${room.name} detail 2`}
+                    fill
+                    className="object-cover w-full h-full"
+                    data-ai-hint="hotel room detail"
+                />
+            </div>
+        )}
          {allImages.length > 3 && (
             <div className="relative hidden md:block rounded-lg overflow-hidden">
                 <Image
@@ -216,10 +226,6 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                 )}
             </div>
         )}
-         {/* Fallback for when there are fewer than 4 images */}
-        {allImages.length > 0 && allImages.length <= 3 && Array.from({length: 4 - allImages.length}).map((_, i) => (
-             <div key={`placeholder-${i}`} className="hidden md:block bg-secondary rounded-lg"></div>
-        ))}
       </div>
 
 
@@ -253,7 +259,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
               <CardTitle className="text-2xl">Book Your Stay</CardTitle>
               <CardDescription>
                  <span className="text-3xl font-bold text-foreground">KES {room.price}</span>
-                 <span className="text-base font-normal text-muted-foreground"> / night</span>
+                 <span className="text-base font-normal text-muted-foreground"> / {room.type === 'room' ? 'night' : 'day'}</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -318,56 +324,19 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     </div>
                 )}
             </CardContent>
-            <CardFooter className="flex flex-col">
+            <CardFooter className="flex flex-col gap-4">
                 <Button size="lg" className="w-full" onClick={() => preBookingCheck() && handleBooking('Pay at Hotel')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
                     {isBooking && activePaymentMethod === 'Pay at Hotel' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     { user ? 'Reserve Now, Pay at Hotel' : 'Login to Reserve' }
                 </Button>
-                <div className="relative w-full my-4">
+                <div className="relative w-full">
                     <Separator />
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">OR PAY NOW WITH</span>
+                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">OR</span>
                 </div>
-                <Tabs defaultValue="card" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="card" disabled={isBooking}>Card</TabsTrigger>
-                    <TabsTrigger value="paystack" disabled={isBooking}>Paystack</TabsTrigger>
-                    <TabsTrigger value="mpesa" disabled={isBooking}>M-Pesa</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="card" className="mt-4 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" placeholder="Cardholder Name" disabled={isBooking} />
-                    </div>
-                     <div className="space-y-2">
-                      <Label htmlFor="card">Card Information</Label>
-                      <div className="flex items-center gap-2 border rounded-md px-3">
-                         <CreditCard className="h-5 w-5 text-muted-foreground" />
-                         <Input id="card" placeholder="Card Number" className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" disabled={isBooking} />
-                      </div>
-                    </div>
-                    <Button size="lg" className="w-full" onClick={() => preBookingCheck() && handleBooking('Credit Card')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                      {isBooking && activePaymentMethod === 'Credit Card' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      { user ? 'Pay & Book Now' : 'Login to Book' }
-                    </Button>
-                  </TabsContent>
-                   <TabsContent value="paystack" className="mt-4 text-center">
-                      <p className="text-sm text-muted-foreground mb-4">You will be redirected to Paystack to complete your payment.</p>
-                       <Button size="lg" className="w-full" onClick={handlePaystackPayment} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                        {isBooking && activePaymentMethod === 'Paystack' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        { user ? 'Pay with Paystack' : 'Login to Book' }
-                      </Button>
-                   </TabsContent>
-                   <TabsContent value="mpesa" className="mt-4 space-y-4">
-                       <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input id="phone" placeholder="e.g. 0712345678" disabled={isBooking} />
-                      </div>
-                       <Button size="lg" className="w-full" onClick={() => preBookingCheck() && handleBooking('M-Pesa')} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                        {isBooking && activePaymentMethod === 'M-Pesa' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        { user ? 'Pay with M-Pesa' : 'Login to Book' }
-                      </Button>
-                   </TabsContent>
-                </Tabs>
+                <Button size="lg" className="w-full" onClick={handlePaystackPayment} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
+                    {isBooking && activePaymentMethod === 'Paystack' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    { user ? 'Pay & Book Now' : 'Login to Book' }
+                </Button>
             </CardFooter>
             
           </Card>

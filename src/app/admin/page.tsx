@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
+import { Logo } from '@/components/logo';
 
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
@@ -38,6 +39,7 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { isAdmin, loginAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -275,17 +277,61 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="container mx-auto py-12 flex justify-center items-center min-h-[calc(100vh-10rem)]">
-        <Card className="w-full max-w-md">
-          <CardHeader><CardTitle className="text-center">Admin Login</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              <Button type="submit" className="w-full">Login</Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+        <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
+            <div className="absolute inset-0 bg-zinc-900" />
+             <div className="relative z-20 flex items-center text-lg font-medium">
+                <Logo className="h-12 w-48" />
+            </div>
+            <div className="relative z-20 mt-auto">
+                <blockquote className="space-y-2">
+                <p className="text-lg">
+                    &ldquo;This control panel gives us the power to shape our guest's experience in real-time. It's an indispensable tool for managing our hotel with precision and care.&rdquo;
+                </p>
+                <footer className="text-sm">Hotel Management</footer>
+                </blockquote>
+            </div>
+        </div>
+        <div className="lg:p-8">
+            <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+                <div className="flex flex-col space-y-2 text-center">
+                    <h1 className="text-2xl font-semibold tracking-tight">
+                        Admin Control Panel
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Enter your administrative password to access the dashboard.
+                    </p>
+                </div>
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label className="sr-only" htmlFor="password">Password</Label>
+                        <div className="relative">
+                        <Input 
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="••••••••" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            className="pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={()={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                        </div>
+                    </div>
+                    <Button type="submit" className="w-full">
+                        <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
+                    </Button>
+                </form>
+            </div>
+        </div>
+        </div>
     );
   }
 
@@ -663,3 +709,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    

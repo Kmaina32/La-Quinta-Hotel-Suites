@@ -10,7 +10,7 @@ import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, Chec
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createPoster } from '@/ai/flows/create-poster-flow';
@@ -367,7 +367,10 @@ export default function AdminPage() {
     return room.inventory - bookedCount;
   }
 
-  const getStatusChip = (status: Booking['status']) => {
+  const getStatusChip = (status: Booking['status'], checkIn: string) => {
+    if (status === 'confirmed' && isPast(new Date(checkIn))) {
+       return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-800">Completed</div>;
+    }
     switch(status) {
         case 'confirmed':
             return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1"/>Confirmed</div>;
@@ -688,13 +691,15 @@ export default function AdminPage() {
                 {bookings.length === 0 && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
                 {bookings.map(booking => {
                     const availability = getAvailabilityForBooking(booking);
+                    const isPastBooking = isPast(new Date(booking.checkIn));
+
                     return (
                         <Card key={booking.id} className={cn("p-4 transition-colors", booking.status === 'cancelled' && 'bg-muted/50')}>
                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2 space-y-2">
                                     <div className="flex items-start justify-between">
                                         <CardTitle className="text-xl">{booking.roomName}</CardTitle>
-                                        {getStatusChip(booking.status)}
+                                        {getStatusChip(booking.status, booking.checkIn)}
                                     </div>
                                     
                                     <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
@@ -709,9 +714,9 @@ export default function AdminPage() {
                                     <div className="text-muted-foreground">Payment: {booking.paymentMethod}</div>
                                     <div className="flex items-center gap-2">
                                         <Bed className="h-4 w-4"/>
-                                        <span>Rooms available: {availability}</span>
+                                        <span>Rooms available on check-in: {availability}</span>
                                     </div>
-                                    {booking.status !== 'cancelled' && (role === 'owner' || role === 'admin') && (
+                                    {booking.status !== 'cancelled' && !isPastBooking && (role === 'owner' || role === 'admin') && (
                                         <Button 
                                             variant="destructive" 
                                             size="sm" 

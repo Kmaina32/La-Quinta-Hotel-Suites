@@ -50,7 +50,7 @@ export default function AdminHeader() {
              <span className="font-semibold text-lg hidden sm:inline border-l pl-4">Admin Panel</span>
           </Link>
           {isAdmin && (
-            <nav className="hidden md:flex items-center gap-1 rounded-lg p-1 bg-muted">
+            <nav className="hidden lg:flex items-center gap-1 rounded-lg p-1 bg-muted">
               {navLinks.map(link => (
                 <Button
                   key={link.id}
@@ -76,13 +76,13 @@ export default function AdminHeader() {
             </Button>
           {isAdmin && (
             <>
-              <div className="hidden md:flex">
+              <div className="hidden lg:flex">
                 <Button variant="outline" onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                 </Button>
               </div>
-              <div className="md:hidden">
+              <div className="lg:hidden">
                 <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                   {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                   <span className="sr-only">Toggle menu</span>
@@ -93,7 +93,7 @@ export default function AdminHeader() {
         </div>
       </div>
        {isMenuOpen && isAdmin && (
-        <div className="md:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
+        <div className="lg:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
           <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg">
             <nav className="flex flex-col items-center gap-2 py-6">
               {navLinks.map((link) => (

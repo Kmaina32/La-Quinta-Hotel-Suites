@@ -16,6 +16,8 @@ export async function uploadImage(formData: FormData): Promise<string> {
     }
 
     const storage = getStorage();
+    if (!storage) throw new Error("Firebase Admin not initialized. Cannot upload image.");
+    
     const bucket = storage.bucket();
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -37,6 +39,10 @@ export async function uploadImage(formData: FormData): Promise<string> {
 export async function getRooms(): Promise<Room[]> {
     try {
         const db = getDb();
+        if (!db) {
+            console.error('Error fetching rooms: Firebase Admin not initialized.');
+            return [];
+        }
         const roomsCollection = db.collection('rooms');
         const roomsSnapshot = await roomsCollection.orderBy('price').get();
         const roomsList = roomsSnapshot.docs.map(doc => ({
@@ -53,6 +59,10 @@ export async function getRooms(): Promise<Room[]> {
 export async function getRoom(id: string): Promise<Room | null> {
     try {
         const db = getDb();
+        if (!db) {
+            console.error(`Error fetching room ${id}: Firebase Admin not initialized.`);
+            return null;
+        }
         const roomDoc = db.collection('rooms').doc(id);
         const roomSnapshot = await roomDoc.get();
 
@@ -69,6 +79,7 @@ export async function getRoom(id: string): Promise<Room | null> {
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const roomDocRef = db.collection('rooms').doc(id);
     await roomDocRef.update(room);
     revalidatePath('/');
@@ -79,6 +90,7 @@ export async function updateRoomDetails(id: string, room: Partial<Room>) {
 
 export async function addRoom(newRoom: Omit<Room, 'id'>) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const roomRef = await db.collection('rooms').add(newRoom);
     await roomRef.update({ id: roomRef.id, inventory: 1, booked: {} });
     revalidatePath('/');
@@ -89,6 +101,7 @@ export async function addRoom(newRoom: Omit<Room, 'id'>) {
 
 export async function deleteRoom(id: string) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const roomDocRef = db.collection('rooms').doc(id);
     await roomDocRef.delete();
     revalidatePath('/');
@@ -102,6 +115,10 @@ export async function deleteRoom(id: string) {
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
     try {
         const db = getDb();
+        if (!db) {
+            console.error('Error fetching establishment images: Firebase Admin not initialized.');
+            return { heroImage: null, galleryImages: [] };
+        }
         const establishmentCollection = db.collection('establishment');
 
         const heroDoc = await establishmentCollection.doc('hero-image').get();
@@ -121,6 +138,7 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
 
 export async function updateHeroImage(src: string) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const heroDocRef = db.collection('establishment').doc('hero-image');
     await heroDocRef.set({ src, alt: 'Hero Image', 'data-ai-hint': 'hotel exterior' }, { merge: true });
     revalidatePath('/');
@@ -129,6 +147,7 @@ export async function updateHeroImage(src: string) {
 
 export async function updateGalleryImage(id: string, src: string) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const imageDocRef = db.collection('establishment').doc(id);
     await imageDocRef.update({ src });
     revalidatePath('/');
@@ -137,6 +156,7 @@ export async function updateGalleryImage(id: string, src: string) {
 
 export async function addGalleryImage(newImage: Omit<EstablishmentImage, 'id'>) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const newImageRef = await db.collection('establishment').add(newImage);
     await newImageRef.update({ id: newImageRef.id });
     revalidatePath('/');
@@ -146,6 +166,7 @@ export async function addGalleryImage(newImage: Omit<EstablishmentImage, 'id'>) 
 
 export async function deleteGalleryImage(id: string) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     if (id === 'hero-image') return; // Cannot delete hero
     const imageDocRef = db.collection('establishment').doc(id);
     await imageDocRef.delete();
@@ -156,6 +177,10 @@ export async function deleteGalleryImage(id: string) {
 export async function getSiteSettings(): Promise<SiteSettings> {
     try {
         const db = getDb();
+        if (!db) {
+            console.error('Error fetching site settings: Firebase Admin not initialized.');
+            return { activeTheme: 'default' };
+        }
         const settingsDoc = await db.collection('establishment').doc('site-settings').get();
         if (!settingsDoc.exists) {
             // Return default settings if none are found
@@ -170,6 +195,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
 export async function updateSiteSettings(settings: SiteSettings) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const settingsDocRef = db.collection('establishment').doc('site-settings');
     await settingsDocRef.set(settings, { merge: true });
     // Revalidate all paths to reflect theme changes
@@ -180,6 +206,7 @@ export async function updateSiteSettings(settings: SiteSettings) {
 // == Bookings ==
 export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn' | 'status'>, isReservation: boolean = false) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const roomRef = db.collection('rooms').doc(bookingData.roomId);
 
     const transactionError = await db.runTransaction(async (transaction) => {
@@ -232,6 +259,7 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
 
 export async function getBookingsForUser(userId: string): Promise<Booking[]> {
     const db = getDb();
+    if (!db) return [];
     const bookingsSnapshot = await db.collection('bookings')
         .where('userId', '==', userId)
         .get();
@@ -246,12 +274,14 @@ export async function getBookingsForUser(userId: string): Promise<Booking[]> {
 
 export async function getAllBookings(): Promise<Booking[]> {
     const db = getDb();
+    if (!db) return [];
     const bookingsSnapshot = await db.collection('bookings').orderBy('bookedOn', 'desc').get();
     return bookingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Booking);
 }
 
 export async function cancelBooking(bookingId: string) {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const bookingRef = db.collection('bookings').doc(bookingId);
 
     const transactionError = await db.runTransaction(async (transaction) => {
@@ -298,6 +328,7 @@ export async function cancelBooking(bookingId: string) {
 // == Messages ==
 export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
     const db = getDb();
+    if (!db) throw new Error("Firebase Admin not initialized.");
     const newMessage = {
         ...messageData,
         sentAt: new Date().toISOString(),
@@ -309,6 +340,7 @@ export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | '
 
 export async function getMessages(): Promise<Message[]> {
     const db = getDb();
+    if (!db) return [];
     const messagesSnapshot = await db.collection('messages').orderBy('sentAt', 'desc').get();
     return messagesSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -319,6 +351,7 @@ export async function getMessages(): Promise<Message[]> {
 // == Users & Roles ==
 export async function getAllUsers(): Promise<UserData[]> {
     const auth = getAuthAdmin();
+    if (!auth) return [];
     const userRecords = await auth.listUsers();
     return userRecords.users.map(user => ({
         uid: user.uid,
@@ -332,6 +365,7 @@ export async function getAllUsers(): Promise<UserData[]> {
 
 export async function setUserRole(uid: string, role: UserRole | null) {
     const auth = getAuthAdmin();
+    if (!auth) throw new Error("Firebase Admin not initialized.");
     // In a real app, you MUST verify that the user calling this function is an owner.
     // This is a simplified example.
     await auth.setCustomUserClaims(uid, { role });
@@ -409,6 +443,10 @@ export async function verifyPaystackTransaction(reference: string) {
 
 export async function confirmBookingFromWebhook(reference: string) {
     const db = getDb();
+    if (!db) {
+        console.error(`Webhook for ${reference} received, but DB is not initialized.`);
+        return;
+    };
     const bookingRef = db.collection('bookings').doc(reference);
 
     const bookingDoc = await bookingRef.get();
@@ -427,6 +465,16 @@ export async function confirmBookingFromWebhook(reference: string) {
 // == Analytics ==
 export async function getAnalyticsData(): Promise<AnalyticsData> {
     const db = getDb();
+    if (!db) {
+        console.error("Cannot get analytics data: Firebase Admin not initialized.");
+        return {
+            totalRevenue: 0,
+            totalBookings: 0,
+            occupancyRate: 0,
+            revenueByRoom: [],
+            bookingsPerMonth: [],
+        };
+    }
     const bookings = await getAllBookings();
     const rooms = await getRooms();
 

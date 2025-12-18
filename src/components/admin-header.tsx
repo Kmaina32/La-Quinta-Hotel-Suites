@@ -11,17 +11,26 @@ import { LogOut, Home, MessageSquare, Image as ImageIcon, Building2, CreditCard,
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
+// This function runs only on the client and avoids the flicker.
+const getInitialAuthState = () => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    return sessionStorage.getItem('la-quita-admin-auth') === 'true';
+};
+
 export default function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Initialize state directly from sessionStorage on the client.
+  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // This effect ensures the state is updated on navigation changes (e.g., after login).
   useEffect(() => {
-    const authStatus = sessionStorage.getItem('la-quita-admin-auth') === 'true';
-    setIsAuthenticated(authStatus);
-  }, [searchParams, pathname]); // Re-check on navigation
+    setIsAuthenticated(getInitialAuthState());
+  }, [searchParams, pathname]);
 
 
   const activeTab = searchParams.get('tab') || 'content';

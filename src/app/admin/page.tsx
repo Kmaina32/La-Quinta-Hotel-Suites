@@ -18,7 +18,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/use-auth';
 
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
@@ -37,7 +38,7 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAdmin, loginAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -67,17 +68,12 @@ export default function AdminPage() {
 
 
   useEffect(() => {
-    const checkAuth = () => {
-      const auth = sessionStorage.getItem('la-quita-admin-auth');
-      if (auth === 'true') {
-        setIsAuthenticated(true);
-        fetchData();
-      } else {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
+    if (isAdmin) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAdmin]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -113,11 +109,7 @@ export default function AdminPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === '38448674') {
-      sessionStorage.setItem('la-quita-admin-auth', 'true');
-      setIsAuthenticated(true);
-      fetchData();
-      // Force re-render of header by triggering navigation state change
-      router.replace(pathname + '?' + searchParams.toString());
+      loginAdmin();
     } else {
       toast({ title: "Login Failed", description: "Incorrect password", variant: "destructive" });
     }
@@ -279,9 +271,9 @@ export default function AdminPage() {
     setPosterForm(prev => ({ ...prev, [field]: value }));
   };
 
-  if (loading && !isAuthenticated) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
+  if (loading && !isAdmin) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
 
-  if (!isAuthenticated) {
+  if (!isAdmin) {
     return (
       <div className="container mx-auto py-12 flex justify-center items-center min-h-[calc(100vh-10rem)]">
         <Card className="w-full max-w-md">
@@ -671,8 +663,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
-
-    
-

@@ -26,11 +26,11 @@ export default async function Home() {
     <>
       <SeoStructuredData />
       {/* Hero Section */}
-      <section className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-white p-4">
+      <section className="relative h-[60vh] md:h-[80vh] w-full flex items-center justify-center text-white p-4">
         <div className="absolute inset-4 md:inset-8 rounded-2xl overflow-hidden">
           <Image
             src={heroImage?.src || "https://picsum.photos/seed/hero/1200/800"}
-            alt={heroImage?.alt || "La Quita Hotel & suits exterior"}
+            alt={heroImage?.alt || "La Quita Hotel & suites exterior"}
             fill
             style={{ objectFit: 'cover' }}
             className="brightness-50"
@@ -45,9 +45,11 @@ export default async function Home() {
           <p className="mt-4 text-lg md:text-2xl max-w-2xl">
             Experience unparalleled luxury and comfort in the heart of the city.
           </p>
-          <HeroBookingForm />
         </div>
       </section>
+
+      {/* Booking Form Section */}
+      <HeroBookingForm />
 
       {/* Rooms Section */}
       <section id="rooms" className="py-16">

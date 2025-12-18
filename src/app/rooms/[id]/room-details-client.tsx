@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
-import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle } from 'lucide-react';
+import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle, Clock } from 'lucide-react';
 import { createBooking, initializePaystackTransaction } from '@/lib/actions';
 import type { Room } from '@/lib/types';
 import { format, addDays, eachDayOfInterval, differenceInCalendarDays } from "date-fns";
@@ -251,6 +251,18 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
               </>
             )}
           </div>
+           <Separator className="my-8" />
+           <div className="space-y-4">
+            <h3 className="text-2xl font-semibold">Hotel Policies</h3>
+            <div className="flex items-center gap-4 text-muted-foreground">
+                <Clock className="h-5 w-5"/>
+                <p>Check-in: <strong>2:00 PM</strong></p>
+            </div>
+            <div className="flex items-center gap-4 text-muted-foreground">
+                <Clock className="h-5 w-5"/>
+                <p>Check-out: <strong>11:00 AM</strong></p>
+            </div>
+          </div>
         </div>
 
         <div className="lg:col-span-1">
@@ -334,7 +346,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                     <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">OR</span>
                 </div>
                 <Button size="lg" className="w-full" onClick={handlePaystackPayment} disabled={isBooking || nights <= 0 || !isRoomAvailable}>
-                    {isBooking && activePaymentMethod === 'Paystack' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isBooking && activePaymentMethod === 'Paystack' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
                     { user ? 'Pay & Book Now' : 'Login to Book' }
                 </Button>
             </CardFooter>

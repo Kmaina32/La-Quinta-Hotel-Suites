@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings } from '@/lib/actions';
-import type { Room, EstablishmentImage, Message, Booking, SiteSettings } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload } from 'lucide-react';
+import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers } from '@/lib/actions';
+import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData } from '@/lib/types';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
@@ -41,6 +42,7 @@ export default function AdminPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [galleryImages, setGalleryImages] = useState<EstablishmentImage[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [heroImage, setHeroImage] = useState('');
@@ -80,17 +82,19 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roomsData, establishmentData, messagesData, bookingsData, settingsData] = await Promise.all([
+      const [roomsData, establishmentData, messagesData, bookingsData, settingsData, usersData] = await Promise.all([
         getRooms(),
         getEstablishmentImages(),
         getMessages(),
         getAllBookings(),
         getSiteSettings(),
+        getAllUsers(),
       ]);
       setRooms(roomsData);
       setMessages(messagesData);
       setBookings(bookingsData);
       setSiteSettings(settingsData);
+      setUsers(usersData);
       const sortedGallery = establishmentData.galleryImages.sort((a, b) => a.id.localeCompare(b.id));
       setGalleryImages(sortedGallery);
       setHeroImage(establishmentData.heroImage?.src || '');
@@ -112,7 +116,7 @@ export default function AdminPage() {
       sessionStorage.setItem('la-quita-admin-auth', 'true');
       setIsAuthenticated(true);
       fetchData();
-      // Force re-render of header
+      // Force re-render of header by triggering navigation state change
       router.replace(pathname + '?' + searchParams.toString());
     } else {
       toast({ title: "Login Failed", description: "Incorrect password", variant: "destructive" });
@@ -587,6 +591,36 @@ export default function AdminPage() {
             </CardContent>
         </Card>
       )}
+
+      {activeTab === 'users' && (
+        <Card>
+            <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>View all registered users in the system.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {users.length === 0 && <p className="text-muted-foreground text-center py-8">No users found.</p>}
+                {users.map(user => (
+                    <Card key={user.uid} className="p-4">
+                       <div className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12">
+                                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                                <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : <User className="h-6 w-6" />}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-grow">
+                                <p className="font-semibold">{user.displayName || 'No Name'}</p>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                            <div className="text-right text-sm text-muted-foreground">
+                                <p>Last signed in:</p>
+                                <p>{user.metadata.lastSignInTime ? formatDistanceToNow(new Date(user.metadata.lastSignInTime), {addSuffix: true}) : 'Never'}</p>
+                            </div>
+                       </div>
+                    </Card>
+                ))}
+            </CardContent>
+        </Card>
+      )}
       
       {activeTab === 'messages' && (
           <Card>
@@ -641,3 +675,4 @@ export default function AdminPage() {
     
 
     
+

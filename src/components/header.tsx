@@ -60,7 +60,7 @@ export default function Header() {
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-2">
+        <nav className="hidden lg:flex items-center gap-2">
           {navLinks.map((link) => (
             <Button key={link.href} variant="ghost" asChild>
               <Link
@@ -81,7 +81,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -110,7 +110,7 @@ export default function Header() {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="md:hidden">
+        <div className="lg:hidden">
             <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               <span className="sr-only">Toggle menu</span>
@@ -120,7 +120,7 @@ export default function Header() {
 
       {/* Mobile Menu Panel */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
+        <div className="lg:hidden absolute top-[calc(100%-0.5rem)] right-0 w-1/2 px-2 z-40">
           <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg">
             <nav className="flex flex-col items-center gap-6 py-6">
               {navLinks.map((link) => (

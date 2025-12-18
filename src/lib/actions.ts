@@ -29,32 +29,42 @@ export async function uploadImage(formData: FormData): Promise<string> {
     });
 
     await fileUpload.makePublic();
-    
+
     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
 // == Rooms ==
 export async function getRooms(): Promise<Room[]> {
-  const db = getDb();
-  const roomsCollection = db.collection('rooms');
-  const roomsSnapshot = await roomsCollection.orderBy('price').get();
-  const roomsList = roomsSnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Room[];
-  return roomsList.filter(room => room.imageUrl);
+    try {
+        const db = getDb();
+        const roomsCollection = db.collection('rooms');
+        const roomsSnapshot = await roomsCollection.orderBy('price').get();
+        const roomsList = roomsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as Room[];
+        return roomsList.filter(room => room.imageUrl);
+    } catch (error) {
+        console.error('Error fetching rooms:', error);
+        return [];
+    }
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
-  const db = getDb();
-  const roomDoc = db.collection('rooms').doc(id);
-  const roomSnapshot = await roomDoc.get();
+    try {
+        const db = getDb();
+        const roomDoc = db.collection('rooms').doc(id);
+        const roomSnapshot = await roomDoc.get();
 
-  if (!roomSnapshot.exists) {
-    return null;
-  }
+        if (!roomSnapshot.exists) {
+            return null;
+        }
 
-  return { id: roomSnapshot.id, ...roomSnapshot.data() } as Room;
+        return { id: roomSnapshot.id, ...roomSnapshot.data() } as Room;
+    } catch (error) {
+        console.error(`Error fetching room ${id}:`, error);
+        return null;
+    }
 }
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
@@ -90,18 +100,23 @@ export async function deleteRoom(id: string) {
 
 // == Establishment Images & Settings ==
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
-    const db = getDb();
-    const establishmentCollection = db.collection('establishment');
+    try {
+        const db = getDb();
+        const establishmentCollection = db.collection('establishment');
 
-    const heroDoc = await establishmentCollection.doc('hero-image').get();
-    const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
-    
-    const gallerySnapshot = await establishmentCollection.where('src', '!=', '').get();
-    const galleryImages = gallerySnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
-        .filter(img => img.id !== 'hero-image' && img.src && img.id !== 'site-settings');
+        const heroDoc = await establishmentCollection.doc('hero-image').get();
+        const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
 
-    return { heroImage, galleryImages };
+        const gallerySnapshot = await establishmentCollection.where('src', '!=', '').get();
+        const galleryImages = gallerySnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as EstablishmentImage))
+            .filter(img => img.id !== 'hero-image' && img.src && img.id !== 'site-settings');
+
+        return { heroImage, galleryImages };
+    } catch (error) {
+        console.error('Error fetching establishment images:', error);
+        return { heroImage: null, galleryImages: [] };
+    }
 }
 
 export async function updateHeroImage(src: string) {
@@ -139,13 +154,18 @@ export async function deleteGalleryImage(id: string) {
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-    const db = getDb();
-    const settingsDoc = await db.collection('establishment').doc('site-settings').get();
-    if (!settingsDoc.exists) {
-        // Return default settings if none are found
+    try {
+        const db = getDb();
+        const settingsDoc = await db.collection('establishment').doc('site-settings').get();
+        if (!settingsDoc.exists) {
+            // Return default settings if none are found
+            return { activeTheme: 'default' };
+        }
+        return settingsDoc.data() as SiteSettings;
+    } catch (error) {
+        console.error('Error fetching site settings:', error);
         return { activeTheme: 'default' };
     }
-    return settingsDoc.data() as SiteSettings;
 }
 
 export async function updateSiteSettings(settings: SiteSettings) {
@@ -161,7 +181,7 @@ export async function updateSiteSettings(settings: SiteSettings) {
 export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn' | 'status'>, isReservation: boolean = false) {
     const db = getDb();
     const roomRef = db.collection('rooms').doc(bookingData.roomId);
-    
+
     const transactionError = await db.runTransaction(async (transaction) => {
         const roomDoc = await transaction.get(roomRef);
         if (!roomDoc.exists) {
@@ -184,44 +204,44 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
             }
             updates[`booked.${dateString}`] = FieldValue.increment(1);
         }
-        
+
         transaction.update(roomRef, updates);
 
         // Use the transaction reference as the booking ID if available
-        const newBookingRef = bookingData.transactionRef 
+        const newBookingRef = bookingData.transactionRef
             ? db.collection('bookings').doc(bookingData.transactionRef)
             : db.collection('bookings').doc();
-        
+
         transaction.set(newBookingRef, {
             ...bookingData,
             bookedOn: new Date().toISOString(),
             status: isReservation ? 'pending' : 'confirmed',
         });
-        
+
         return null;
     });
 
     if (transactionError) {
         throw new Error(transactionError);
     }
-    
+
     revalidatePath('/bookings');
     revalidatePath('/admin');
 }
 
 
 export async function getBookingsForUser(userId: string): Promise<Booking[]> {
-  const db = getDb();
-  const bookingsSnapshot = await db.collection('bookings')
-    .where('userId', '==', userId)
-    .get();
-  
-  const bookingsList = bookingsSnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Booking[];
-  
-  return bookingsList.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+    const db = getDb();
+    const bookingsSnapshot = await db.collection('bookings')
+        .where('userId', '==', userId)
+        .get();
+
+    const bookingsList = bookingsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+    })) as Booking[];
+
+    return bookingsList.sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
 }
 
 export async function getAllBookings(): Promise<Booking[]> {
@@ -237,7 +257,7 @@ export async function cancelBooking(bookingId: string) {
     const transactionError = await db.runTransaction(async (transaction) => {
         const bookingDoc = await transaction.get(bookingRef);
         if (!bookingDoc.exists) return "Booking not found.";
-        
+
         const booking = bookingDoc.data() as Booking;
         if (booking.status === 'cancelled') return "Booking already cancelled.";
 
@@ -251,25 +271,25 @@ export async function cancelBooking(bookingId: string) {
             });
 
             const updates: Record<string, FieldValue> = {};
-             // Don't decrement inventory for the last day (check-out day)
+            // Don't decrement inventory for the last day (check-out day)
             for (const day of bookingDates.slice(0, -1)) {
                 const dateString = format(day, 'yyyy-MM-dd');
                 // Decrement only if the current count is > 0
                 if ((roomDoc.data()?.booked?.[dateString] || 0) > 0) {
-                  updates[`booked.${dateString}`] = FieldValue.increment(-1);
+                    updates[`booked.${dateString}`] = FieldValue.increment(-1);
                 }
             }
             if (Object.keys(updates).length > 0) {
-              transaction.update(roomRef, updates);
+                transaction.update(roomRef, updates);
             }
         }
-        
+
         transaction.update(bookingRef, { status: 'cancelled' });
         return null;
     });
-    
+
     if (transactionError) throw new Error(transactionError);
-    
+
     revalidatePath('/bookings');
     revalidatePath('/admin');
 }
@@ -298,16 +318,16 @@ export async function getMessages(): Promise<Message[]> {
 
 // == Users & Roles ==
 export async function getAllUsers(): Promise<UserData[]> {
-  const auth = getAuthAdmin();
-  const userRecords = await auth.listUsers();
-  return userRecords.users.map(user => ({
-    uid: user.uid,
-    email: user.email || null,
-    displayName: user.displayName || null,
-    photoURL: user.photoURL || null,
-    metadata: user.metadata.toJSON(),
-    role: (user.customClaims?.role as UserRole) || undefined,
-  }));
+    const auth = getAuthAdmin();
+    const userRecords = await auth.listUsers();
+    return userRecords.users.map(user => ({
+        uid: user.uid,
+        email: user.email || null,
+        displayName: user.displayName || null,
+        photoURL: user.photoURL || null,
+        metadata: user.metadata.toJSON(),
+        role: (user.customClaims?.role as UserRole) || undefined,
+    }));
 }
 
 export async function setUserRole(uid: string, role: UserRole | null) {
@@ -325,7 +345,7 @@ export async function initializePaystackTransaction(email: string, amount: numbe
     if (!secretKey) {
         throw new Error('Paystack secret key is not configured.');
     }
-    
+
     // Ensure the NEXT_PUBLIC_SITE_URL is set for the callback
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002';
     const callback_url = `${siteUrl}/bookings/status`;
@@ -390,7 +410,7 @@ export async function verifyPaystackTransaction(reference: string) {
 export async function confirmBookingFromWebhook(reference: string) {
     const db = getDb();
     const bookingRef = db.collection('bookings').doc(reference);
-    
+
     const bookingDoc = await bookingRef.get();
     if (!bookingDoc.exists) {
         console.warn(`Webhook received for non-existent booking reference: ${reference}`);
@@ -417,12 +437,12 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
 
     // 2. Total Bookings
     const totalBookings = bookings.filter(b => b.status === 'confirmed').length;
-    
+
     // 3. Occupancy Rate (for the last 30 days)
     const today = new Date();
     const thirtyDaysAgo = new Date(new Date().setDate(today.getDate() - 30));
     const interval = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
-    
+
     const totalPossibleNights = rooms.reduce((acc, room) => acc + (room.inventory * 30), 0);
     const totalBookedNights = rooms.reduce((acc, room) => {
         let roomBookedNights = 0;
@@ -432,7 +452,7 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
         });
         return acc + roomBookedNights;
     }, 0);
-    
+
     const occupancyRate = totalPossibleNights > 0 ? (totalBookedNights / totalPossibleNights) * 100 : 0;
 
     // 4. Revenue by Room

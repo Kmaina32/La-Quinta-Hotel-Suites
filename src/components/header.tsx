@@ -21,6 +21,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+// This function runs only on the client and avoids the flicker.
+const getInitialAuthState = () => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const item = sessionStorage.getItem('la-quita-admin-auth');
+    return item === 'true';
+};
+
+
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user } = useAuth();
@@ -32,14 +42,14 @@ export default function Header() {
     router.push('/');
   };
 
-  const adminEmail = 'gmaina424@gmail.com';
+  const adminEmails = ['gmaina424@gmail.com', 'cyriljunior2@gmail.com'];
 
   const navLinks = [
     { href: '/#rooms', label: 'Rooms' },
-    { href: '/#gallery', label: 'Gallery' },
+    { href: '/gallery', label: 'Gallery' },
     ...(user ? [{ href: '/bookings', label: 'Bookings' }] : []),
     { href: '/about', label: 'About' },
-    ...(user && user.email === adminEmail ? [{ href: '/admin', label: 'Admin' }] : []),
+    ...(user && adminEmails.includes(user.email || '') ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 
   return (

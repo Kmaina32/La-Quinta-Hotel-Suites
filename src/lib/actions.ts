@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getDb, getStorage } from '@/lib/firebase-admin';
+import { getDb, getStorage, getAuthAdmin } from '@/lib/firebase-admin';
 import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval } from 'date-fns';
@@ -295,6 +295,20 @@ export async function getMessages(): Promise<Message[]> {
         ...doc.data(),
     })) as Message[];
 }
+
+// == Users ==
+export async function getAllUsers(): Promise<UserData[]> {
+  const auth = getAuthAdmin();
+  const userRecords = await auth.listUsers();
+  return userRecords.users.map(user => ({
+    uid: user.uid,
+    email: user.email || null,
+    displayName: user.displayName || null,
+    photoURL: user.photoURL || null,
+    metadata: user.metadata.toJSON(),
+  }));
+}
+
 
 // == Paystack ==
 export async function initializePaystackTransaction(email: string, amount: number) {

@@ -37,12 +37,12 @@ export async function uploadImage(formData: FormData): Promise<string> {
 
 // == Rooms ==
 export async function getRooms(): Promise<Room[]> {
+    const db = getDb();
+    if (!db) {
+        console.error('Error fetching rooms: Firebase Admin not initialized.');
+        return [];
+    }
     try {
-        const db = getDb();
-        if (!db) {
-            console.error('Error fetching rooms: Firebase Admin not initialized.');
-            return [];
-        }
         const roomsCollection = db.collection('rooms');
         const roomsSnapshot = await roomsCollection.orderBy('price').get();
         const roomsList = roomsSnapshot.docs.map(doc => ({
@@ -57,12 +57,12 @@ export async function getRooms(): Promise<Room[]> {
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
+    const db = getDb();
+    if (!db) {
+        console.error(`Error fetching room ${id}: Firebase Admin not initialized.`);
+        return null;
+    }
     try {
-        const db = getDb();
-        if (!db) {
-            console.error(`Error fetching room ${id}: Firebase Admin not initialized.`);
-            return null;
-        }
         const roomDoc = db.collection('rooms').doc(id);
         const roomSnapshot = await roomDoc.get();
 
@@ -113,12 +113,12 @@ export async function deleteRoom(id: string) {
 
 // == Establishment Images & Settings ==
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
+    const db = getDb();
+    if (!db) {
+        console.error('Error fetching establishment images: Firebase Admin not initialized.');
+        return { heroImage: null, galleryImages: [] };
+    }
     try {
-        const db = getDb();
-        if (!db) {
-            console.error('Error fetching establishment images: Firebase Admin not initialized.');
-            return { heroImage: null, galleryImages: [] };
-        }
         const establishmentCollection = db.collection('establishment');
 
         const heroDoc = await establishmentCollection.doc('hero-image').get();
@@ -175,12 +175,12 @@ export async function deleteGalleryImage(id: string) {
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
+    const db = getDb();
+    if (!db) {
+        console.error('Error fetching site settings: Firebase Admin not initialized.');
+        return { activeTheme: 'default' };
+    }
     try {
-        const db = getDb();
-        if (!db) {
-            console.error('Error fetching site settings: Firebase Admin not initialized.');
-            return { activeTheme: 'default' };
-        }
         const settingsDoc = await db.collection('establishment').doc('site-settings').get();
         if (!settingsDoc.exists) {
             // Return default settings if none are found

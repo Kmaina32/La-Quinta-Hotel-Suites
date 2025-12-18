@@ -277,61 +277,62 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-        <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-        <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-            <div className="absolute inset-0 bg-zinc-900" />
-             <div className="relative z-20 flex items-center text-lg font-medium">
-                <Logo className="h-12 w-48" />
+      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-[800px]">
+        <div className="flex items-center justify-center py-12">
+          <div className="mx-auto grid w-[350px] gap-6">
+            <div className="grid gap-2 text-center">
+              <h1 className="text-3xl font-bold">Admin Login</h1>
+              <p className="text-balance text-muted-foreground">
+                Enter your password to access the control panel
+              </p>
             </div>
-            <div className="relative z-20 mt-auto">
-                <blockquote className="space-y-2">
-                <p className="text-lg">
-                    &ldquo;This control panel gives us the power to shape our guest's experience in real-time. It's an indispensable tool for managing our hotel with precision and care.&rdquo;
-                </p>
-                <footer className="text-sm">Hotel Management</footer>
-                </blockquote>
-            </div>
-        </div>
-        <div className="lg:p-8">
-            <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-                <div className="flex flex-col space-y-2 text-center">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Admin Control Panel
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Enter your administrative password to access the dashboard.
-                    </p>
+            <form onSubmit={handleLogin} className="grid gap-4">
+              <div className="grid gap-2">
+                <div className="flex items-center">
+                  <Label htmlFor="password">Password</Label>
                 </div>
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label className="sr-only" htmlFor="password">Password</Label>
-                        <div className="relative">
-                        <Input 
-                            id="password"
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••" 
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="pr-10"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
-                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        >
-                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                        </div>
-                    </div>
-                    <Button type="submit" className="w-full">
-                        <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
-                    </Button>
-                </form>
+                <div className="relative">
+                  <Input 
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••" 
+                      value={password} 
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                  />
+                  <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full">
+                <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
+              </Button>
+            </form>
+          </div>
+        </div>
+        <div className="hidden bg-muted lg:block p-8">
+            <div className="relative flex h-full flex-col rounded-2xl p-10 text-white bg-zinc-900">
+                <div className="relative z-20 flex items-center text-lg font-medium">
+                    <Logo className="h-12 w-48" />
+                </div>
+                <div className="relative z-20 mt-auto">
+                    <blockquote className="space-y-2">
+                    <p className="text-lg">
+                        &ldquo;This control panel gives us the power to shape our guest's experience in real-time. It's an indispensable tool for managing our hotel with precision and care.&rdquo;
+                    </p>
+                    <footer className="text-sm">Hotel Management</footer>
+                    </blockquote>
+                </div>
             </div>
         </div>
-        </div>
+      </div>
     );
   }
 
@@ -709,6 +710,8 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
 
     
 

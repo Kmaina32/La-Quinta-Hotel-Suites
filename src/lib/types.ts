@@ -1,4 +1,5 @@
 
+
 export interface Room {
   id: string;
   name: string;
@@ -37,6 +38,7 @@ export interface Booking {
   nights: number;
   totalCost: number;
   paymentMethod: string;
+  transactionRef?: string; // Add this line
   bookedOn: string; // ISO string
   status: 'confirmed' | 'cancelled' | 'pending';
 }

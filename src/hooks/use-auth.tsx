@@ -10,7 +10,7 @@ import type { UserRole } from '@/lib/types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isAdmin: boolean; // Kept for general "is logged in as admin-level" checks
+  isAdmin: boolean; 
   role: UserRole | null;
   loginAdmin: () => void;
   logoutAdmin: () => void;
@@ -25,18 +25,11 @@ const AuthContext = createContext<AuthContextType>({
   logoutAdmin: () => { },
 });
 
-// This function runs only on the client and avoids flicker.
-const getInitialAdminAuth = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return sessionStorage.getItem('la-quita-admin-auth') === 'true';
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(getInitialAdminAuth);
-  // Default role to 'owner' if we are already logged in as admin via password
-  const [role, setRole] = useState<UserRole | null>(getInitialAdminAuth() ? 'owner' : null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -51,39 +44,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsAdmin(true);
             sessionStorage.setItem('la-quita-admin-auth', 'true');
           } else {
-            // If we have a Firebase user but no role, check if we are locally authorized
-            if (!getInitialAdminAuth()) {
-              setRole(null);
-              setIsAdmin(false);
-              sessionStorage.removeItem('la-quita-admin-auth');
+            // Check for password-based auth
+            const sessionAuth = sessionStorage.getItem('la-quita-admin-auth') === 'true';
+            if (sessionAuth) {
+                setRole('owner');
+                setIsAdmin(true);
+            } else {
+                setRole(null);
+                setIsAdmin(false);
             }
           }
         } catch (error) {
           console.error("Error fetching user claims:", error);
-          if (!getInitialAdminAuth()) {
-            setRole(null);
-            setIsAdmin(false);
-          }
+           const sessionAuth = sessionStorage.getItem('la-quita-admin-auth') === 'true';
+            if (sessionAuth) {
+                setRole('owner');
+                setIsAdmin(true);
+            } else {
+                setRole(null);
+                setIsAdmin(false);
+            }
         }
       } else {
-        // If firebase user logs out, we should only clear admin if it was tied to firebase
-        // But here we rely on onAuthStateChanged for everything usually. 
-        // For the password bypass, we might want to keep it? 
-        // The current logic clears it. We'll stick to that to be safe, 
-        // BUT if we are "loading" we might want to preserve local auth.
-        // Actually, let's keep the existing logic: if firebase says no user, 
-        // and we aren't explicitly in "local override" mode that survives firebase...
-        // The original code cleared it. Let's keep it cleared EXCEPT if we want password to persist.
-        // But wait, getInitialAdminAuth only checks sessionStorage. 
-
-        // If we allow password auth to coexist with 'no firebase user', we should respect sessionStorage
-        if (getInitialAdminAuth()) {
-          setRole('owner');
-          setIsAdmin(true);
+        // No Firebase user, check for session-based admin login
+        const sessionAuth = sessionStorage.getItem('la-quita-admin-auth') === 'true';
+        if (sessionAuth) {
+            setRole('owner');
+            setIsAdmin(true);
         } else {
-          setRole(null);
-          setIsAdmin(false);
-          sessionStorage.removeItem('la-quita-admin-auth');
+            setRole(null);
+            setIsAdmin(false);
         }
       }
       setLoading(false);
@@ -93,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event.key === 'la-quita-admin-auth') {
         const isAuth = event.newValue === 'true';
         setIsAdmin(isAuth);
-        setRole(isAuth ? 'owner' : null);
+        // Only set role if there's no Firebase user with a role
+        if (!auth.currentUser) {
+            setRole(isAuth ? 'owner' : null);
+        }
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -105,21 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginAdmin = useCallback(() => {
-    // This function is now mostly a placeholder for the legacy password login.
-    // The onAuthStateChanged listener is the source of truth.
-    // We can set it here optimistically.
     sessionStorage.setItem('la-quita-admin-auth', 'true');
     setIsAdmin(true);
     setRole('owner');
-    // Force a token refresh on next page load or action
-    auth.currentUser?.getIdToken(true);
+    // Force a token refresh on next page load or action if a user exists
+    if(auth.currentUser) auth.currentUser.getIdToken(true);
   }, []);
 
   const logoutAdmin = useCallback(() => {
     sessionStorage.removeItem('la-quita-admin-auth');
     setIsAdmin(false);
     setRole(null);
-    auth.signOut(); // Also sign out from Firebase
+    if(auth.currentUser) signOut(auth); // Also sign out from Firebase
   }, []);
 
   if (loading) {

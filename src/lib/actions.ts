@@ -7,36 +7,35 @@ import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval, eachMonthOfInterval, addDays } from 'date-fns';
 
 /**
- * Data Fetching (Uses Admin SDK for maximum reliability on Server)
+ * Shared logic to check if DB is online before performing ops
  */
-
-export async function getRooms(): Promise<Room[]> {
+async function safeDbOp<T>(op: (db: FirebaseFirestore.Firestore) => Promise<T>, fallback: T): Promise<T> {
     try {
         const db = getDb();
-        const snapshot = await db.collection('rooms').orderBy('price').get();
-        if (snapshot.empty) return [];
-        return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Room[];
-    } catch (error) {
-        console.error('Error fetching rooms:', error);
-        return [];
+        return await op(db);
+    } catch (e) {
+        console.error("Database operation failed:", e);
+        return fallback;
     }
+}
+
+export async function getRooms(): Promise<Room[]> {
+    return safeDbOp(async (db) => {
+        const snapshot = await db.collection('rooms').orderBy('price').get();
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Room[];
+    }, []);
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
-    try {
-        const db = getDb();
+    return safeDbOp(async (db) => {
         const doc = await db.collection('rooms').doc(id).get();
         if (!doc.exists) return null;
         return { id: doc.id, ...doc.data() } as Room;
-    } catch (error) {
-        console.error(`Error fetching room ${id}:`, error);
-        return null;
-    }
+    }, null);
 }
 
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
-    try {
-        const db = getDb();
+    return safeDbOp(async (db) => {
         const heroDoc = await db.collection('establishment').doc('hero-image').get();
         const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
 
@@ -46,25 +45,15 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
             .filter(img => img.id !== 'hero-image' && img.id !== 'site-settings' && img.src !== '');
 
         return { heroImage, galleryImages };
-    } catch (error) {
-        console.error('Error fetching establishment images:', error);
-        return { heroImage: null, galleryImages: [] };
-    }
+    }, { heroImage: null, galleryImages: [] });
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-    try {
-        const db = getDb();
+    return safeDbOp(async (db) => {
         const settingsDoc = await db.collection('establishment').doc('site-settings').get();
         return (settingsDoc.exists ? settingsDoc.data() : { activeTheme: 'default' }) as SiteSettings;
-    } catch (error) {
-        return { activeTheme: 'default' };
-    }
+    }, { activeTheme: 'default' });
 }
-
-/**
- * Mutations
- */
 
 export async function uploadImage(formData: FormData): Promise<string> {
     const file = formData.get('file') as File;
@@ -73,7 +62,6 @@ export async function uploadImage(formData: FormData): Promise<string> {
     try {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-
         const storage = getStorage();
         const bucket = storage.bucket();
         const fileName = `uploads/${Date.now()}-${file.name}`;
@@ -83,51 +71,35 @@ export async function uploadImage(formData: FormData): Promise<string> {
             metadata: { contentType: file.type },
         });
 
-        // Use the standardized public URL format for Firebase Storage
         return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
     } catch (error: any) {
         console.error('Upload failed:', error);
-        throw new Error('Image upload failed. Ensure your Storage bucket is public.');
+        throw new Error('Image upload failed.');
     }
 }
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
-    try {
-        const db = getDb();
-        await db.collection('rooms').doc(id).update(room);
-        revalidatePath('/');
-        revalidatePath(`/rooms/${id}`);
-        revalidatePath('/admin');
-    } catch (e) {
-        console.error("Mutation failed:", e);
-        throw e;
-    }
+    const db = getDb();
+    await db.collection('rooms').doc(id).update(room);
+    revalidatePath('/');
+    revalidatePath(`/rooms/${id}`);
+    revalidatePath('/admin');
 }
 
 export async function addRoom(newRoom: Omit<Room, 'id' | 'booked'>) {
-    try {
-        const db = getDb();
-        const docRef = await db.collection('rooms').add({ ...newRoom, booked: {} });
-        await docRef.update({ id: docRef.id });
-        revalidatePath('/');
-        revalidatePath('/admin');
-        return docRef.id;
-    } catch (e) {
-        console.error("Add room failed:", e);
-        throw e;
-    }
+    const db = getDb();
+    const docRef = await db.collection('rooms').add({ ...newRoom, booked: {} });
+    await docRef.update({ id: docRef.id });
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return docRef.id;
 }
 
 export async function deleteRoom(id: string) {
-    try {
-        const db = getDb();
-        await db.collection('rooms').doc(id).delete();
-        revalidatePath('/');
-        revalidatePath('/admin');
-    } catch (e) {
-        console.error("Delete failed:", e);
-        throw e;
-    }
+    const db = getDb();
+    await db.collection('rooms').doc(id).delete();
+    revalidatePath('/');
+    revalidatePath('/admin');
 }
 
 export async function updateHeroImage(src: string) {
@@ -142,57 +114,40 @@ export async function updateSiteSettings(settings: SiteSettings) {
     revalidatePath('/', 'layout');
 }
 
-/**
- * Booking Management
- */
 export async function createBooking(bookingData: any, isReservation: boolean) {
-    try {
-        const db = getDb();
-        const status = isReservation ? 'pending' : 'confirmed';
-        
-        const docRef = await db.collection('bookings').add({
-            ...bookingData,
-            status,
-            bookedOn: new Date().toISOString(),
-        });
+    const db = getDb();
+    const status = isReservation ? 'pending' : 'confirmed';
+    const docRef = await db.collection('bookings').add({
+        ...bookingData,
+        status,
+        bookedOn: new Date().toISOString(),
+    });
 
-        const checkIn = new Date(bookingData.checkIn);
-        const checkOut = new Date(bookingData.checkOut);
-        const dates = eachDayOfInterval({ start: checkIn, end: addDays(checkOut, -1) });
+    const checkIn = new Date(bookingData.checkIn);
+    const checkOut = new Date(bookingData.checkOut);
+    const dates = eachDayOfInterval({ start: checkIn, end: addDays(checkOut, -1) });
 
-        const roomRef = db.collection('rooms').doc(bookingData.roomId);
-        const roomDoc = await roomRef.get();
-        const currentBooked = roomDoc.exists ? (roomDoc.data()?.booked || {}) : {};
+    const roomRef = db.collection('rooms').doc(bookingData.roomId);
+    const roomDoc = await roomRef.get();
+    const currentBooked = roomDoc.exists ? (roomDoc.data()?.booked || {}) : {};
 
-        dates.forEach(d => {
-            const dateStr = format(d, 'yyyy-MM-dd');
-            currentBooked[dateStr] = (currentBooked[dateStr] || 0) + 1;
-        });
+    dates.forEach(d => {
+        const dateStr = format(d, 'yyyy-MM-dd');
+        currentBooked[dateStr] = (currentBooked[dateStr] || 0) + 1;
+    });
 
-        await roomRef.update({ booked: currentBooked });
-
-        revalidatePath('/admin');
-        revalidatePath('/bookings');
-        return docRef.id;
-    } catch (e) {
-        console.error("Booking creation failed:", e);
-        throw e;
-    }
+    await roomRef.update({ booked: currentBooked });
+    revalidatePath('/admin');
+    revalidatePath('/bookings');
+    return docRef.id;
 }
 
 export async function getBookingsForUser(userId: string): Promise<Booking[]> {
-    try {
-        const db = getDb();
+    return safeDbOp(async (db) => {
         const snapshot = await db.collection('bookings').where('userId', '==', userId).get();
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Booking);
-    } catch (e) {
-        return [];
-    }
+    }, []);
 }
-
-/**
- * Admin SDK Required Features
- */
 
 export async function getAllUsers(): Promise<UserData[]> {
     try {
@@ -207,15 +162,19 @@ export async function getAllUsers(): Promise<UserData[]> {
             role: (user.customClaims?.role as UserRole) || undefined,
         }));
     } catch (e) {
-        console.error("Admin SDK Auth error:", e);
+        console.error("User fetching failed:", e);
         return [];
     }
 }
 
 export async function getAnalyticsData(): Promise<AnalyticsData> {
-    try {
-        const bookings = await getAllBookings();
-        const rooms = await getRooms();
+    return safeDbOp(async (db) => {
+        const bookingsSnap = await db.collection('bookings').get();
+        const roomsSnap = await db.collection('rooms').get();
+        
+        const bookings = bookingsSnap.docs.map(d => d.data() as Booking);
+        const rooms = roomsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Room));
+        
         const confirmed = bookings.filter(b => b.status === 'confirmed');
         const totalRevenue = confirmed.reduce((acc, b) => acc + b.totalCost, 0);
         const totalBookings = confirmed.length;
@@ -237,33 +196,25 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
         });
 
         return { totalRevenue, totalBookings, occupancyRate: 0, revenueByRoom, bookingsPerMonth };
-    } catch (e) {
-        return { totalRevenue: 0, totalBookings: 0, occupancyRate: 0, revenueByRoom: [], bookingsPerMonth: [] };
-    }
+    }, { totalRevenue: 0, totalBookings: 0, occupancyRate: 0, revenueByRoom: [], bookingsPerMonth: [] });
 }
 
 export async function getAllBookings(): Promise<Booking[]> {
-    try {
-        const db = getDb();
+    return safeDbOp(async (db) => {
         const snapshot = await db.collection('bookings').get();
         return snapshot.docs
             .map(d => ({ id: d.id, ...d.data() }) as Booking)
             .sort((a, b) => new Date(b.bookedOn).getTime() - new Date(a.bookedOn).getTime());
-    } catch (e) {
-        return [];
-    }
+    }, []);
 }
 
 export async function getMessages(): Promise<Message[]> {
-    try {
-        const db = getDb();
+    return safeDbOp(async (db) => {
         const snapshot = await db.collection('messages').get();
         return snapshot.docs
             .map(d => ({ id: d.id, ...d.data() }) as Message)
             .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-    } catch (e) {
-        return [];
-    }
+    }, []);
 }
 
 export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
@@ -272,36 +223,31 @@ export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | '
 }
 
 export async function confirmBookingFromWebhook(reference: string) {
-    try {
-        const db = getDb();
-        const snapshot = await db.collection('bookings').where('transactionRef', '==', reference).get();
-        if (!snapshot.empty) {
-            const bookingDoc = snapshot.docs[0];
-            await bookingDoc.ref.update({ status: 'confirmed' });
-        }
-    } catch (e) {
-        console.error("Webhook confirmation failed:", e);
+    const db = getDb();
+    const snapshot = await db.collection('bookings').where('transactionRef', '==', reference).get();
+    if (!snapshot.empty) {
+        const bookingDoc = snapshot.docs[0];
+        await bookingDoc.ref.update({ status: 'confirmed' });
     }
 }
 
 export async function initializePaystackTransaction(email: string, amount: number) {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) throw new Error('Paystack secret key is not configured.');
+    if (!secretKey) throw new Error('Paystack configuration missing.');
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.laquitahotel.com';
-    const params = { email, amount: Math.round(amount * 100), currency: 'KES', callback_url: `${siteUrl}/bookings/status` };
     const res = await fetch('https://api.paystack.co/transaction/initialize', {
         method: 'POST',
         headers: { Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        body: JSON.stringify({ email, amount: Math.round(amount * 100), currency: 'KES', callback_url: `${siteUrl}/bookings/status` }),
     });
     const data = await res.json();
-    if (!data.status) throw new Error(data.message || 'Paystack initialization failed.');
+    if (!data.status) throw new Error(data.message || 'Initialization failed.');
     return data.data;
 }
 
 export async function verifyPaystackTransaction(reference: string) {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) throw new Error('Paystack secret key missing.');
+    if (!secretKey) throw new Error('Paystack configuration missing.');
     const res = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${secretKey}` },

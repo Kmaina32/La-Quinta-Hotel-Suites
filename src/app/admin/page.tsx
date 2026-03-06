@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, setUserRole, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, UserRole, AnalyticsData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck, Crown, Shield, Building } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck, Crown, Shield, Building, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,12 +35,23 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   inventory: 1,
 };
 
+function ErrorDisplay({ title, message }: { title: string; message: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-lg bg-muted/30">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-xl font-bold text-destructive">{title}</h3>
+            <p className="text-muted-foreground mt-2 max-w-md">{message}</p>
+        </div>
+    );
+}
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { isAdmin, loginAdmin, role } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [fetchErrors, setFetchErrors] = useState<Record<string, boolean>>({});
+  
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -65,7 +75,6 @@ export default function AdminPage() {
   const { toast } = useToast()
 
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || 'analytics';
 
@@ -80,10 +89,12 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    setFetchErrors(prev => ({...prev, [activeTab]: false}));
     
     const handleError = (tabName: string, error: any) => {
         console.error(`Failed to fetch data for ${tabName}:`, error);
-        toast({ title: "Error", description: `Failed to fetch data for the ${tabName} tab.`, variant: "destructive" });
+        setFetchErrors(prev => ({...prev, [tabName]: true}));
+        toast({ title: "Fetch Error", description: `Could not load data for the ${tabName} tab. Please check your credentials.`, variant: "destructive" });
     };
 
     try {
@@ -91,22 +102,31 @@ export default function AdminPage() {
             try {
                 const data = await getAnalyticsData();
                 setAnalyticsData(data);
+                if (!data) setFetchErrors(prev => ({...prev, analytics: true}));
             } catch (e) { handleError('analytics', e); }
         }
         if (activeTab === 'rooms' || activeTab === 'transactions') {
              try {
                 const data = await getRooms();
                 setRooms(data);
+                if (data.length === 0 && activeTab === 'rooms') {
+                    // Could be valid or error, but if it's strictly empty and actions.ts returns [] on fail
+                    // we'll assume valid empty for now unless we add specific error types
+                }
             } catch (e) { handleError('rooms', e); }
         }
         if (activeTab === 'content') {
              try {
                 const establishmentData = await getEstablishmentImages();
-                const sortedGallery = establishmentData.galleryImages.sort((a: any, b: any) => a.id.localeCompare(b.id));
-                setGalleryImages(sortedGallery);
-                setHeroImage(establishmentData.heroImage?.src || '');
-                const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
-                if(defaultImage && !posterForm.primaryImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+                if (establishmentData) {
+                    const sortedGallery = establishmentData.galleryImages.sort((a: any, b: any) => a.id.localeCompare(b.id));
+                    setGalleryImages(sortedGallery);
+                    setHeroImage(establishmentData.heroImage?.src || '');
+                    const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
+                    if(defaultImage && !posterForm.primaryImage) setPosterForm(prev => ({...prev, primaryImage: defaultImage}));
+                } else {
+                    setFetchErrors(prev => ({...prev, content: true}));
+                }
              } catch (e) { handleError('content', e); }
         }
         if (activeTab === 'messages') {
@@ -125,17 +145,18 @@ export default function AdminPage() {
              try {
                 const data = await getSiteSettings();
                 setSiteSettings(data);
+                if (!data) setFetchErrors(prev => ({...prev, settings: true}));
              } catch (e) { handleError('settings', e); }
         }
         if (activeTab === 'users' && (role === 'owner' || role === 'admin')) {
              try {
                 const data = await getAllUsers();
                 setUsers(data);
+                if (data.length === 0) setFetchErrors(prev => ({...prev, users: true}));
              } catch (e) { handleError('users', e); }
         }
     } catch (error) {
         console.error("An unexpected error occurred during data fetching:", error);
-        toast({ title: "Error", description: "An unexpected error occurred. Some data may not be loaded.", variant: "destructive" });
     } finally {
         setLoading(false);
     }
@@ -325,8 +346,8 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-        <div className="flex items-center justify-center py-12 px-4">
+      <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-10">
+        <div className="flex items-center justify-center py-12 px-4 lg:col-span-6">
           <div className="mx-auto grid w-[350px] gap-6">
             <div className="grid gap-2 text-center">
               <h1 className="text-3xl font-bold">Admin Login</h1>
@@ -365,7 +386,7 @@ export default function AdminPage() {
             </form>
           </div>
         </div>
-        <div className="hidden bg-muted lg:block p-8">
+        <div className="hidden bg-muted lg:block lg:col-span-4 p-8">
             <div className="relative flex h-full flex-col rounded-2xl p-10 text-white bg-zinc-900">
                 <div className="relative z-20 flex items-center text-lg font-medium">
                     <Logo className="h-12 w-48" />
@@ -436,7 +457,12 @@ export default function AdminPage() {
             <Card>
                 <CardHeader><CardTitle>Analytics Dashboard</CardTitle></CardHeader>
                 <CardContent>
-                    {analyticsData ? (
+                    {fetchErrors.analytics ? (
+                        <ErrorDisplay 
+                            title="Analytics Unavailable" 
+                            message="We couldn't load your analytics data. This usually means your Firebase environment variables are not correctly configured in the .env file." 
+                        />
+                    ) : analyticsData ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card>
                                 <CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader>
@@ -457,197 +483,208 @@ export default function AdminPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader><CardTitle>Bookings per Month (Last 12 Months)</CardTitle></CardHeader>
-                    <CardContent>
-                        {analyticsData && analyticsData.bookingsPerMonth.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={analyticsData.bookingsPerMonth}>
-                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip />
-                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                             !loading && <p className="text-muted-foreground py-12 text-center">No monthly booking data to display.</p>
-                        )}
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader><CardTitle>Revenue by Room</CardTitle></CardHeader>
-                    <CardContent>
-                        {analyticsData && analyticsData.revenueByRoom.length > 0 ? (
-                             <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie data={analyticsData.revenueByRoom} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                                       {analyticsData.revenueByRoom.map((entry, index) => (
-                                          <Cell key={`cell-${index}`} fill={`hsl(var(--primary), ${1 - (index / analyticsData.revenueByRoom.length) * 0.5})`} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
-                                    <Legend />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            !loading && <p className="text-muted-foreground py-12 text-center">No room revenue data to display.</p>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+            {!fetchErrors.analytics && (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader><CardTitle>Bookings per Month (Last 12 Months)</CardTitle></CardHeader>
+                        <CardContent>
+                            {analyticsData && analyticsData.bookingsPerMonth.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={analyticsData.bookingsPerMonth}>
+                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                !loading && <p className="text-muted-foreground py-12 text-center">No monthly booking data to display.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><CardTitle>Revenue by Room</CardTitle></CardHeader>
+                        <CardContent>
+                            {analyticsData && analyticsData.revenueByRoom.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie data={analyticsData.revenueByRoom} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                                        {analyticsData.revenueByRoom.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={`hsl(var(--primary), ${1 - (index / analyticsData.revenueByRoom.length) * 0.5})`} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                !loading && <p className="text-muted-foreground py-12 text-center">No room revenue data to display.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
       )}
       {activeTab === 'content' && (
          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1">
-                  <Card>
-                      <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
-                      <CardContent className="space-y-3">
-                      {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
-                      <div className="flex items-center gap-2">
-                          <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
-                          {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
-                      </div>
-                      <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
-                      <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload'] || role === 'manager'}>
-                          {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
-                      </Button>
-                      </CardContent>
-                  </Card>
-              </div>
-              <div className="lg:col-span-2">
-                  <Card>
-                      <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
-                      <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image'] || role === 'manager'}>
-                          <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                      </Button>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                      {galleryImages.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No gallery images found.</p>}
-                      {galleryImages.map(image => (
-                          <div key={image.id} className="space-y-2 border-t pt-3">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                                  {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
-                                  <div className="space-y-2">
-                                      <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Paste image URL" />
-                                      <div className="flex items-center gap-2">
-                                          <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
-                                          {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                      </div>
-                                  </div>
-                              </div>
-                              <div className="flex items-center gap-2 mt-2">
-                                  <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`] || role === 'manager'}>
-                                  {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
-                                  </Button>
-                                  <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id] || role === 'manager'}><Trash2 className="h-4 w-4" /></Button>
-                              </div>
-                          </div>
-                      ))}
-                      </CardContent>
-                  </Card>
-              </div>
-          </div>
-           <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary"/> AI Poster Generator</CardTitle>
-                <CardDescription>Create promotional posters for events and offers using AI.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="poster-title">Title</Label>
-                        <Input id="poster-title" value={posterForm.title} onChange={e => handlePosterFormChange('title', e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="poster-subtitle">Subtitle</Label>
-                        <Input id="poster-subtitle" value={posterForm.subtitle} onChange={e => handlePosterFormChange('subtitle', e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="poster-date">Occasion Date</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                            <Button
-                                id="poster-date"
-                                variant={"outline"}
-                                className={cn("w-full justify-start text-left font-normal", !posterForm.occasionDate && "text-muted-foreground")}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {posterForm.occasionDate ? format(new Date(posterForm.occasionDate), "PPP") : <span>Pick a date</span>}
-                            </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={posterForm.occasionDate ? new Date(posterForm.occasionDate) : undefined}
-                                onSelect={(date) => handlePosterFormChange('occasionDate', date?.toISOString() || '')}
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="poster-details">Extra Details / Amenities</Label>
-                        <Textarea id="poster-details" placeholder="e.g. Live Music, Buffet, Free Entry" value={posterForm.extraDetails} onChange={e => handlePosterFormChange('extraDetails', e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Primary Image</Label>
-                        <Select value={posterForm.primaryImage} onValueChange={value => handlePosterFormChange('primaryImage', value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an image" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                                {allImages.map(image => (
-                                    <SelectItem key={image.id} value={image.src}>
-                                        <div className="flex items-center gap-2">
-                                            <Image src={image.src} alt={image.alt} width={40} height={30} className="rounded-sm object-cover" />
-                                            <span className="truncate">{image.alt}</span>
+            {fetchErrors.content ? (
+                <ErrorDisplay 
+                    title="Content Management Offline" 
+                    message="The establishment images could not be loaded. Please ensure your Firebase Private Key and Client Email are correctly set in your .env file." 
+                />
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-1">
+                            <Card>
+                                <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
+                                <CardContent className="space-y-3">
+                                {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
+                                <div className="flex items-center gap-2">
+                                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
+                                    {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                </div>
+                                <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
+                                <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload'] || role === 'manager'}>
+                                    {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
+                                </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="lg:col-span-2">
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
+                                <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image'] || role === 'manager'}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                                </Button>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                {galleryImages.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No gallery images found.</p>}
+                                {galleryImages.map(image => (
+                                    <div key={image.id} className="space-y-2 border-t pt-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                            {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
+                                            <div className="space-y-2">
+                                                <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Paste image URL" />
+                                                <div className="flex items-center gap-2">
+                                                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
+                                                    {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </SelectItem>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`] || role === 'manager'}>
+                                            {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
+                                            </Button>
+                                            <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id] || role === 'manager'}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    </div>
                                 ))}
-                            </SelectContent>
-                        </Select>
-                         <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-card px-2 text-muted-foreground">OR</span>
-                            </div>
+                                </CardContent>
+                            </Card>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Input id="poster-upload" type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'poster-image-upload', url => handlePosterFormChange('primaryImage', url))} />
-                            {uploadingStates['poster-image-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
-                        </div>
-                         {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
                     </div>
-                    <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading || uploadingStates['poster-image-upload']}>
-                        {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
-                        Generate Poster
-                    </Button>
-                </div>
-                <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px] p-4">
-                    {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
-                    {!posterGenLoading && generatedPoster && (
-                      <div className="w-full flex-grow flex flex-col items-center justify-center">
-                          <div className="relative w-full flex-grow mb-4">
-                            <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
-                          </div>
-                           <Button asChild className="w-full">
-                            <a href={generatedPoster} download={`la_quita_poster_${Date.now()}.png`}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Download Poster
-                            </a>
-                        </Button>
-                      </div>
-                    )}
-                     {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
-                </div>
-            </CardContent>
-         </Card>
-        </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary"/> AI Poster Generator</CardTitle>
+                            <CardDescription>Create promotional posters for events and offers using AI.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="poster-title">Title</Label>
+                                    <Input id="poster-title" value={posterForm.title} onChange={e => handlePosterFormChange('title', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="poster-subtitle">Subtitle</Label>
+                                    <Input id="poster-subtitle" value={posterForm.subtitle} onChange={e => handlePosterFormChange('subtitle', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="poster-date">Occasion Date</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                        <Button
+                                            id="poster-date"
+                                            variant={"outline"}
+                                            className={cn("w-full justify-start text-left font-normal", !posterForm.occasionDate && "text-muted-foreground")}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {posterForm.occasionDate ? format(new Date(posterForm.occasionDate), "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={posterForm.occasionDate ? new Date(posterForm.occasionDate) : undefined}
+                                            onSelect={(date) => handlePosterFormChange('occasionDate', date?.toISOString() || '')}
+                                            initialFocus
+                                        />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="poster-details">Extra Details / Amenities</Label>
+                                    <Textarea id="poster-details" placeholder="e.g. Live Music, Buffet, Free Entry" value={posterForm.extraDetails} onChange={e => handlePosterFormChange('extraDetails', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Primary Image</Label>
+                                    <Select value={posterForm.primaryImage} onValueChange={value => handlePosterFormChange('primaryImage', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an image" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60">
+                                            {allImages.map(image => (
+                                                <SelectItem key={image.id} value={image.src}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Image src={image.src} alt={image.alt} width={40} height={30} className="rounded-sm object-cover" />
+                                                        <span className="truncate">{image.alt}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <div className="relative">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <span className="w-full border-t" />
+                                        </div>
+                                        <div className="relative flex justify-center text-xs uppercase">
+                                            <span className="bg-card px-2 text-muted-foreground">OR</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Input id="poster-upload" type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'poster-image-upload', url => handlePosterFormChange('primaryImage', url))} />
+                                        {uploadingStates['poster-image-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                    </div>
+                                    {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
+                                </div>
+                                <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading || uploadingStates['poster-image-upload']}>
+                                    {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
+                                    Generate Poster
+                                </Button>
+                            </div>
+                            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px] p-4">
+                                {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
+                                {!posterGenLoading && generatedPoster && (
+                                <div className="w-full flex-grow flex flex-col items-center justify-center">
+                                    <div className="relative w-full flex-grow mb-4">
+                                        <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
+                                    </div>
+                                    <Button asChild className="w-full">
+                                        <a href={generatedPoster} download={`la_quita_poster_${Date.now()}.png`}>
+                                            <Download className="mr-2 h-4 w-4" />
+                                            Download Poster
+                                        </a>
+                                    </Button>
+                                </div>
+                                )}
+                                {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </>
+            )}
+         </div>
       )}
 
       {activeTab === 'rooms' && (
@@ -656,61 +693,70 @@ export default function AdminPage() {
               <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room'] || role === 'manager'}><PlusCircle className="mr-2 h-4 w-4" />Create New</Button>
             </CardHeader>
             <CardContent className="space-y-6">
-              {rooms.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No rooms or facilities found.</p>}
-              {rooms.map(room => (
-                <Card key={room.id} className="p-4 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-semibold">{room.name}</h3>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id] || role === 'manager'}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1"><label className="text-sm font-medium">Name</label><Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} /></div>
-                    <div className="space-y-1"><label className="text-sm font-medium">{room.type === 'conference' ? 'Full Day Price (per person)' : 'Price per Night'}</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                    <div className="space-y-1"><label className="text-sm font-medium">Type</label>
-                      <Select value={room.type || 'room'} onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)} disabled={role === 'manager'}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="room">Room</SelectItem><SelectItem value="conference">Conference</SelectItem></SelectContent>
-                      </Select>
-                    </div>
-                    {room.type === 'conference' && (
-                      <div className="space-y-1"><label className="text-sm font-medium">Half Day Price (per person)</label><Input type="number" value={room.halfDayPrice || 0} onChange={e => handleRoomChange(room.id, 'halfDayPrice', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                    )}
-                    <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                     <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                    {room.type !== 'conference' && <>
-                      <div className="space-y-1"><label className="text-sm font-medium">Beds</label><Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                      <div className="space-y-1"><label className="text-sm font-medium">Baths</label><Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                    </>}
-                    <div className="md:col-span-3 space-y-1"><label className="text-sm font-medium">Description</label><Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} readOnly={role === 'manager'} /></div>
-                    <div className="md:col-span-3 space-y-3">
-                      <label className="text-sm font-medium">Main Image</label>
-                      {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={150} height={90} className="rounded-md object-cover" />}
-                       <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
-                        <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
-                        {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                      </div>
-                      <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
-                    </div>
-                    <div className="md:col-span-3 space-y-3">
-                      <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label>
-                        {role !== 'manager' && <Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}><PlusCircle className="mr-2 h-4 w-4" />Add</Button>}
-                      </div>
-                      {room.images?.map((img) => (
-                        <div key={img.id} className="border-t pt-3 space-y-2">
-                          {img.src && <Image src={img.src} alt={img.alt} width={150} height={90} className="rounded-md object-cover" />}
-                          <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
-                              <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${img.id}`, url => handleRoomImageChange(room.id, img.id, url))} />
-                              {uploadingStates[`room-detail-${img.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                              <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </div>
-                          <Input value={img.src} onChange={e => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" readOnly={role === 'manager'} />
+              {fetchErrors.rooms ? (
+                  <ErrorDisplay 
+                    title="Room Data Error" 
+                    message="We couldn't connect to the room database. Please verify your .env file contains the correct Firebase credentials."
+                  />
+              ) : (
+                <>
+                    {rooms.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No rooms or facilities found.</p>}
+                    {rooms.map(room => (
+                        <Card key={room.id} className="p-4 space-y-4">
+                        <div className="flex justify-between items-start">
+                            <h3 className="text-xl font-semibold">{room.name}</h3>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id] || role === 'manager'}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>{savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Room'} </Button>
-                </Card>
-              ))}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1"><label className="text-sm font-medium">Name</label><Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} /></div>
+                            <div className="space-y-1"><label className="text-sm font-medium">{room.type === 'conference' ? 'Full Day Price (per person)' : 'Price per Night'}</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                            <div className="space-y-1"><label className="text-sm font-medium">Type</label>
+                            <Select value={room.type || 'room'} onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)} disabled={role === 'manager'}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="room">Room</SelectItem><SelectItem value="conference">Conference</SelectItem></SelectContent>
+                            </Select>
+                            </div>
+                            {room.type === 'conference' && (
+                            <div className="space-y-1"><label className="text-sm font-medium">Half Day Price (per person)</label><Input type="number" value={room.halfDayPrice || 0} onChange={e => handleRoomChange(room.id, 'halfDayPrice', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                            )}
+                            <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                            <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                            {room.type !== 'conference' && <>
+                            <div className="space-y-1"><label className="text-sm font-medium">Beds</label><Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                            <div className="space-y-1"><label className="text-sm font-medium">Baths</label><Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                            </>}
+                            <div className="md:col-span-3 space-y-1"><label className="text-sm font-medium">Description</label><Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} readOnly={role === 'manager'} /></div>
+                            <div className="md:col-span-3 space-y-3">
+                            <label className="text-sm font-medium">Main Image</label>
+                            {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={150} height={90} className="rounded-md object-cover" />}
+                            <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
+                                <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
+                                {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
+                            </div>
+                            <Input value={room.imageUrl} onChange={handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
+                            </div>
+                            <div className="md:col-span-3 space-y-3">
+                            <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label>
+                                {role !== 'manager' && <Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}><PlusCircle className="mr-2 h-4 w-4" />Add</Button>}
+                            </div>
+                            {room.images?.map((img) => (
+                                <div key={img.id} className="border-t pt-3 space-y-2">
+                                {img.src && <Image src={img.src} alt={img.alt} width={150} height={90} className="rounded-md object-cover" />}
+                                <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
+                                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${img.id}`, url => handleRoomImageChange(room.id, img.id, url))} />
+                                    {uploadingStates[`room-detail-${img.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                    <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </div>
+                                <Input value={img.src} onChange={e => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" readOnly={role === 'manager'} />
+                                </div>
+                            ))}
+                            </div>
+                        </div>
+                        <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>{savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Room'} </Button>
+                        </Card>
+                    ))}
+                </>
+              )}
             </CardContent>
           </Card>
       )}
@@ -722,54 +768,63 @@ export default function AdminPage() {
                 <CardDescription>View and manage all reservations and payments.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {bookings.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
-                {bookings.map(booking => {
-                    const availability = getAvailabilityForBooking(booking);
-                    const isPastBooking = isPast(new Date(booking.checkIn));
+                {fetchErrors.transactions ? (
+                    <ErrorDisplay 
+                        title="Bookings Offline" 
+                        message="Reservations could not be retrieved. Please ensure your Firebase credentials in .env are active and correct." 
+                    />
+                ) : (
+                    <>
+                        {bookings.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
+                        {bookings.map(booking => {
+                            const availability = getAvailabilityForBooking(booking);
+                            const isPastBooking = isPast(new Date(booking.checkIn));
 
-                    return (
-                        <Card key={booking.id} className={cn("p-4 transition-colors", booking.status === 'cancelled' && 'bg-muted/50')}>
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="md:col-span-2 space-y-2">
-                                    <div className="flex items-start justify-between">
-                                        <CardTitle className="text-xl">{booking.roomName}</CardTitle>
-                                        {getStatusChip(booking.status, booking.checkIn)}
-                                    </div>
-                                    
-                                    <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
-                                    <div className="flex items-center gap-4 text-sm">
-                                        <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4"/><span>{format(new Date(booking.checkIn), 'PP')} to {format(new Date(booking.checkOut), 'PP')}</span></div>
-                                        <div className="flex items-center gap-2"><Users className="h-4 w-4"/><span>{booking.nights} {booking.numPeople ? 'day(s)' : 'night(s)'}</span></div>
-                                    </div>
-                                    {booking.numPeople && (
-                                      <p className="text-sm font-medium">Conference for {booking.numPeople} people ({booking.conferenceOption === 'half' ? 'Half Day' : 'Full Day'})</p>
-                                    )}
-                                    <p className="text-sm">Booked {formatDistanceToNow(new Date(booking.bookedOn), { addSuffix: true })}</p>
+                            return (
+                                <Card key={booking.id} className={cn("p-4 transition-colors", booking.status === 'cancelled' && 'bg-muted/50')}>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="md:col-span-2 space-y-2">
+                                            <div className="flex items-start justify-between">
+                                                <CardTitle className="text-xl">{booking.roomName}</CardTitle>
+                                                {getStatusChip(booking.status, booking.checkIn)}
+                                            </div>
+                                            
+                                            <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
+                                            <div className="flex items-center gap-4 text-sm">
+                                                <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4"/><span>{format(new Date(booking.checkIn), 'PP')} to {format(new Date(booking.checkOut), 'PP')}</span></div>
+                                                <div className="flex items-center gap-2"><Users className="h-4 w-4"/><span>{booking.nights} {booking.numPeople ? 'day(s)' : 'night(s)'}</span></div>
+                                            </div>
+                                            {booking.numPeople && (
+                                            <p className="text-sm font-medium">Conference for {booking.numPeople} people ({booking.conferenceOption === 'half' ? 'Half Day' : 'Full Day'})</p>
+                                            )}
+                                            <p className="text-sm">Booked {formatDistanceToNow(new Date(booking.bookedOn), { addSuffix: true })}</p>
+                                        </div>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="font-semibold">Total Cost: KES {booking.totalCost.toFixed(2)}</div>
+                                            <div className="text-muted-foreground">Payment: {booking.paymentMethod}</div>
+                                            <div className="flex items-center gap-2">
+                                                <Bed className="h-4 w-4"/>
+                                                <span>Rooms available on check-in: {availability}</span>
+                                            </div>
+                                            {booking.status !== 'cancelled' && !isPastBooking && (role === 'owner' || role === 'admin') && (
+                                                <Button 
+                                                    variant="destructive" 
+                                                    size="sm" 
+                                                    className="w-full mt-2" 
+                                                    onClick={() => handleCancelBooking(booking.id)}
+                                                    disabled={savingStates[booking.id]}
+                                                >
+                                                {savingStates[booking.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                Cancel Booking
+                                                </Button>
+                                            )}
+                                        </div>
                                 </div>
-                                <div className="space-y-2 text-sm">
-                                    <div className="font-semibold">Total Cost: KES {booking.totalCost.toFixed(2)}</div>
-                                    <div className="text-muted-foreground">Payment: {booking.paymentMethod}</div>
-                                    <div className="flex items-center gap-2">
-                                        <Bed className="h-4 w-4"/>
-                                        <span>Rooms available on check-in: {availability}</span>
-                                    </div>
-                                    {booking.status !== 'cancelled' && !isPastBooking && (role === 'owner' || role === 'admin') && (
-                                        <Button 
-                                            variant="destructive" 
-                                            size="sm" 
-                                            className="w-full mt-2" 
-                                            onClick={() => handleCancelBooking(booking.id)}
-                                            disabled={savingStates[booking.id]}
-                                        >
-                                          {savingStates[booking.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
-                                          Cancel Booking
-                                        </Button>
-                                    )}
-                                </div>
-                           </div>
-                        </Card>
-                    )
-                })}
+                                </Card>
+                            )
+                        })}
+                    </>
+                )}
             </CardContent>
         </Card>
       )}
@@ -781,48 +836,56 @@ export default function AdminPage() {
                 <CardDescription>Assign roles to users. Only owners can change roles.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {users.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No users found.</p>}
-                {users.length === 0 && loading && <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin"/></div>}
-                {users.map(user => (
-                    <Card key={user.uid} className="p-4">
-                       <div className="flex items-center gap-4">
-                            <Avatar className="h-12 w-12">
-                                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                                <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : <User className="h-6 w-6" />}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-grow">
-                                <p className="font-semibold flex items-center gap-2">{getRoleIcon(user.role)} {user.displayName || 'No Name'}</p>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                {fetchErrors.users ? (
+                    <ErrorDisplay 
+                        title="User Directory Unavailable" 
+                        message="We couldn't connect to the user database. This tab requires valid Firebase Admin permissions." 
+                    />
+                ) : (
+                    <>
+                        {users.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No users found.</p>}
+                        {users.map(user => (
+                            <Card key={user.uid} className="p-4">
+                            <div className="flex items-center gap-4">
+                                    <Avatar className="h-12 w-12">
+                                        <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                                        <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : <User className="h-6 w-6" />}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-grow">
+                                        <p className="font-semibold flex items-center gap-2">{getRoleIcon(user.role)} {user.displayName || 'No Name'}</p>
+                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    </div>
+                                    {role === 'owner' ? (
+                                        <div className="flex items-center gap-2">
+                                            <Select
+                                                value={user.role || 'none'}
+                                                onValueChange={(newRole: UserRole | 'none') => handleSetUserRole(user.uid, newRole)}
+                                                disabled={savingStates[user.uid]}
+                                            >
+                                                <SelectTrigger className="w-[120px]">
+                                                    <SelectValue placeholder="Role" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                    <SelectItem value="manager">Manager</SelectItem>
+                                                    <SelectItem value="admin">Admin</SelectItem>
+                                                    <SelectItem value="owner">Owner</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {savingStates[user.uid] && <Loader2 className="h-5 w-5 animate-spin" />}
+                                        </div>
+                                    ) : (
+                                        user.role && <p className="capitalize font-semibold">{user.role}</p>
+                                    )}
+                                    <div className="text-right text-sm text-muted-foreground hidden md:block">
+                                        <p>Last signed in:</p>
+                                        <p>{user.metadata.lastSignInTime ? formatDistanceToNow(new Date(user.metadata.lastSignInTime), {addSuffix: true}) : 'Never'}</p>
+                                    </div>
                             </div>
-                            {role === 'owner' ? (
-                                <div className="flex items-center gap-2">
-                                    <Select
-                                        value={user.role || 'none'}
-                                        onValueChange={(newRole: UserRole | 'none') => handleSetUserRole(user.uid, newRole)}
-                                        disabled={savingStates[user.uid]}
-                                    >
-                                        <SelectTrigger className="w-[120px]">
-                                            <SelectValue placeholder="Role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            <SelectItem value="manager">Manager</SelectItem>
-                                            <SelectItem value="admin">Admin</SelectItem>
-                                            <SelectItem value="owner">Owner</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {savingStates[user.uid] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                </div>
-                            ) : (
-                                 user.role && <p className="capitalize font-semibold">{user.role}</p>
-                            )}
-                            <div className="text-right text-sm text-muted-foreground hidden md:block">
-                                <p>Last signed in:</p>
-                                <p>{user.metadata.lastSignInTime ? formatDistanceToNow(new Date(user.metadata.lastSignInTime), {addSuffix: true}) : 'Never'}</p>
-                            </div>
-                       </div>
-                    </Card>
-                ))}
+                            </Card>
+                        ))}
+                    </>
+                )}
             </CardContent>
         </Card>
       )}
@@ -831,45 +894,63 @@ export default function AdminPage() {
           <Card>
             <CardHeader><CardTitle>Guest Messages</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {messages.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No messages yet.</p>}
-              {messages.map(message => (
-                  <Card key={message.id} className="p-4">
-                      <div className="flex justify-between items-start">
-                          <div>
-                              <p className="font-semibold">{message.name} <span className="text-sm font-normal text-muted-foreground">&lt;{message.email}&gt;</span></p>
-                              {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
-                              <p className="text-xs text-muted-foreground">{format(new Date(message.sentAt), 'PPp')}</p>
-                          </div>
-                      </div>
-                      <p className="mt-2 text-muted-foreground">{message.message}</p>
-                  </Card>
-              ))}
+              {fetchErrors.messages ? (
+                  <ErrorDisplay 
+                    title="Messaging System Error" 
+                    message="Guest messages could not be retrieved. Please check your database connection settings." 
+                  />
+              ) : (
+                <>
+                    {messages.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No messages yet.</p>}
+                    {messages.map(message => (
+                        <Card key={message.id} className="p-4">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-semibold">{message.name} <span className="text-sm font-normal text-muted-foreground">&lt;{message.email}&gt;</span></p>
+                                    {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
+                                    <p className="text-xs text-muted-foreground">{format(new Date(message.sentAt), 'PPp')}</p>
+                                </div>
+                            </div>
+                            <p className="mt-2 text-muted-foreground">{message.message}</p>
+                        </Card>
+                    ))}
+                </>
+              )}
             </CardContent>
           </Card>
       )}
 
-      {activeTab === 'settings' && siteSettings && (
+      {activeTab === 'settings' && (
         <Card>
             <CardHeader><CardTitle>Site Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Active Theme</label>
-                    <Select 
-                        value={siteSettings.activeTheme} 
-                        onValueChange={(theme) => setSiteSettings(prev => prev ? { ...prev, activeTheme: theme as 'default' | 'christmas' } : null)}
-                    >
-                        <SelectTrigger className="max-w-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="default">Default</SelectItem>
-                            <SelectItem value="christmas">Christmas</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <Button onClick={() => handleSave('settings', 'site-settings')} disabled={savingStates['site-settings']}>
-                    {savingStates['site-settings'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Settings
-                </Button>
+                {fetchErrors.settings ? (
+                    <ErrorDisplay 
+                        title="Settings Error" 
+                        message="Site settings could not be retrieved from the establishment document." 
+                    />
+                ) : siteSettings ? (
+                    <>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Active Theme</label>
+                            <Select 
+                                value={siteSettings.activeTheme} 
+                                onValueChange={(theme) => setSiteSettings(prev => prev ? { ...prev, activeTheme: theme as 'default' | 'christmas' } : null)}
+                            >
+                                <SelectTrigger className="max-w-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="default">Default</SelectItem>
+                                    <SelectItem value="christmas">Christmas</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button onClick={() => handleSave('settings', 'site-settings')} disabled={savingStates['site-settings']}>
+                            {savingStates['site-settings'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Settings
+                        </Button>
+                    </>
+                ) : null}
             </CardContent>
         </Card>
       )}

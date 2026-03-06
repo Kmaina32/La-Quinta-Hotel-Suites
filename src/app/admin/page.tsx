@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, uploadImage, getMessages, getAllBookings, getSiteSettings, updateSiteSettings, getAllUsers, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, AnalyticsData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Users, AlertTriangle, Image as ImageIcon, Bath, BedDouble, DollarSign, Layers, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Users, AlertTriangle, Image as ImageIcon, Bath, BedDouble, Layers, Clock, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,8 +16,6 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/logo';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Pie, PieChart, Cell, Legend } from "recharts";
-import { formatDistanceToNow } from 'date-fns';
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
@@ -36,7 +34,7 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
 function ErrorDisplay({ title, message }: { title: string; message: string }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-[2rem] bg-muted/30 h-full w-full">
-            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
             <h3 className="text-xl font-bold text-destructive">{title}</h3>
             <p className="text-muted-foreground mt-2 max-w-md">{message}</p>
         </div>
@@ -45,7 +43,7 @@ function ErrorDisplay({ title, message }: { title: string; message: string }) {
 
 function AdminContent() {
   const [password, setPassword] = useState('');
-  const { isAdmin, loginAdmin, role } = useAuth();
+  const { isAdmin, loginAdmin, logoutAdmin, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [fetchErrors, setFetchErrors] = useState<Record<string, boolean>>({});
   
@@ -75,16 +73,16 @@ function AdminContent() {
 
   const fetchData = async () => {
     setLoading(true);
+    setFetchErrors({});
     try {
         if (activeTab === 'analytics') {
             const data = await getAnalyticsData();
             setAnalyticsData(data);
-            if (data.totalBookings === 0 && data.totalRevenue === 0) setFetchErrors(p => ({...p, analytics: true}));
+            if (!data || data.totalRevenue === 0 && data.totalBookings === 0) {
+                setFetchErrors(p => ({...p, analytics: true}));
+            }
         }
-        if (activeTab === 'rooms') {
-            const data = await getRooms();
-            setRooms(data);
-        }
+        if (activeTab === 'rooms') setRooms(await getRooms());
         if (activeTab === 'content') {
             const est = await getEstablishmentImages();
             setGalleryImages(est.galleryImages || []);
@@ -96,7 +94,7 @@ function AdminContent() {
         if (activeTab === 'users') {
             const data = await getAllUsers();
             setUsers(data);
-            if (data.length === 0) setFetchErrors(p => ({...p, users: true}));
+            if (!data || data.length === 0) setFetchErrors(p => ({...p, users: true}));
         }
     } catch (error) {
         setFetchErrors(prev => ({...prev, [activeTab]: true}));
@@ -123,8 +121,8 @@ function AdminContent() {
           const imageUrl = await uploadImage(formData);
           onUploadComplete(imageUrl);
           toast({ title: "Upload Successful" });
-      } catch (error) {
-          toast({ title: "Upload Failed", variant: "destructive" });
+      } catch (error: any) {
+          toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
       } finally {
           setUploadingStates(prev => ({...prev, [uploadId]: false}));
       }
@@ -171,16 +169,22 @@ function AdminContent() {
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">
-        <Card className="w-full max-w-md shadow-2xl rounded-[2.5rem]">
+        <Card className="w-full max-w-md shadow-2xl rounded-[2.5rem] border-none bg-muted/50 backdrop-blur-sm">
           <CardHeader className="text-center pt-10">
             <Logo className="h-12 w-48 mx-auto mb-4" />
-            <CardTitle className="text-2xl font-black">Admin Access</CardTitle>
-            <CardDescription>Enter Master Password to continue</CardDescription>
+            <CardTitle className="text-2xl font-black">Admin Gateway</CardTitle>
+            <CardDescription>Master Console requires Authorization</CardDescription>
           </CardHeader>
           <CardContent className="pb-10">
             <form onSubmit={handleLogin} className="space-y-4">
-              <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 rounded-2xl text-center" />
-              <Button type="submit" className="w-full h-12 rounded-2xl font-black">UNLOCK CONSOLE</Button>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                className="h-12 rounded-2xl text-center text-lg tracking-widest" 
+              />
+              <Button type="submit" className="w-full h-12 rounded-2xl font-black tracking-widest uppercase">Unlock Dashboard</Button>
             </form>
           </CardContent>
         </Card>
@@ -188,22 +192,22 @@ function AdminContent() {
     );
   }
 
-  if (loading) return <div className="flex justify-center items-center h-[calc(100vh-12rem)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+  if (loading) return <div className="flex justify-center items-center h-[calc(100vh-16rem)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
        {activeTab === 'analytics' && (
         <div className="space-y-8">
             {fetchErrors.analytics ? (
-                <ErrorDisplay title="Analytics Offline" message="Connect your Firebase Private Key to track revenue and bookings." />
+                <ErrorDisplay title="Database Offline" message="Connect your FIREBASE_PRIVATE_KEY to view revenue and booking metrics." />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Card className="rounded-[2rem] border-none bg-primary/5 p-6">
-                        <p className="text-[10px] font-black uppercase text-primary mb-1">Revenue</p>
+                        <p className="text-[10px] font-black uppercase text-primary mb-1 tracking-widest">Gross Revenue</p>
                         <p className="text-2xl font-black">KES {analyticsData?.totalRevenue.toLocaleString()}</p>
                     </Card>
                     <Card className="rounded-[2rem] border-none bg-blue-500/5 p-6">
-                        <p className="text-[10px] font-black uppercase text-blue-600 mb-1">Bookings</p>
+                        <p className="text-[10px] font-black uppercase text-blue-600 mb-1 tracking-widest">Total Bookings</p>
                         <p className="text-2xl font-black">{analyticsData?.totalBookings}</p>
                     </Card>
                 </div>
@@ -214,63 +218,91 @@ function AdminContent() {
       {activeTab === 'rooms' && (
         <div className="space-y-6">
             <div className="flex justify-between items-center px-2">
-                <h2 className="text-2xl font-black tracking-tighter">INVENTORY</h2>
+                <div>
+                    <h2 className="text-2xl font-black tracking-tighter">INVENTORY</h2>
+                    <p className="text-xs text-muted-foreground">Manage units, pricing and occupancy</p>
+                </div>
                 <Button onClick={async () => {
                     const id = await addRoom(defaultRoom);
-                    setRooms([...rooms, {id, ...defaultRoom, booked: {}}]);
-                }} className="rounded-xl font-black"><PlusCircle className="mr-2 h-4 w-4" /> ADD UNIT</Button>
+                    setRooms([{id, ...defaultRoom, booked: {}}, ...rooms]);
+                }} className="rounded-xl font-black" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> NEW UNIT</Button>
             </div>
-            <div className="grid grid-cols-1 gap-6">
+            
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {rooms.map(room => (
-                    <Card key={room.id} className="rounded-[2rem] overflow-hidden shadow-sm border-none bg-muted/20">
+                    <Card key={room.id} className="rounded-[2.5rem] overflow-hidden shadow-sm border-none bg-muted/20 hover:bg-muted/30 transition-colors">
                         <CardHeader className="bg-muted/30 flex flex-row items-center justify-between p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center"><Bed className="h-5 w-5" /></div>
-                                <Input value={room.name} onChange={(e) => handleRoomChange(room.id, 'name', e.target.value)} className="font-black border-none bg-transparent text-lg focus-visible:ring-0 p-0 h-auto w-auto" />
+                            <div className="flex items-center gap-4 flex-1">
+                                <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm"><Bed className="h-5 w-5 text-primary" /></div>
+                                <Input 
+                                    value={room.name} 
+                                    onChange={(e) => handleRoomChange(room.id, 'name', e.target.value)} 
+                                    className="font-black border-none bg-transparent text-lg focus-visible:ring-0 p-0 h-auto w-full" 
+                                    readOnly={role === 'manager'}
+                                />
                             </div>
-                            <Button size="sm" onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id]} className="rounded-xl font-black">{savingStates[room.id] ? <Loader2 className="animate-spin h-4 w-4" /> : 'SAVE'}</Button>
+                            <Button size="sm" onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'} className="rounded-xl font-black px-6">{savingStates[room.id] ? <Loader2 className="animate-spin h-4 w-4" /> : 'SAVE'}</Button>
                         </CardHeader>
-                        <CardContent className="p-8 grid md:grid-cols-12 gap-8">
-                            <div className="md:col-span-4 space-y-4">
+                        <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase opacity-50">Description</Label>
-                                    <Textarea value={room.description} onChange={(e) => handleRoomChange(room.id, 'description', e.target.value)} className="rounded-xl min-h-[100px]" />
+                                    <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Description</Label>
+                                    <Textarea 
+                                        value={room.description} 
+                                        onChange={(e) => handleRoomChange(room.id, 'description', e.target.value)} 
+                                        className="rounded-2xl min-h-[100px] resize-none" 
+                                        readOnly={role === 'manager'}
+                                    />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase opacity-50">Price (KES)</Label>
-                                        <Input type="number" value={room.price} onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} className="rounded-xl" />
+                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Daily Rate (KES)</Label>
+                                        <Input 
+                                            type="number" 
+                                            value={room.price} 
+                                            onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} 
+                                            className="rounded-xl" 
+                                            readOnly={role === 'manager'}
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase opacity-50">Inventory</Label>
-                                        <Input type="number" value={room.inventory} onChange={(e) => handleRoomChange(room.id, 'inventory', Number(e.target.value))} className="rounded-xl" />
+                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Units</Label>
+                                        <Input 
+                                            type="number" 
+                                            value={room.inventory} 
+                                            onChange={(e) => handleRoomChange(room.id, 'inventory', Number(e.target.value))} 
+                                            className="rounded-xl" 
+                                            readOnly={role === 'manager'}
+                                        />
                                     </div>
                                 </div>
                             </div>
-                            <div className="md:col-span-4 space-y-4">
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase opacity-50">Capacity</Label><Input type="number" value={room.capacity} onChange={(e) => handleRoomChange(room.id, 'capacity', Number(e.target.value))} className="rounded-xl" /></div>
-                                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase opacity-50">Beds</Label><Input type="number" value={room.beds} onChange={(e) => handleRoomChange(room.id, 'beds', Number(e.target.value))} className="rounded-xl" /></div>
-                                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase opacity-50">Baths</Label><Input type="number" value={room.baths} onChange={(e) => handleRoomChange(room.id, 'baths', Number(e.target.value))} className="rounded-xl" /></div>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="space-y-1"><Label className="text-[9px] font-black uppercase opacity-50">Capacity</Label><Input type="number" value={room.capacity} onChange={(e) => handleRoomChange(room.id, 'capacity', Number(e.target.value))} className="h-8 rounded-lg" readOnly={role === 'manager'}/></div>
+                                    <div className="space-y-1"><Label className="text-[9px] font-black uppercase opacity-50">Beds</Label><Input type="number" value={room.beds} onChange={(e) => handleRoomChange(room.id, 'beds', Number(e.target.value))} className="h-8 rounded-lg" readOnly={role === 'manager'}/></div>
+                                    <div className="space-y-1"><Label className="text-[9px] font-black uppercase opacity-50">Baths</Label><Input type="number" value={room.baths} onChange={(e) => handleRoomChange(room.id, 'baths', Number(e.target.value))} className="h-8 rounded-lg" readOnly={role === 'manager'}/></div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase opacity-50">Main Image</Label>
-                                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-muted flex items-center justify-center">
+                                    <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Cover Image</Label>
+                                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed">
                                         {room.imageUrl ? <Image src={room.imageUrl} alt={room.name} fill className="object-cover" /> : <ImageIcon className="opacity-20" />}
-                                        <Input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
+                                        {role !== 'manager' && (
+                                            <Input 
+                                                type="file" 
+                                                className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                onChange={(e) => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} 
+                                            />
+                                        )}
+                                        {uploadingStates[`room-main-${room.id}`] && <div className="absolute inset-0 bg-background/50 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}
                                     </div>
-                                    <Input value={room.imageUrl} onChange={(e) => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" className="text-[10px] h-8 rounded-lg mt-2" />
-                                </div>
-                            </div>
-                            <div className="md:col-span-4 space-y-4">
-                                <div className="flex justify-between items-center"><Label className="text-[10px] font-black uppercase opacity-50">Gallery</Label><Button variant="ghost" size="sm" onClick={() => addRoomImage(room.id)} className="h-6 text-[10px] font-black uppercase text-primary">ADD PHOTO</Button></div>
-                                <div className="grid grid-cols-2 gap-2 h-[200px] overflow-y-auto no-scrollbar">
-                                    {room.images?.map((img, i) => (
-                                        <div key={img.id} className="relative aspect-square rounded-xl bg-muted overflow-hidden">
-                                            <Image src={img.src || 'https://picsum.photos/seed/placeholder/200/200'} alt="" fill className="object-cover" />
-                                            <Input value={img.src} onChange={(e) => handleRoomImageChange(room.id, i, 'src', e.target.value)} className="absolute bottom-0 left-0 right-0 h-6 text-[8px] bg-black/50 text-white border-none rounded-none" />
-                                        </div>
-                                    ))}
+                                    <Input 
+                                        value={room.imageUrl} 
+                                        onChange={(e) => handleRoomChange(room.id, 'imageUrl', e.target.value)} 
+                                        placeholder="Paste image URL" 
+                                        className="text-[10px] h-8 rounded-lg mt-2" 
+                                        readOnly={role === 'manager'}
+                                    />
                                 </div>
                             </div>
                         </CardContent>
@@ -284,14 +316,21 @@ function AdminContent() {
         <div className="space-y-6">
             <h2 className="text-2xl font-black tracking-tighter px-2">DIRECTORY</h2>
             {fetchErrors.users ? (
-                <ErrorDisplay title="Access Restricted" message="User management requires a properly configured FIREBASE_PRIVATE_KEY." />
+                <ErrorDisplay title="Access Restricted" message="User management requires a valid FIREBASE_PRIVATE_KEY in your environment variables." />
             ) : (
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {users.map(user => (
-                        <Card key={user.uid} className="rounded-[2rem] p-6 border-none bg-muted/10">
+                        <Card key={user.uid} className="rounded-[2rem] p-6 border-none bg-muted/10 hover:bg-muted/20 transition-colors">
                             <div className="flex items-center gap-4">
-                                <Avatar className="h-12 w-12 border-2 border-background shadow-md"><AvatarImage src={user.photoURL || ''} /><AvatarFallback>{user.displayName?.[0]}</AvatarFallback></Avatar>
-                                <div><p className="font-black text-sm">{user.displayName || 'User'}</p><p className="text-[10px] opacity-50 truncate">{user.email}</p></div>
+                                <Avatar className="h-12 w-12 border-2 border-background shadow-md">
+                                    <AvatarImage src={user.photoURL || ''} />
+                                    <AvatarFallback className="font-black bg-primary/10 text-primary">{user.displayName?.[0] || user.email?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <div className="overflow-hidden">
+                                    <p className="font-black text-sm truncate">{user.displayName || 'Anonymous'}</p>
+                                    <p className="text-[10px] opacity-50 truncate">{user.email}</p>
+                                    <div className="mt-1"><span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">{user.role || 'Guest'}</span></div>
+                                </div>
                             </div>
                         </Card>
                     ))}

@@ -19,25 +19,24 @@ function initializeAdmin() {
   let rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
 
   if (!projectId || !clientEmail || !rawKey) {
-    console.warn("Firebase Admin credentials missing. Administrative features (User management) will be disabled.");
+    console.warn("Firebase Admin credentials missing. High-privilege features disabled.");
     return;
   }
 
   try {
-    // 1. Clean the key: remove literal quotes if present
+    // Aggressive cleaning of the private key to handle newline issues in .env
     let privateKey = rawKey.trim();
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-      privateKey = privateKey.slice(1, -1);
-    }
-    if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+    
+    // Remove wrapping quotes if they exist
+    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || 
+        (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
       privateKey = privateKey.slice(1, -1);
     }
 
-    // 2. CRITICAL: Replace literal \n strings with actual newline characters
-    // This is the most common cause of "Invalid PEM formatted message" in .env files
+    // Replace literal \n characters with real newlines
     privateKey = privateKey.replace(/\\n/g, '\n');
 
-    // 3. Ensure the key has the correct RSA headers
+    // Ensure standard PEM headers
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
       privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
     }
@@ -50,11 +49,12 @@ function initializeAdmin() {
       }),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
     });
+    
     adminInitialized = true;
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
     console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
-    // Do not re-throw to allow standard site features to continue via Client SDK
+    // Fail soft to keep the app running
   }
 }
 

@@ -21,7 +21,7 @@ import {
 } from 'firebase/firestore';
 import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings, UserRole, AnalyticsData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
-import { format, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
+import { format, eachDayOfInterval, eachMonthOfInterval, addDays } from 'date-fns';
 
 /**
  * Standard Data Fetching (Uses Client SDK for stability on deployment)
@@ -143,16 +143,100 @@ export async function updateSiteSettings(settings: SiteSettings) {
 }
 
 /**
+ * Image Upload (Server-side via Admin SDK)
+ */
+export async function uploadImage(formData: FormData): Promise<string> {
+    const file = formData.get('file') as File;
+    if (!file) throw new Error('No file provided');
+
+    try {
+        const storage = getStorage();
+        if (!storage) throw new Error('Firebase Admin Storage not initialized');
+
+        const bucket = storage.bucket();
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const filename = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const fileRef = bucket.file(filename);
+
+        await fileRef.save(buffer, {
+            metadata: { contentType: file.type },
+        });
+
+        // Use public URL if bucket is configured for public access, 
+        // or generate a signed URL for safety.
+        const [url] = await fileRef.getSignedUrl({
+            action: 'read',
+            expires: '03-01-2500',
+        });
+
+        return url;
+    } catch (e: any) {
+        console.error("Upload failed:", e.message);
+        throw new Error("Failed to upload image. Ensure FIREBASE_PRIVATE_KEY is correctly set.");
+    }
+}
+
+/**
+ * Booking Management
+ */
+export async function createBooking(bookingData: any, isReservation: boolean) {
+    try {
+        const bookingsRef = collection(clientDb, 'bookings');
+        const status = isReservation ? 'pending' : 'confirmed';
+        
+        const docRef = await addDoc(bookingsRef, {
+            ...bookingData,
+            status,
+            bookedOn: new Date().toISOString(),
+        });
+
+        // Simplified inventory tracking
+        const roomRef = doc(clientDb, 'rooms', bookingData.roomId);
+        const checkIn = new Date(bookingData.checkIn);
+        const checkOut = new Date(bookingData.checkOut);
+        const dates = eachDayOfInterval({ start: checkIn, end: addDays(checkOut, -1) });
+
+        const updates: any = {};
+        dates.forEach(d => {
+            const dateStr = format(d, 'yyyy-MM-dd');
+            updates[`booked.${dateStr}`] = increment(1);
+        });
+
+        await updateDoc(roomRef, updates);
+
+        revalidatePath('/admin');
+        revalidatePath('/bookings');
+        return docRef.id;
+    } catch (e) {
+        console.error("Booking creation failed:", e);
+        throw e;
+    }
+}
+
+export async function confirmBookingFromWebhook(reference: string) {
+    try {
+        const bookingsRef = collection(clientDb, 'bookings');
+        const q = query(bookingsRef, where('transactionRef', '==', reference));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+            const bookingDoc = snapshot.docs[0];
+            await updateDoc(bookingDoc.ref, { status: 'confirmed' });
+        }
+    } catch (e) {
+        console.error("Webhook confirmation failed:", e);
+    }
+}
+
+/**
  * Privileged Operations (Require Admin SDK)
  */
 
 export async function getAllUsers(): Promise<UserData[]> {
-    const authAdmin = getAuthAdmin();
-    if (!authAdmin) {
-        console.warn("getAllUsers requested but Admin SDK not configured.");
-        return [];
-    }
     try {
+        const authAdmin = getAuthAdmin();
+        if (!authAdmin) return [];
+        
         const userRecords = await authAdmin.listUsers();
         return userRecords.users.map(user => ({
             uid: user.uid,

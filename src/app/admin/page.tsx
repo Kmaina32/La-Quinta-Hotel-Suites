@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, uploadImage, getMessages, getAllBookings, getSiteSettings, updateSiteSettings, getAllUsers, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, AnalyticsData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Users, AlertTriangle, Image as ImageIcon, Bath, BedDouble, Layers, Clock, ShieldAlert } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Users, AlertTriangle, Image as ImageIcon, Bath, BedDouble, Layers, Clock, ShieldAlert, DollarSign } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/logo';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
@@ -239,17 +240,23 @@ function AdminContent() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Daily Rate (KES)</Label>
-                                        <Input 
-                                            type="number" 
-                                            value={room.price} 
-                                            onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} 
-                                            className="rounded-xl" 
-                                            readOnly={role === 'manager'}
-                                        />
+                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Type</Label>
+                                        <Select 
+                                            value={room.type} 
+                                            onValueChange={(val) => handleRoomChange(room.id, 'type', val)}
+                                            disabled={role === 'manager'}
+                                        >
+                                            <SelectTrigger className="rounded-xl">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="room">Standard Room</SelectItem>
+                                                <SelectItem value="conference">Conference Facility</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Units</Label>
+                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Available Units</Label>
                                         <Input 
                                             type="number" 
                                             value={room.inventory} 
@@ -258,6 +265,30 @@ function AdminContent() {
                                             readOnly={role === 'manager'}
                                         />
                                     </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">{room.type === 'conference' ? 'Full Day Rate' : 'Daily Rate'}</Label>
+                                        <Input 
+                                            type="number" 
+                                            value={room.price} 
+                                            onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} 
+                                            className="rounded-xl" 
+                                            readOnly={role === 'manager'}
+                                        />
+                                    </div>
+                                    {room.type === 'conference' && (
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Half Day Rate</Label>
+                                            <Input 
+                                                type="number" 
+                                                value={room.halfDayPrice} 
+                                                onChange={(e) => handleRoomChange(room.id, 'halfDayPrice', Number(e.target.value))} 
+                                                className="rounded-xl" 
+                                                readOnly={role === 'manager'}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="space-y-4">
@@ -287,6 +318,39 @@ function AdminContent() {
                                         readOnly={role === 'manager'}
                                     />
                                 </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Detail Gallery</Label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {room.images?.map((img, idx) => (
+                                            <div key={img.id || idx} className="relative aspect-square rounded-lg overflow-hidden group border">
+                                                <Image src={img.src} alt={img.alt} fill className="object-cover" />
+                                                {role !== 'manager' && (
+                                                    <Button 
+                                                        variant="destructive" 
+                                                        size="icon" 
+                                                        className="absolute top-0.5 right-0.5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => handleRoomChange(room.id, 'images', room.images.filter((_, i) => i !== idx))}
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {role !== 'manager' && (
+                                            <div className="relative aspect-square rounded-lg border-2 border-dashed flex items-center justify-center hover:bg-muted/50 cursor-pointer">
+                                                {uploadingStates[`room-gallery-${room.id}`] ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4 opacity-20" />}
+                                                <Input 
+                                                    type="file" 
+                                                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                    onChange={(e) => e.target.files && handleFileUpload(e.target.files[0], `room-gallery-${room.id}`, url => {
+                                                        const newImages = [...(room.images || []), { id: Date.now().toString(), src: url, alt: room.name }];
+                                                        handleRoomChange(room.id, 'images', newImages);
+                                                    })} 
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -295,7 +359,7 @@ function AdminContent() {
         </div>
       )}
 
-      {activeTab === 'users' && (
+      {activeTab === 'users' && (activeTab === 'users' && (
         <div className="space-y-6">
             <h2 className="text-2xl font-black tracking-tighter px-2">DIRECTORY</h2>
             {fetchErrors.users ? (
@@ -320,7 +384,7 @@ function AdminContent() {
                 </div>
             )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

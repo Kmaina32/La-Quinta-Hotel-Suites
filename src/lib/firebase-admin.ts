@@ -24,17 +24,17 @@ function initializeAdmin() {
   }
 
   try {
-    // Robust cleaning of the private key
+    // Aggressive cleaning of the private key
     let privateKey = rawKey.trim();
     
+    // Replace literal \n characters with real newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
     // Remove wrapping quotes if they exist
     if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || 
         (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
       privateKey = privateKey.slice(1, -1);
     }
-
-    // Replace literal \n characters with real newlines
-    privateKey = privateKey.replace(/\\n/g, '\n');
 
     // Ensure standard PEM headers
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {

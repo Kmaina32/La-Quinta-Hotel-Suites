@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getAuthAdmin } from '@/lib/firebase-admin';
+import { getAuthAdmin, getStorage } from '@/lib/firebase-admin';
 import { db as clientDb } from '@/lib/firebase';
 import { 
     collection, 
@@ -82,6 +82,27 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 /**
  * Mutations
  */
+
+export async function uploadImage(formData: FormData): Promise<string> {
+    const file = formData.get('file') as File;
+    if (!file) throw new Error('No file provided');
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const storage = getStorage();
+    if (!storage) throw new Error('Cloud Storage is unavailable. Please configure Firebase Admin credentials.');
+
+    const bucket = storage.bucket();
+    const fileName = `uploads/${Date.now()}-${file.name}`;
+    const fileUpload = bucket.file(fileName);
+
+    await fileUpload.save(buffer, {
+        metadata: { contentType: file.type },
+    });
+
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
+}
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
     try {

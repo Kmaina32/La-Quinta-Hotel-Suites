@@ -110,8 +110,7 @@ export default function AdminPage() {
                 const data = await getRooms();
                 setRooms(data);
                 if (data.length === 0 && activeTab === 'rooms') {
-                    // Could be valid or error, but if it's strictly empty and actions.ts returns [] on fail
-                    // we'll assume valid empty for now unless we add specific error types
+                    // Could be valid or error
                 }
             } catch (e) { handleError('rooms', e); }
         }
@@ -460,7 +459,7 @@ export default function AdminPage() {
                     {fetchErrors.analytics ? (
                         <ErrorDisplay 
                             title="Analytics Unavailable" 
-                            message="We couldn't load your analytics data. This usually means your Firebase environment variables are not correctly configured in the .env file." 
+                            message="We couldn't load your analytics data. This usually means your Firebase environment variables are not correctly configured." 
                         />
                     ) : analyticsData ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -531,7 +530,7 @@ export default function AdminPage() {
             {fetchErrors.content ? (
                 <ErrorDisplay 
                     title="Content Management Offline" 
-                    message="The establishment images could not be loaded. Please ensure your Firebase Private Key and Client Email are correctly set in your .env file." 
+                    message="The establishment images could not be loaded. Please ensure your Firebase credentials are correctly set." 
                 />
             ) : (
                 <>
@@ -696,7 +695,7 @@ export default function AdminPage() {
               {fetchErrors.rooms ? (
                   <ErrorDisplay 
                     title="Room Data Error" 
-                    message="We couldn't connect to the room database. Please verify your .env file contains the correct Firebase credentials."
+                    message="We couldn't connect to the room database. Please verify your credentials."
                   />
               ) : (
                 <>
@@ -733,7 +732,7 @@ export default function AdminPage() {
                                 <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
                                 {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                             </div>
-                            <Input value={room.imageUrl} onChange={handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
+                            <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
                             </div>
                             <div className="md:col-span-3 space-y-3">
                             <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label>
@@ -771,7 +770,7 @@ export default function AdminPage() {
                 {fetchErrors.transactions ? (
                     <ErrorDisplay 
                         title="Bookings Offline" 
-                        message="Reservations could not be retrieved. Please ensure your Firebase credentials in .env are active and correct." 
+                        message="Reservations could not be retrieved. Please ensure your Firebase credentials are correct." 
                     />
                 ) : (
                     <>

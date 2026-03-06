@@ -66,9 +66,9 @@ export default function AboutPage() {
                     <MapPin className="h-8 w-8 text-primary" />
                     <span className="text-lg">Elementaita road, Nakuru, Kenya</span>
                 </a>
-                <a href="mailto:contact@laquita.com" className="flex items-center gap-4 hover:text-primary transition-colors">
+                <a href="mailto:reservations@laquita.com" className="flex items-center gap-4 hover:text-primary transition-colors">
                     <Mail className="h-8 w-8 text-primary" />
-                    <span className="text-lg">contact@laquita.com</span>
+                    <span className="text-lg">reservations@laquita.com</span>
                 </a>
                 <a href="tel:0759713882" className="flex items-center gap-4 hover:text-primary transition-colors">
                     <Phone className="h-8 w-8 text-primary" />

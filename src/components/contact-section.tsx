@@ -62,9 +62,9 @@ export function ContactSection() {
                                 </a>
                             </li>
                             <li>
-                                <a href="mailto:contact@laquita.com" className="flex items-center gap-4 hover:text-primary transition-colors">
+                                <a href="mailto:reservations@laquita.com" className="flex items-center gap-4 hover:text-primary transition-colors">
                                     <Mail className="h-6 w-6 text-primary" />
-                                    <span>contact@laquita.com</span>
+                                    <span>reservations@laquita.com</span>
                                 </a>
                             </li>
                             <li>

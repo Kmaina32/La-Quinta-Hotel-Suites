@@ -1,6 +1,5 @@
 'use client';
 
-import type { Metadata } from "next";
 import { PT_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
@@ -9,7 +8,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ContactSection } from "@/components/contact-section";
 import { usePathname } from "next/navigation";
-import AdminHeader from "@/components/header"; // This will be updated below
 import AdminSidebar from "@/components/admin-sidebar";
 import DashboardHeader from "@/components/admin-header";
 import AdminFooter from "@/components/admin-footer";
@@ -62,8 +60,12 @@ export default function RootLayout({
 
   useEffect(() => {
     async function fetchTheme() {
-        const settings = await getSiteSettings();
-        setTheme(settings.activeTheme || 'default');
+        try {
+            const settings = await getSiteSettings();
+            setTheme(settings?.activeTheme || 'default');
+        } catch (e) {
+            setTheme('default');
+        }
     }
     fetchTheme();
   }, [pathname]);
@@ -83,9 +85,9 @@ export default function RootLayout({
           {isAdminPage ? (
             <div className="flex min-h-screen bg-muted/10">
               <AdminSidebar />
-              <div className="flex-1 flex flex-col pl-28 pr-4 md:pr-8 gap-8 pb-8">
+              <div className="flex-1 flex flex-col pl-24 pr-4 md:pr-8 gap-6 pb-8">
                 <DashboardHeader />
-                <main className="flex-1 bg-background rounded-[2.5rem] border shadow-sm p-8 overflow-hidden">
+                <main className="flex-1 bg-background rounded-[2rem] border shadow-sm p-6 lg:p-8 overflow-hidden">
                   {children}
                 </main>
                 <AdminFooter />

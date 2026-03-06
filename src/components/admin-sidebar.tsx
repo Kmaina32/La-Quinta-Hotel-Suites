@@ -35,22 +35,22 @@ export default function AdminSidebar() {
   if (!isAdmin) return null;
 
   return (
-    <aside className="fixed left-4 top-4 bottom-4 w-20 z-50 flex flex-col items-center py-8 bg-background/80 backdrop-blur-md border rounded-[2.5rem] shadow-2xl gap-8 transition-all duration-300">
+    <aside className="fixed left-4 top-4 bottom-4 w-16 z-50 flex flex-col items-center py-6 bg-background/80 backdrop-blur-md border rounded-[2rem] shadow-xl gap-6 transition-all duration-300">
       <div className="flex flex-col items-center gap-4 w-full px-2">
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href="/" className="p-3 bg-primary text-primary-foreground rounded-2xl shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-                <Home className="h-6 w-6" />
+              <Link href="/" className="p-2.5 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+                <Home className="h-5 w-5" />
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">Go to Website</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <div className="w-10 h-px bg-border/50" />
+        <div className="w-8 h-px bg-border/50" />
       </div>
 
-      <nav className="flex-1 flex flex-col items-center gap-4 w-full px-2 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 flex flex-col items-center gap-3 w-full px-2 overflow-y-auto no-scrollbar">
         <TooltipProvider delayDuration={0}>
           {navLinks.map((link) => (
             <Tooltip key={link.id}>
@@ -60,11 +60,11 @@ export default function AdminSidebar() {
                   size="icon"
                   onClick={() => setTab(link.id)}
                   className={cn(
-                    "h-12 w-12 rounded-2xl transition-all",
-                    activeTab === link.id ? 'shadow-xl shadow-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                    "h-10 w-10 rounded-xl transition-all",
+                    activeTab === link.id ? 'shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
                   )}
                 >
-                  <link.icon className="h-6 w-6" />
+                  <link.icon className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right" className="font-semibold">
@@ -76,7 +76,7 @@ export default function AdminSidebar() {
       </nav>
 
       <div className="flex flex-col items-center gap-4 w-full px-2">
-        <div className="w-10 h-px bg-border/50" />
+        <div className="w-8 h-px bg-border/50" />
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -84,9 +84,9 @@ export default function AdminSidebar() {
                 variant="ghost" 
                 size="icon" 
                 onClick={logoutAdmin}
-                className="h-12 w-12 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                className="h-10 w-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               >
-                <LogOut className="h-6 w-6" />
+                <LogOut className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">Sign Out</TooltipContent>

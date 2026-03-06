@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, setUserRole, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, UserRole, AnalyticsData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, Upload, User, LogOut, Eye, EyeOff, ShieldCheck, Crown, Shield, Building, AlertTriangle } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, User, Crown, Shield, Building, AlertTriangle, Mail, Phone, DollarSign } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +20,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/logo';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell, Legend } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, Pie, PieChart, Cell, Legend } from "recharts";
 
 const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
@@ -37,7 +37,7 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
 
 function ErrorDisplay({ title, message }: { title: string; message: string }) {
     return (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-lg bg-muted/30">
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-xl bg-muted/30">
             <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
             <h3 className="text-xl font-bold text-destructive">{title}</h3>
             <p className="text-muted-foreground mt-2 max-w-md">{message}</p>
@@ -94,7 +94,7 @@ export default function AdminPage() {
     const handleError = (tabName: string, error: any) => {
         console.error(`Failed to fetch data for ${tabName}:`, error);
         setFetchErrors(prev => ({...prev, [tabName]: true}));
-        toast({ title: "Fetch Error", description: `Could not load data for the ${tabName} tab. Please check your credentials.`, variant: "destructive" });
+        toast({ title: "Fetch Error", description: `Could not load data for the ${tabName} tab.`, variant: "destructive" });
     };
 
     try {
@@ -190,9 +190,9 @@ export default function AdminPage() {
   const handleHeroImageChange = (e: React.ChangeEvent<HTMLInputElement>) => setHeroImage(e.target.value);
   const handleGalleryImageChange = (id: string, newSrc: string) => setGalleryImages(galleryImages.map(img => img.id === id ? { ...img, src: newSrc } : img));
   const handleRoomChange = (id: string, field: keyof Room, value: any) => setRooms(rooms.map(room => room.id === id ? { ...room, [field]: value } : room));
-  const handleRoomImageChange = (roomId: string, imageId: string, newSrc: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: room.images.map(img => img.id === imageId ? { ...img, src: newSrc } : img) } : room));
+  const handleRoomImageChange = (roomId: string, imageId: string, newSrc: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: (room.images || []).map(img => img.id === imageId ? { ...img, src: newSrc } : img) } : room));
   const addRoomImage = (roomId: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: [...(room.images || []), { id: `img-${Date.now()}`, src: '', alt: room.name }] } : room));
-  const removeRoomImage = (roomId: string, imageId: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: room.images.filter(img => img.id !== imageId) } : room));
+  const removeRoomImage = (roomId: string, imageId: string) => setRooms(rooms.map(room => room.id === roomId ? { ...room, images: (room.images || []).filter(img => img.id !== imageId) } : room));
 
   const handleSave = async (type: 'hero' | 'gallery' | 'room' | 'settings', id: string) => {
     setSavingStates(prev => ({...prev, [id]: true}));
@@ -226,7 +226,7 @@ export default function AdminPage() {
     try {
       const newRoomId = await addRoom(defaultRoom);
       setRooms([...rooms, { id: newRoomId, ...defaultRoom, booked: {} }]);
-      toast({ title: "Success", description: "New room created. You can now edit it below." });
+      toast({ title: "Success", description: "New room created." });
     } catch(error) {
       console.error('Failed to create room:', error);
       toast({ title: "Error", description: "Failed to create a new room.", variant: "destructive" });
@@ -282,15 +282,15 @@ export default function AdminPage() {
   };
 
   const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) return;
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
     setSavingStates(prev => ({...prev, [bookingId]: true}));
     try {
       await cancelBooking(bookingId);
       setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
-      toast({ title: 'Booking Cancelled', description: 'The booking has been successfully cancelled.' });
+      toast({ title: 'Booking Cancelled' });
     } catch (error: any) {
       console.error("Failed to cancel booking:", error);
-      toast({ title: "Error", description: error.message || "Failed to cancel booking.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to cancel booking.", variant: "destructive" });
     } finally {
       setSavingStates(prev => ({...prev, [bookingId]: false}));
     }
@@ -298,7 +298,7 @@ export default function AdminPage() {
 
    const handleGeneratePoster = async () => {
     if (!posterForm.primaryImage) {
-        toast({ title: "Image Required", description: "Please select or upload a primary image for the poster.", variant: "destructive" });
+        toast({ title: "Image Required", variant: "destructive" });
         return;
     }
     setPosterGenLoading(true);
@@ -307,13 +307,13 @@ export default function AdminPage() {
       const result = await createPoster(posterForm);
       if(result.posterUrl) {
         setGeneratedPoster(result.posterUrl);
-        toast({ title: 'Poster Generated!', description: 'Your new poster is ready.' });
+        toast({ title: 'Poster Generated!' });
       } else {
-        throw new Error('AI did not return a poster. Please try again.');
+        throw new Error('AI did not return a poster.');
       }
     } catch (error: any) {
       console.error("Poster generation failed:", error);
-      toast({ title: "Generation Failed", description: error.message || "Could not generate the poster.", variant: "destructive" });
+      toast({ title: "Generation Failed", description: error.message, variant: "destructive" });
     } finally {
       setPosterGenLoading(false);
     }
@@ -328,16 +328,16 @@ export default function AdminPage() {
     try {
       await setUserRole(uid, newRole === 'none' ? null : newRole);
       setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole === 'none' ? undefined : newRole } : u));
-      toast({ title: "Role Updated", description: "User role has been changed." });
+      toast({ title: "Role Updated" });
     } catch (error: any) {
       console.error("Failed to set user role:", error);
-      toast({ title: "Error", description: error.message || "Could not set user role.", variant: "destructive" });
+      toast({ title: "Error", variant: "destructive" });
     } finally {
       setSavingStates(prev => ({...prev, [uid]: false}));
     }
   };
 
-  if (loading && !isAdmin) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
+  if (loading && !isAdmin) return <div className="flex justify-center items-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
   if (!isAdmin) {
     return (
@@ -346,53 +346,37 @@ export default function AdminPage() {
           <div className="mx-auto grid w-[350px] gap-6">
             <div className="grid gap-2 text-center">
               <h1 className="text-3xl font-bold">Admin Login</h1>
-              <p className="text-balance text-muted-foreground">
-                Enter your password to access the control panel
+              <p className="text-balance text-muted-foreground text-sm">
+                Secure access required
               </p>
             </div>
             <form onSubmit={handleLogin} className="grid gap-4">
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <div className="relative">
-                  <Input 
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••" 
-                      value={password} 
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="pr-10"
-                  />
-                  <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-primary"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
+                <Label htmlFor="password">Password</Label>
+                <Input 
+                    id="password"
+                    type="password"
+                    placeholder="••••••••" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                />
               </div>
               <Button type="submit" className="w-full">
-                <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
+                Login
               </Button>
             </form>
           </div>
         </div>
         <div className="hidden bg-muted lg:block lg:col-span-4 p-8">
-            <div className="relative flex h-full flex-col rounded-2xl p-10 text-white bg-zinc-900">
+            <div className="relative flex h-full flex-col rounded-3xl p-10 text-white bg-zinc-900 overflow-hidden shadow-2xl">
                 <div className="relative z-20 flex items-center text-lg font-medium">
-                    <Logo className="h-12 w-48" />
+                    <Logo className="h-12 w-48 brightness-200" />
                 </div>
                 <div className="relative z-20 mt-auto">
-                    <blockquote className="space-y-2">
-                    <p className="text-lg">
-                        &ldquo;This control panel gives us the power to shape our guest's experience in real-time. It's an indispensable tool for managing our hotel with precision and care.&rdquo;
+                    <p className="text-lg italic opacity-80">
+                        &ldquo;Managing luxury with precision.&rdquo;
                     </p>
-                    <footer className="text-sm">Hotel Management</footer>
-                    </blockquote>
                 </div>
             </div>
         </div>
@@ -400,34 +384,23 @@ export default function AdminPage() {
     );
   }
 
-  const getAvailabilityForBooking = (booking: Booking): number => {
-    const room = rooms.find(r => r.id === booking.roomId);
-    if (!room) return 0;
-    const checkInDate = format(new Date(booking.checkIn), 'yyyy-MM-dd');
-    const bookedCount = room.booked?.[checkInDate] || 0;
-    return room.inventory - bookedCount;
-  }
-
   const getStatusChip = (status: Booking['status'], checkIn: string) => {
     if (status === 'confirmed' && isPast(new Date(checkIn))) {
-       return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-800">Completed</div>;
+       return <div className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">Completed</div>;
     }
     switch(status) {
-        case 'confirmed':
-            return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1"/>Confirmed</div>;
-        case 'pending':
-            return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1"/>Pending</div>;
-        case 'cancelled':
-            return <div className="flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1"/>Cancelled</div>;
+        case 'confirmed': return <div className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-green-100 text-green-700">Confirmed</div>;
+        case 'pending': return <div className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-yellow-100 text-yellow-700">Pending</div>;
+        case 'cancelled': return <div className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-red-100 text-red-700">Cancelled</div>;
     }
   }
 
   const getRoleIcon = (role?: UserRole) => {
     switch (role) {
-        case 'owner': return <Crown className="h-5 w-5 text-yellow-500" />;
-        case 'admin': return <Shield className="h-5 w-5 text-blue-500" />;
-        case 'manager': return <Building className="h-5 w-5 text-gray-500" />;
-        default: return <User className="h-5 w-5 text-muted-foreground" />;
+        case 'owner': return <Crown className="h-4 w-4 text-yellow-500" />;
+        case 'admin': return <Shield className="h-4 w-4 text-blue-500" />;
+        case 'manager': return <Building className="h-4 w-4 text-gray-500" />;
+        default: return <User className="h-4 w-4 text-muted-foreground" />;
     }
   }
   
@@ -442,512 +415,377 @@ export default function AdminPage() {
 
 
   if (loading) {
-    return <div className="flex justify-center items-center h-[calc(100vh-10rem)]"><Loader2 className="h-16 w-16 animate-spin" /></div>;
+    return <div className="flex justify-center items-center h-[calc(100vh-12rem)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="space-y-8">
        {activeTab === 'analytics' && (
-        <div className="space-y-6">
-            <Card>
-                <CardHeader><CardTitle>Analytics Dashboard</CardTitle></CardHeader>
-                <CardContent>
-                    {fetchErrors.analytics ? (
-                        <ErrorDisplay 
-                            title="Analytics Unavailable" 
-                            message="We couldn't load your analytics data. This usually means your Firebase environment variables are not correctly configured." 
-                        />
-                    ) : analyticsData ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Card>
-                                <CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader>
-                                <CardContent><p className="text-3xl font-bold">KES {analyticsData.totalRevenue.toLocaleString()}</p></CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader><CardTitle>Total Bookings</CardTitle></CardHeader>
-                                <CardContent><p className="text-3xl font-bold">{analyticsData.totalBookings}</p></CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader><CardTitle>Occupancy Rate (30d)</CardTitle></CardHeader>
-                                <CardContent><p className="text-3xl font-bold">{analyticsData.occupancyRate.toFixed(1)}%</p></CardContent>
-                            </Card>
-                        </div>
-                    ) : (
-                       !loading && <p className="text-muted-foreground">No analytics data available. This might be because there are no confirmed bookings yet.</p>
-                    )}
-                </CardContent>
-            </Card>
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {analyticsData ? (
+                    <>
+                        <Card className="shadow-sm border-none bg-primary/5">
+                            <CardHeader className="pb-2"><CardDescription className="text-[10px] uppercase font-bold tracking-widest">Total Revenue</CardDescription></CardHeader>
+                            <CardContent><p className="text-2xl font-black">KES {analyticsData.totalRevenue.toLocaleString()}</p></CardContent>
+                        </Card>
+                        <Card className="shadow-sm border-none bg-blue-500/5">
+                            <CardHeader className="pb-2"><CardDescription className="text-[10px] uppercase font-bold tracking-widest">Bookings</CardDescription></CardHeader>
+                            <CardContent><p className="text-2xl font-black text-blue-600">{analyticsData.totalBookings}</p></CardContent>
+                        </Card>
+                        <Card className="shadow-sm border-none bg-green-500/5">
+                            <CardHeader className="pb-2"><CardDescription className="text-[10px] uppercase font-bold tracking-widest">Occupancy</CardDescription></CardHeader>
+                            <CardContent><p className="text-2xl font-black text-green-600">{analyticsData.occupancyRate.toFixed(1)}%</p></CardContent>
+                        </Card>
+                        <Card className="shadow-sm border-none bg-orange-500/5">
+                            <CardHeader className="pb-2"><CardDescription className="text-[10px] uppercase font-bold tracking-widest">Avg Value</CardDescription></CardHeader>
+                            <CardContent><p className="text-2xl font-black text-orange-600">KES {(analyticsData.totalRevenue / (analyticsData.totalBookings || 1)).toLocaleString(undefined, {maximumFractionDigits: 0})}</p></CardContent>
+                        </Card>
+                    </>
+                ) : (
+                    <div className="col-span-full"><ErrorDisplay title="Analytics Offline" message="Could not load your dashboard metrics." /></div>
+                )}
+            </div>
 
-            {!fetchErrors.analytics && (
+            {analyticsData && (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader><CardTitle>Bookings per Month (Last 12 Months)</CardTitle></CardHeader>
+                    <Card className="shadow-sm">
+                        <CardHeader><CardTitle className="text-lg">Monthly Performance</CardTitle></CardHeader>
                         <CardContent>
-                            {analyticsData && analyticsData.bookingsPerMonth.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={analyticsData.bookingsPerMonth}>
-                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip />
-                                        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                !loading && <p className="text-muted-foreground py-12 text-center">No monthly booking data to display.</p>
-                            )}
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={analyticsData.bookingsPerMonth}>
+                                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={10} tickLine={false} axisLine={false} />
+                                    <RechartsTooltip cursor={{fill: 'transparent'}} />
+                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={24} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader><CardTitle>Revenue by Room</CardTitle></CardHeader>
+                    <Card className="shadow-sm">
+                        <CardHeader><CardTitle className="text-lg">Revenue Mix</CardTitle></CardHeader>
                         <CardContent>
-                            {analyticsData && analyticsData.revenueByRoom.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <PieChart>
-                                        <Pie data={analyticsData.revenueByRoom} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                                        {analyticsData.revenueByRoom.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={`hsl(var(--primary), ${1 - (index / analyticsData.revenueByRoom.length) * 0.5})`} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                !loading && <p className="text-muted-foreground py-12 text-center">No room revenue data to display.</p>
-                            )}
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie data={analyticsData.revenueByRoom} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={80} paddingAngle={5} stroke="none">
+                                    {analyticsData.revenueByRoom.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={`hsl(var(--primary), ${1 - (index / (analyticsData.revenueByRoom.length || 1)) * 0.6})`} />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                                    <Legend iconType="circle" wrapperStyle={{fontSize: '10px'}} />
+                                </PieChart>
+                            </ResponsiveContainer>
                         </CardContent>
                     </Card>
                 </div>
             )}
         </div>
       )}
+
       {activeTab === 'content' && (
-         <div className="space-y-6">
+         <div className="space-y-8">
             {fetchErrors.content ? (
-                <ErrorDisplay 
-                    title="Content Management Offline" 
-                    message="The establishment images could not be loaded. Please ensure your Firebase credentials are correctly set." 
-                />
+                <ErrorDisplay title="Content Offline" message="Establishment data is currently unavailable." />
             ) : (
-                <>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-1">
-                            <Card>
-                                <CardHeader><CardTitle>Hero Image</CardTitle></CardHeader>
-                                <CardContent className="space-y-3">
-                                {heroImage && <Image src={heroImage} alt="Hero Preview" width={200} height={120} className="rounded-md object-cover" />}
-                                <div className="flex items-center gap-2">
-                                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
-                                    {uploadingStates['hero-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                </div>
-                                <Input value={heroImage} onChange={handleHeroImageChange} placeholder="Or paste image URL" />
-                                <Button onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || uploadingStates['hero-upload'] || role === 'manager'}>
-                                    {savingStates['hero-image'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Hero
-                                </Button>
-                                </CardContent>
-                            </Card>
-                        </div>
-                        <div className="lg:col-span-2">
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Our Gallery</CardTitle>
-                                <Button variant="outline" size="sm" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image'] || role === 'manager'}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                                </Button>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                {galleryImages.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No gallery images found.</p>}
-                                {galleryImages.map(image => (
-                                    <div key={image.id} className="space-y-2 border-t pt-3">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                                            {image.src && <Image src={image.src} alt={image.alt} width={150} height={90} className="rounded-md object-cover" />}
-                                            <div className="space-y-2">
-                                                <Input value={image.src} onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Paste image URL" />
-                                                <div className="flex items-center gap-2">
-                                                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
-                                                    {uploadingStates[`gallery-${image.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <Button size="sm" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || uploadingStates[`gallery-${image.id}`] || role === 'manager'}>
-                                            {savingStates[image.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save'}
-                                            </Button>
-                                            <Button variant="destructive" size="icon" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id] || role === 'manager'}><Trash2 className="h-4 w-4" /></Button>
-                                        </div>
-                                    </div>
-                                ))}
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary"/> AI Poster Generator</CardTitle>
-                            <CardDescription>Create promotional posters for events and offers using AI.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-4 space-y-6">
+                        <Card className="shadow-sm overflow-hidden">
+                            <CardHeader className="bg-muted/30"><CardTitle className="text-sm uppercase tracking-tighter font-black">Hero Background</CardTitle></CardHeader>
+                            <CardContent className="p-4 space-y-4">
+                                {heroImage && <div className="relative aspect-video rounded-xl overflow-hidden shadow-inner bg-muted"><Image src={heroImage} alt="Hero" fill className="object-cover" /></div>}
                                 <div className="space-y-2">
-                                    <Label htmlFor="poster-title">Title</Label>
-                                    <Input id="poster-title" value={posterForm.title} onChange={e => handlePosterFormChange('title', e.target.value)} />
+                                    <Input type="file" className="text-xs h-8 cursor-pointer" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'hero-upload', url => setHeroImage(url))} />
+                                    <Input value={heroImage} className="text-xs h-8" onChange={handleHeroImageChange} placeholder="Or paste image URL" />
+                                    <Button size="sm" className="w-full" onClick={() => handleSave('hero', 'hero-image')} disabled={savingStates['hero-image'] || role === 'manager'}>
+                                        {savingStates['hero-image'] && <Loader2 className="mr-2 h-3 w-3 animate-spin" />} Update Hero
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm border-primary/20 bg-primary/5">
+                            <CardHeader><CardTitle className="text-sm uppercase tracking-tighter font-black flex items-center gap-2"><PartyPopper className="h-4 w-4 text-primary"/> AI Designer</CardTitle></CardHeader>
+                            <CardContent className="p-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] uppercase font-bold opacity-60">Poster Title</Label>
+                                    <Input value={posterForm.title} className="text-xs h-8" onChange={e => handlePosterFormChange('title', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="poster-subtitle">Subtitle</Label>
-                                    <Input id="poster-subtitle" value={posterForm.subtitle} onChange={e => handlePosterFormChange('subtitle', e.target.value)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="poster-date">Occasion Date</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                        <Button
-                                            id="poster-date"
-                                            variant={"outline"}
-                                            className={cn("w-full justify-start text-left font-normal", !posterForm.occasionDate && "text-muted-foreground")}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {posterForm.occasionDate ? format(new Date(posterForm.occasionDate), "PPP") : <span>Pick a date</span>}
-                                        </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={posterForm.occasionDate ? new Date(posterForm.occasionDate) : undefined}
-                                            onSelect={(date) => handlePosterFormChange('occasionDate', date?.toISOString() || '')}
-                                            initialFocus
-                                        />
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="poster-details">Extra Details / Amenities</Label>
-                                    <Textarea id="poster-details" placeholder="e.g. Live Music, Buffet, Free Entry" value={posterForm.extraDetails} onChange={e => handlePosterFormChange('extraDetails', e.target.value)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Primary Image</Label>
+                                    <Label className="text-[10px] uppercase font-bold opacity-60">Primary Image</Label>
                                     <Select value={posterForm.primaryImage} onValueChange={value => handlePosterFormChange('primaryImage', value)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select an image" />
+                                        <SelectTrigger className="text-xs h-8">
+                                            <SelectValue placeholder="Select from library" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60">
                                             {allImages.map(image => (
-                                                <SelectItem key={image.id} value={image.src}>
+                                                <SelectItem key={image.id} value={image.src} className="text-xs">
                                                     <div className="flex items-center gap-2">
-                                                        <Image src={image.src} alt={image.alt} width={40} height={30} className="rounded-sm object-cover" />
-                                                        <span className="truncate">{image.alt}</span>
+                                                        <Image src={image.src} alt="lib" width={24} height={16} className="rounded-sm object-cover" />
+                                                        <span className="truncate w-32">{image.alt}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <div className="relative">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <span className="w-full border-t" />
-                                        </div>
-                                        <div className="relative flex justify-center text-xs uppercase">
-                                            <span className="bg-card px-2 text-muted-foreground">OR</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Input id="poster-upload" type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], 'poster-image-upload', url => handlePosterFormChange('primaryImage', url))} />
-                                        {uploadingStates['poster-image-upload'] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                    </div>
-                                    {posterForm.primaryImage && <Image src={posterForm.primaryImage} alt="Selected preview" width={150} height={100} className="rounded-md object-cover mt-2" />}
                                 </div>
-                                <Button size="lg" className="w-full" onClick={handleGeneratePoster} disabled={posterGenLoading || uploadingStates['poster-image-upload']}>
-                                    {posterGenLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PartyPopper className="mr-2 h-4 w-4" />}
-                                    Generate Poster
+                                <Button size="sm" className="w-full font-black text-xs h-9" onClick={handleGeneratePoster} disabled={posterGenLoading || role === 'manager'}>
+                                    {posterGenLoading ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <PlusCircle className="mr-2 h-3 w-3" />}
+                                    GENERATE POSTER
                                 </Button>
-                            </div>
-                            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg bg-muted/50 min-h-[400px] p-4">
-                                {posterGenLoading && <div className="flex flex-col items-center gap-2 text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin" /><p>Generating your poster...</p></div>}
-                                {!posterGenLoading && generatedPoster && (
-                                <div className="w-full flex-grow flex flex-col items-center justify-center">
-                                    <div className="relative w-full flex-grow mb-4">
-                                        <Image src={generatedPoster} alt="Generated Poster" fill className="object-contain" />
+                                {generatedPoster && (
+                                    <div className="relative aspect-[3/4] rounded-xl overflow-hidden shadow-lg border mt-4">
+                                        <Image src={generatedPoster} alt="Gen" fill className="object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Button size="icon" variant="secondary" className="rounded-full" asChild><a href={generatedPoster} download="poster.png"><Download className="h-4 w-4" /></a></Button>
+                                        </div>
                                     </div>
-                                    <Button asChild className="w-full">
-                                        <a href={generatedPoster} download={`la_quita_poster_${Date.now()}.png`}>
-                                            <Download className="mr-2 h-4 w-4" />
-                                            Download Poster
-                                        </a>
-                                    </Button>
-                                </div>
                                 )}
-                                {!posterGenLoading && !generatedPoster && <p className="text-muted-foreground text-center p-4">Your generated poster will appear here.</p>}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="lg:col-span-8">
+                        <Card className="shadow-sm border-none bg-muted/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-sm uppercase tracking-tighter font-black">Photo Library</CardTitle>
+                                <Button variant="outline" size="xs" className="h-7 text-[10px] uppercase font-bold" onClick={handleAddGalleryImage} disabled={savingStates['new-gallery-image'] || role === 'manager'}>
+                                    <PlusCircle className="mr-1.5 h-3 w-3" /> Add Image
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="p-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {galleryImages.map(image => (
+                                        <Card key={image.id} className="shadow-none border p-2 space-y-2 bg-background">
+                                            <div className="relative aspect-video rounded-lg overflow-hidden shadow-inner">
+                                                {image.src ? <Image src={image.src} alt={image.alt} fill className="object-cover" /> : <div className="w-full h-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground uppercase font-bold">No Image</div>}
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Input value={image.src} className="text-[10px] h-7" onChange={e => handleGalleryImageChange(image.id, e.target.value)} placeholder="Image URL" />
+                                                <div className="flex gap-1">
+                                                    <Button size="icon" className="h-7 w-7" onClick={() => handleSave('gallery', image.id)} disabled={savingStates[image.id] || role === 'manager'}>
+                                                        {savingStates[image.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                                                    </Button>
+                                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDeleteGalleryImage(image.id)} disabled={savingStates[image.id] || role === 'manager'}><Trash2 className="h-3 w-3" /></Button>
+                                                    <div className="flex-1">
+                                                        <Input type="file" className="text-[8px] h-7 px-1 py-0 cursor-pointer" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `gallery-${image.id}`, url => handleGalleryImageChange(image.id, url))} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             )}
          </div>
       )}
 
       {activeTab === 'rooms' && (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between"><CardTitle>Rooms & Facilities</CardTitle>
-              <Button variant="outline" onClick={handleCreateRoom} disabled={savingStates['new-room'] || role === 'manager'}><PlusCircle className="mr-2 h-4 w-4" />Create New</Button>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {fetchErrors.rooms ? (
-                  <ErrorDisplay 
-                    title="Room Data Error" 
-                    message="We couldn't connect to the room database. Please verify your credentials."
-                  />
-              ) : (
-                <>
-                    {rooms.length === 0 && !loading && <p className="text-muted-foreground py-8 text-center">No rooms or facilities found.</p>}
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h2 className="text-xl font-black uppercase tracking-tighter">Rooms & Facilities</h2>
+                    <p className="text-xs text-muted-foreground">Manage your inventory and pricing</p>
+                </div>
+                <Button size="sm" onClick={handleCreateRoom} disabled={savingStates['new-room'] || role === 'manager'} className="font-black text-xs">
+                    <PlusCircle className="mr-2 h-4 w-4" /> CREATE NEW UNIT
+                </Button>
+            </div>
+            {fetchErrors.rooms ? (
+                <ErrorDisplay title="Rooms Unavailable" message="Could not retrieve unit data." />
+            ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {rooms.map(room => (
-                        <Card key={room.id} className="p-4 space-y-4">
-                        <div className="flex justify-between items-start">
-                            <h3 className="text-xl font-semibold">{room.name}</h3>
-                            <Button variant="destructive" size="sm" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id] || role === 'manager'}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-1"><label className="text-sm font-medium">Name</label><Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} /></div>
-                            <div className="space-y-1"><label className="text-sm font-medium">{room.type === 'conference' ? 'Full Day Price (per person)' : 'Price per Night'}</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                            <div className="space-y-1"><label className="text-sm font-medium">Type</label>
-                            <Select value={room.type || 'room'} onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)} disabled={role === 'manager'}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent><SelectItem value="room">Room</SelectItem><SelectItem value="conference">Conference</SelectItem></SelectContent>
-                            </Select>
-                            </div>
-                            {room.type === 'conference' && (
-                            <div className="space-y-1"><label className="text-sm font-medium">Half Day Price (per person)</label><Input type="number" value={room.halfDayPrice || 0} onChange={e => handleRoomChange(room.id, 'halfDayPrice', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                            )}
-                            <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                            <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                            {room.type !== 'conference' && <>
-                            <div className="space-y-1"><label className="text-sm font-medium">Beds</label><Input type="number" value={room.beds} onChange={e => handleRoomChange(room.id, 'beds', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                            <div className="space-y-1"><label className="text-sm font-medium">Baths</label><Input type="number" value={room.baths} onChange={e => handleRoomChange(room.id, 'baths', Number(e.target.value))} readOnly={role === 'manager'} /></div>
-                            </>}
-                            <div className="md:col-span-3 space-y-1"><label className="text-sm font-medium">Description</label><Input value={room.description} onChange={e => handleRoomChange(room.id, 'description', e.target.value)} readOnly={role === 'manager'} /></div>
-                            <div className="md:col-span-3 space-y-3">
-                            <label className="text-sm font-medium">Main Image</label>
-                            {room.imageUrl && <Image src={room.imageUrl} alt={room.name} width={150} height={90} className="rounded-md object-cover" />}
-                            <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
-                                <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
-                                {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                            </div>
-                            <Input value={room.imageUrl} onChange={(e) => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
-                            </div>
-                            <div className="md:col-span-3 space-y-3">
-                            <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label>
-                                {role !== 'manager' && <Button variant="outline" size="sm" onClick={() => addRoomImage(room.id)}><PlusCircle className="mr-2 h-4 w-4" />Add</Button>}
-                            </div>
-                            {room.images?.map((img) => (
-                                <div key={img.id} className="border-t pt-3 space-y-2">
-                                {img.src && <Image src={img.src} alt={img.alt} width={150} height={90} className="rounded-md object-cover" />}
-                                <div className={cn("items-center gap-2", role !== 'manager' ? 'flex' : 'hidden')}>
-                                    <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${img.id}`, url => handleRoomImageChange(room.id, img.id, url))} />
-                                    {uploadingStates[`room-detail-${img.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                    <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        <Card key={room.id} className="shadow-sm border-muted/50 overflow-hidden">
+                            <div className="flex flex-col md:flex-row h-full">
+                                <div className="w-full md:w-48 relative h-48 md:h-auto bg-muted">
+                                    {room.imageUrl ? <Image src={room.imageUrl} alt={room.name} fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs font-bold uppercase opacity-30">No Image</div>}
                                 </div>
-                                <Input value={img.src} onChange={(e) => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" readOnly={role === 'manager'} />
+                                <div className="flex-1 p-4 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="space-y-1">
+                                            <Input value={room.name} className="h-8 font-black text-lg border-none p-0 focus-visible:ring-0" onChange={(e) => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} />
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><Bed className="h-3 w-3" /> {room.type || 'room'}</p>
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteRoom(room.id)} disabled={savingStates[room.id] || role === 'manager'}><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-[9px] uppercase font-black opacity-50">Price (KES)</Label>
+                                            <Input type="number" className="h-8 text-xs font-bold" value={room.price} onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[9px] uppercase font-black opacity-50">Inventory</Label>
+                                            <Input type="number" className="h-8 text-xs font-bold" value={room.inventory} onChange={(e) => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <Button size="xs" className="h-8 flex-1 text-[10px] uppercase font-black" onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>
+                                            {savingStates[room.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save Changes'}
+                                        </Button>
+                                        <Button variant="outline" size="xs" className="h-8 text-[10px] uppercase font-black" onClick={() => router.push(`/rooms/${room.id}`)}>View Site</Button>
+                                    </div>
                                 </div>
-                            ))}
                             </div>
-                        </div>
-                        <Button onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>{savingStates[room.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Room'} </Button>
                         </Card>
                     ))}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+            )}
+        </div>
       )}
 
       {activeTab === 'transactions' && (
-        <Card>
-            <CardHeader>
-                <CardTitle>Transaction Management</CardTitle>
-                <CardDescription>View and manage all reservations and payments.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {fetchErrors.transactions ? (
-                    <ErrorDisplay 
-                        title="Bookings Offline" 
-                        message="Reservations could not be retrieved. Please ensure your Firebase credentials are correct." 
-                    />
-                ) : (
-                    <>
-                        {bookings.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No bookings yet.</p>}
-                        {bookings.map(booking => {
-                            const availability = getAvailabilityForBooking(booking);
-                            const isPastBooking = isPast(new Date(booking.checkIn));
-
-                            return (
-                                <Card key={booking.id} className={cn("p-4 transition-colors", booking.status === 'cancelled' && 'bg-muted/50')}>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="md:col-span-2 space-y-2">
-                                            <div className="flex items-start justify-between">
-                                                <CardTitle className="text-xl">{booking.roomName}</CardTitle>
-                                                {getStatusChip(booking.status, booking.checkIn)}
-                                            </div>
-                                            
-                                            <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
-                                            <div className="flex items-center gap-4 text-sm">
-                                                <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4"/><span>{format(new Date(booking.checkIn), 'PP')} to {format(new Date(booking.checkOut), 'PP')}</span></div>
-                                                <div className="flex items-center gap-2"><Users className="h-4 w-4"/><span>{booking.nights} {booking.numPeople ? 'day(s)' : 'night(s)'}</span></div>
-                                            </div>
-                                            {booking.numPeople && (
-                                            <p className="text-sm font-medium">Conference for {booking.numPeople} people ({booking.conferenceOption === 'half' ? 'Half Day' : 'Full Day'})</p>
-                                            )}
-                                            <p className="text-sm">Booked {formatDistanceToNow(new Date(booking.bookedOn), { addSuffix: true })}</p>
-                                        </div>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="font-semibold">Total Cost: KES {booking.totalCost.toFixed(2)}</div>
-                                            <div className="text-muted-foreground">Payment: {booking.paymentMethod}</div>
-                                            <div className="flex items-center gap-2">
-                                                <Bed className="h-4 w-4"/>
-                                                <span>Rooms available on check-in: {availability}</span>
-                                            </div>
-                                            {booking.status !== 'cancelled' && !isPastBooking && (role === 'owner' || role === 'admin') && (
-                                                <Button 
-                                                    variant="destructive" 
-                                                    size="sm" 
-                                                    className="w-full mt-2" 
-                                                    onClick={() => handleCancelBooking(booking.id)}
-                                                    disabled={savingStates[booking.id]}
-                                                >
-                                                {savingStates[booking.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
-                                                Cancel Booking
-                                                </Button>
-                                            )}
-                                        </div>
+        <div className="space-y-6">
+            <div className="space-y-1">
+                <h2 className="text-xl font-black uppercase tracking-tighter">Reservations</h2>
+                <p className="text-xs text-muted-foreground">Monitor and manage guest bookings</p>
+            </div>
+            {fetchErrors.transactions ? (
+                <ErrorDisplay title="Reservations Offline" message="Booking data could not be retrieved." />
+            ) : (
+                <div className="space-y-4">
+                    {bookings.map(booking => (
+                        <Card key={booking.id} className={cn("shadow-sm border-none bg-muted/30 p-4 transition-all hover:bg-muted/50", booking.status === 'cancelled' && 'opacity-50 grayscale')}>
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                <div className="md:col-span-3 space-y-1">
+                                    <p className="font-black text-sm uppercase tracking-tight truncate">{booking.roomName}</p>
+                                    <div className="flex items-center gap-2">{getStatusChip(booking.status, booking.checkIn)}</div>
                                 </div>
-                                </Card>
-                            )
-                        })}
-                    </>
-                )}
-            </CardContent>
-        </Card>
+                                <div className="md:col-span-3 space-y-0.5">
+                                    <p className="text-xs font-bold truncate opacity-80">{booking.userEmail}</p>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {format(new Date(booking.checkIn), 'MMM dd')} - {format(new Date(booking.checkOut), 'MMM dd, yy')}</p>
+                                </div>
+                                <div className="md:col-span-2 space-y-0.5 text-center md:text-left">
+                                    <p className="text-xs font-black">KES {booking.totalCost.toLocaleString()}</p>
+                                    <p className="text-[9px] uppercase font-bold opacity-50">{booking.paymentMethod}</p>
+                                </div>
+                                <div className="md:col-span-2 text-center md:text-left">
+                                    <p className="text-[10px] uppercase font-black opacity-40">Booked {formatDistanceToNow(new Date(booking.bookedOn), { addSuffix: true })}</p>
+                                </div>
+                                <div className="md:col-span-2 flex justify-end">
+                                    {booking.status !== 'cancelled' && !isPast(new Date(booking.checkIn)) && (role === 'owner' || role === 'admin') && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleCancelBooking(booking.id)} disabled={savingStates[booking.id]}><XCircle className="h-4 w-4" /></Button>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
       )}
 
       {activeTab === 'users' && (
-        <Card>
-            <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Assign roles to users. Only owners can change roles.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {fetchErrors.users ? (
-                    <ErrorDisplay 
-                        title="User Directory Unavailable" 
-                        message="We couldn't connect to the user database. This tab requires valid Firebase Admin permissions." 
-                    />
-                ) : (
-                    <>
-                        {users.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No users found.</p>}
-                        {users.map(user => (
-                            <Card key={user.uid} className="p-4">
+        <div className="space-y-6">
+            <div className="space-y-1">
+                <h2 className="text-xl font-black uppercase tracking-tighter">User Directory</h2>
+                <p className="text-xs text-muted-foreground">Manage permissions and roles</p>
+            </div>
+            {fetchErrors.users ? (
+                <ErrorDisplay title="Directory Unavailable" message="Admin privileges required to view users." />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {users.map(user => (
+                        <Card key={user.uid} className="shadow-sm p-4 hover:border-primary/30 transition-colors">
                             <div className="flex items-center gap-4">
-                                    <Avatar className="h-12 w-12">
-                                        <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                                        <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : <User className="h-6 w-6" />}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-grow">
-                                        <p className="font-semibold flex items-center gap-2">{getRoleIcon(user.role)} {user.displayName || 'No Name'}</p>
-                                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                                    </div>
-                                    {role === 'owner' ? (
-                                        <div className="flex items-center gap-2">
-                                            <Select
-                                                value={user.role || 'none'}
-                                                onValueChange={(newRole: UserRole | 'none') => handleSetUserRole(user.uid, newRole)}
-                                                disabled={savingStates[user.uid]}
-                                            >
-                                                <SelectTrigger className="w-[120px]">
-                                                    <SelectValue placeholder="Role" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">None</SelectItem>
-                                                    <SelectItem value="manager">Manager</SelectItem>
-                                                    <SelectItem value="admin">Admin</SelectItem>
-                                                    <SelectItem value="owner">Owner</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            {savingStates[user.uid] && <Loader2 className="h-5 w-5 animate-spin" />}
-                                        </div>
-                                    ) : (
-                                        user.role && <p className="capitalize font-semibold">{user.role}</p>
-                                    )}
-                                    <div className="text-right text-sm text-muted-foreground hidden md:block">
-                                        <p>Last signed in:</p>
-                                        <p>{user.metadata.lastSignInTime ? formatDistanceToNow(new Date(user.metadata.lastSignInTime), {addSuffix: true}) : 'Never'}</p>
-                                    </div>
+                                <Avatar className="h-10 w-10 border shadow-inner">
+                                    <AvatarImage src={user.photoURL || undefined} />
+                                    <AvatarFallback className="bg-muted text-muted-foreground font-black text-xs">{user.displayName?.[0] || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-black text-sm truncate flex items-center gap-1.5">{getRoleIcon(user.role)} {user.displayName || 'Unnamed User'}</p>
+                                    <p className="text-xs text-muted-foreground truncate font-bold opacity-60">{user.email}</p>
+                                </div>
                             </div>
-                            </Card>
-                        ))}
-                    </>
-                )}
-            </CardContent>
-        </Card>
+                            <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                                {role === 'owner' ? (
+                                    <Select value={user.role || 'none'} onValueChange={(val: any) => handleSetUserRole(user.uid, val)} disabled={savingStates[user.uid]}>
+                                        <SelectTrigger className="h-7 text-[10px] w-24 uppercase font-black"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none" className="text-[10px] font-bold">User</SelectItem>
+                                            <SelectItem value="manager" className="text-[10px] font-bold">Manager</SelectItem>
+                                            <SelectItem value="admin" className="text-[10px] font-bold">Admin</SelectItem>
+                                            <SelectItem value="owner" className="text-[10px] font-bold">Owner</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <span className="text-[10px] uppercase font-black opacity-40">{user.role || 'user'}</span>
+                                )}
+                                <div className="text-right text-[9px] uppercase font-bold text-muted-foreground opacity-50">
+                                    {user.metadata.lastSignInTime ? `Seen ${formatDistanceToNow(new Date(user.metadata.lastSignInTime), {addSuffix: true})}` : 'Never active'}
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
       )}
       
       {activeTab === 'messages' && (
-          <Card>
-            <CardHeader><CardTitle>Guest Messages</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {fetchErrors.messages ? (
-                  <ErrorDisplay 
-                    title="Messaging System Error" 
-                    message="Guest messages could not be retrieved. Please check your database connection settings." 
-                  />
-              ) : (
-                <>
-                    {messages.length === 0 && !loading && <p className="text-muted-foreground text-center py-8">No messages yet.</p>}
+          <div className="space-y-6">
+            <div className="space-y-1">
+                <h2 className="text-xl font-black uppercase tracking-tighter">Inquiries</h2>
+                <p className="text-xs text-muted-foreground">Direct messages from potential guests</p>
+            </div>
+            {fetchErrors.messages ? (
+                <ErrorDisplay title="Messaging Error" message="Inquiry database is offline." />
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {messages.map(message => (
-                        <Card key={message.id} className="p-4">
+                        <Card key={message.id} className="shadow-sm p-4 space-y-3 bg-background border-muted hover:border-blue-500/30 transition-colors">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-semibold">{message.name} <span className="text-sm font-normal text-muted-foreground">&lt;{message.email}&gt;</span></p>
-                                    {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
-                                    <p className="text-xs text-muted-foreground">{format(new Date(message.sentAt), 'PPp')}</p>
+                                <div className="space-y-0.5">
+                                    <p className="font-black text-sm uppercase">{message.name}</p>
+                                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                        <p className="text-[10px] font-bold opacity-60 flex items-center gap-1"><Mail className="h-2.5 w-2.5" /> {message.email}</p>
+                                        {message.phone && <p className="text-[10px] font-bold opacity-60 flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> {message.phone}</p>}
+                                    </div>
                                 </div>
+                                <p className="text-[9px] uppercase font-black opacity-30 whitespace-nowrap">{format(new Date(message.sentAt), 'MMM dd, h:mm a')}</p>
                             </div>
-                            <p className="mt-2 text-muted-foreground">{message.message}</p>
+                            <div className="p-3 bg-muted/30 rounded-xl">
+                                <p className="text-xs leading-relaxed font-bold opacity-80">{message.message}</p>
+                            </div>
                         </Card>
                     ))}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+            )}
+          </div>
       )}
 
       {activeTab === 'settings' && (
-        <Card>
-            <CardHeader><CardTitle>Site Settings</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                {fetchErrors.settings ? (
-                    <ErrorDisplay 
-                        title="Settings Error" 
-                        message="Site settings could not be retrieved from the establishment document." 
-                    />
-                ) : siteSettings ? (
-                    <>
+        <div className="max-w-md space-y-6">
+            <div className="space-y-1">
+                <h2 className="text-xl font-black uppercase tracking-tighter">General Settings</h2>
+                <p className="text-xs text-muted-foreground">Global configuration for your hotel</p>
+            </div>
+            {fetchErrors.settings ? (
+                <ErrorDisplay title="Settings Locked" message="System configuration is currently inaccessible." />
+            ) : siteSettings && (
+                <Card className="shadow-sm">
+                    <CardHeader className="bg-muted/30"><CardTitle className="text-xs uppercase font-black">Visual Identity</CardTitle></CardHeader>
+                    <CardContent className="p-6 space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Active Theme</label>
-                            <Select 
-                                value={siteSettings.activeTheme} 
-                                onValueChange={(theme) => setSiteSettings(prev => prev ? { ...prev, activeTheme: theme as 'default' | 'christmas' } : null)}
-                            >
-                                <SelectTrigger className="max-w-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
+                            <Label className="text-[10px] uppercase font-black opacity-60 tracking-widest">Active Seasonal Theme</Label>
+                            <Select value={siteSettings.activeTheme} onValueChange={(theme) => setSiteSettings(prev => prev ? { ...prev, activeTheme: theme as 'default' | 'christmas' } : null)}>
+                                <SelectTrigger className="h-9 font-bold text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="default">Default</SelectItem>
-                                    <SelectItem value="christmas">Christmas</SelectItem>
+                                    <SelectItem value="default" className="text-xs font-bold">Standard Elegance</SelectItem>
+                                    <SelectItem value="christmas" className="text-xs font-bold">Christmas Special</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button onClick={() => handleSave('settings', 'site-settings')} disabled={savingStates['site-settings']}>
-                            {savingStates['site-settings'] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Settings
+                        <Button size="sm" className="w-full font-black text-xs h-9" onClick={() => handleSave('settings', 'site-settings')} disabled={savingStates['site-settings'] || role !== 'owner'}>
+                            {savingStates['site-settings'] && <Loader2 className="mr-2 h-3 w-3 animate-spin" />} APPLY SITE SETTINGS
                         </Button>
-                    </>
-                ) : null}
-            </CardContent>
-        </Card>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
       )}
     </div>
   );

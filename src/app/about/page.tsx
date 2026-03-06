@@ -1,16 +1,7 @@
 
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Metadata } from 'next';
 import { Mail, MapPin, Phone } from 'lucide-react';
-import Image from 'next/image';
-
-// Even though this is a client component for the map, we can export metadata
-// export const metadata: Metadata = {
-//   title: 'About Us | La Quita',
-//   description: 'Learn about the history, mission, and team behind La Quita Hotel & suites.',
-// };
 
 export default function AboutPage() {
   return (
@@ -22,7 +13,6 @@ export default function AboutPage() {
         </p>
       </div>
 
-      {/* Our Story & Mission Section */}
       <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
         <div className="space-y-4">
           <h2 className="text-3xl font-semibold">Our Story</h2>
@@ -44,7 +34,6 @@ export default function AboutPage() {
         </div>
       </div>
       
-       {/* Location Section */}
       <section id="location" className="mb-24">
         <div className="text-center mb-12">
             <h2 className="text-3xl font-bold">Our Location</h2>

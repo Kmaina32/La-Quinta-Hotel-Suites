@@ -51,7 +51,6 @@ export function ContactSection() {
                     </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-                    {/* Contact Info */}
                     <div className="space-y-8">
                          <h3 className="text-2xl font-semibold mb-4">Contact Information</h3>
                          <ul className="space-y-4 text-muted-foreground">
@@ -82,7 +81,6 @@ export function ContactSection() {
                          </ul>
                     </div>
 
-                    {/* Message Us Form */}
                      <div>
                         <Card>
                             <CardContent className="p-6">

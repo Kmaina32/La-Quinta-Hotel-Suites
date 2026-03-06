@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getRooms, getEstablishmentImages, updateHeroImage, updateGalleryImage, updateRoomDetails, addRoom, deleteRoom, addGalleryImage, deleteGalleryImage, uploadImage, getMessages, getAllBookings, cancelBooking, getSiteSettings, updateSiteSettings, getAllUsers, setUserRole, getAnalyticsData } from '@/lib/actions';
 import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData, UserRole, AnalyticsData } from '@/lib/types';
-import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, User, Crown, Shield, Building, AlertTriangle, Mail, Phone, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Bed, Calendar as CalendarIcon, Users, CheckCircle, XCircle, Clock, PartyPopper, Download, User, Crown, Shield, Building, AlertTriangle, Mail, Phone, DollarSign, Image as ImageIcon, Bath, BedDouble, Info, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +23,7 @@ const defaultRoom: Omit<Room, 'id' | 'booked'> = {
   name: 'New Room',
   description: '',
   price: 100,
+  halfDayPrice: 60,
   capacity: 2,
   beds: 1,
   baths: 1,
@@ -45,7 +45,7 @@ function ErrorDisplay({ title, message }: { title: string; message: string }) {
 
 function AdminContent() {
   const [password, setPassword] = useState('');
-  const { isAdmin, loginAdmin, role } = useAuth();
+  const { isAdmin, loginAdmin, role, logoutAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [fetchErrors, setFetchErrors] = useState<Record<string, boolean>>({});
   
@@ -152,6 +152,34 @@ function AdminContent() {
   };
   
   const handleRoomChange = (id: string, field: keyof Room, value: any) => setRooms(rooms.map(room => room.id === id ? { ...room, [field]: value } : room));
+
+  const handleRoomImageChange = (roomId: string, index: number, field: string, value: string) => {
+    setRooms(rooms.map(room => {
+        if (room.id !== roomId) return room;
+        const newImages = [...room.images];
+        newImages[index] = { ...newImages[index], [field]: value };
+        return { ...room, images: newImages };
+    }));
+  };
+
+  const addRoomImage = (roomId: string) => {
+    setRooms(rooms.map(room => {
+        if (room.id !== roomId) return room;
+        return { 
+            ...room, 
+            images: [...(room.images || []), { id: Date.now().toString(), src: '', alt: room.name + ' detail' }] 
+        };
+    }));
+  };
+
+  const removeRoomImage = (roomId: string, index: number) => {
+    setRooms(rooms.map(room => {
+        if (room.id !== roomId) return room;
+        const newImages = [...room.images];
+        newImages.splice(index, 1);
+        return { ...room, images: newImages };
+    }));
+  };
 
   const handleSave = async (type: 'hero' | 'gallery' | 'room' | 'settings', id: string) => {
     setSavingStates(prev => ({...prev, [id]: true}));
@@ -353,33 +381,169 @@ function AdminContent() {
             {fetchErrors.rooms ? (
                 <ErrorDisplay title="Inventory Offline" message="Units database is inaccessible." />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-8">
                     {rooms.map(room => (
-                        <Card key={room.id} className="shadow-sm rounded-[2rem] overflow-hidden group hover:border-primary/30 transition-colors">
-                            <div className="relative h-48 bg-muted">
-                                {room.imageUrl ? <Image src={room.imageUrl} alt={room.name} fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-20"><ImageIcon className="h-12 w-12" /></div>}
-                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-lg" onClick={() => deleteRoom(room.id)} disabled={role === 'manager'}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                </div>
-                            </div>
-                            <CardContent className="p-6 space-y-4">
-                                <div className="space-y-1">
-                                    <Input value={room.name} className="h-8 font-black text-lg border-none p-0 focus-visible:ring-0" onChange={(e) => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} />
-                                    <p className="text-[10px] uppercase font-black text-primary flex items-center gap-1.5"><Bed className="h-3 w-3" /> {room.type}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] uppercase font-black opacity-50">Price (KES)</Label>
-                                        <Input type="number" className="h-9 font-bold rounded-xl" value={room.price} onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} />
+                        <Card key={room.id} className="shadow-sm rounded-[2rem] overflow-hidden border-none bg-muted/10 group hover:bg-muted/20 transition-colors">
+                            <CardHeader className="flex flex-row items-center justify-between bg-muted/30 px-8 py-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                                        {room.type === 'conference' ? <Layers className="h-6 w-6" /> : <Bed className="h-6 w-6" />}
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] uppercase font-black opacity-50">Units</Label>
-                                        <Input type="number" className="h-9 font-bold rounded-xl" value={room.inventory} onChange={(e) => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} />
+                                    <div>
+                                        <Input 
+                                            value={room.name} 
+                                            className="h-7 text-xl font-black bg-transparent border-none p-0 focus-visible:ring-0 shadow-none w-auto min-w-[200px]" 
+                                            onChange={(e) => handleRoomChange(room.id, 'name', e.target.value)} 
+                                            readOnly={role === 'manager'} 
+                                        />
+                                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{room.id}</p>
                                     </div>
                                 </div>
-                                <Button size="sm" className="w-full rounded-xl font-black h-10" onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>
-                                    {savingStates[room.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : 'SAVE CHANGES'}
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" className="rounded-xl font-black h-9 border-destructive/20 text-destructive hover:bg-destructive/10" onClick={() => deleteRoom(room.id)} disabled={role === 'manager'}>
+                                        <Trash2 className="h-4 w-4 mr-2" /> DELETE
+                                    </Button>
+                                    <Button size="sm" className="rounded-xl font-black h-9 shadow-lg shadow-primary/20" onClick={() => handleSave('room', room.id)} disabled={savingStates[room.id] || role === 'manager'}>
+                                        {savingStates[room.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : 'SAVE CHANGES'}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                    {/* Left Column: Basic Info */}
+                                    <div className="lg:col-span-4 space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Room Category</Label>
+                                            <Select value={room.type} onValueChange={(val: any) => handleRoomChange(room.id, 'type', val)} disabled={role === 'manager'}>
+                                                <SelectTrigger className="rounded-xl font-bold border-muted-foreground/20">
+                                                    <SelectValue placeholder="Select type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="room">Standard Room/Suite</SelectItem>
+                                                    <SelectItem value="conference">Conference Facility</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Description</Label>
+                                            <Textarea 
+                                                value={room.description} 
+                                                className="rounded-2xl border-muted-foreground/20 min-h-[120px] font-medium leading-relaxed" 
+                                                onChange={(e) => handleRoomChange(room.id, 'description', e.target.value)} 
+                                                readOnly={role === 'manager'}
+                                                placeholder="Describe the unit's features and amenities..."
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Base Price (KES)</Label>
+                                                <div className="relative">
+                                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <Input type="number" className="pl-9 rounded-xl font-bold border-muted-foreground/20" value={room.price} onChange={(e) => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} />
+                                                </div>
+                                            </div>
+                                            {room.type === 'conference' && (
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1">Half Day Price (KES)</Label>
+                                                    <div className="relative">
+                                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Input type="number" className="pl-9 rounded-xl font-bold border-muted-foreground/20" value={room.halfDayPrice || 0} onChange={(e) => handleRoomChange(room.id, 'halfDayPrice', Number(e.target.value))} readOnly={role === 'manager'} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Middle Column: Details & Capacity */}
+                                    <div className="lg:col-span-4 space-y-6">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1 flex items-center gap-1.5"><Users className="h-3 w-3" /> Max Capacity</Label>
+                                                <Input type="number" className="rounded-xl font-bold border-muted-foreground/20" value={room.capacity} onChange={(e) => handleRoomChange(room.id, 'capacity', Number(e.target.value))} readOnly={role === 'manager'} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1 flex items-center gap-1.5"><Layers className="h-3 w-3" /> Total Units</Label>
+                                                <Input type="number" className="rounded-xl font-bold border-muted-foreground/20" value={room.inventory} onChange={(e) => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} />
+                                            </div>
+                                        </div>
+
+                                        {room.type !== 'conference' && (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1 flex items-center gap-1.5"><BedDouble className="h-3 w-3" /> Beds</Label>
+                                                    <Input type="number" className="rounded-xl font-bold border-muted-foreground/20" value={room.beds} onChange={(e) => handleRoomChange(room.id, 'beds', Number(e.target.value))} readOnly={role === 'manager'} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1 flex items-center gap-1.5"><Bath className="h-3 w-3" /> Baths</Label>
+                                                    <Input type="number" className="rounded-xl font-bold border-muted-foreground/20" value={room.baths} onChange={(e) => handleRoomChange(room.id, 'baths', Number(e.target.value))} readOnly={role === 'manager'} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-4">
+                                            <Label className="text-[10px] uppercase font-black text-muted-foreground ml-1 block">Main Unit Image</Label>
+                                            <div className="relative aspect-video rounded-[2rem] overflow-hidden bg-muted group/img">
+                                                {room.imageUrl ? (
+                                                    <Image src={room.imageUrl} alt={room.name} fill className="object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center opacity-20"><ImageIcon className="h-12 w-12" /></div>
+                                                )}
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center p-4">
+                                                    <Input 
+                                                        type="file" 
+                                                        className="hidden" 
+                                                        id={`file-main-${room.id}`} 
+                                                        onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} 
+                                                    />
+                                                    <Button variant="secondary" size="sm" className="rounded-xl font-black" onClick={() => document.getElementById(`file-main-${room.id}`)?.click()}>
+                                                        UPLOAD NEW
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            <Input value={room.imageUrl} className="h-8 text-[10px] rounded-lg border-muted-foreground/20" placeholder="Or paste image URL" onChange={(e) => handleRoomChange(room.id, 'imageUrl', e.target.value)} readOnly={role === 'manager'} />
+                                        </div>
+                                    </div>
+
+                                    {/* Right Column: Detail Images Gallery */}
+                                    <div className="lg:col-span-4 space-y-4">
+                                        <div className="flex items-center justify-between px-1">
+                                            <Label className="text-[10px] uppercase font-black text-muted-foreground flex items-center gap-1.5"><ImageIcon className="h-3 w-3" /> Detail Library</Label>
+                                            <Button variant="ghost" size="sm" className="h-6 text-[10px] font-black uppercase text-primary hover:bg-primary/5" onClick={() => addRoomImage(room.id)} disabled={role === 'manager'}>
+                                                <PlusCircle className="h-3 w-3 mr-1" /> ADD PHOTO
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 h-[300px] overflow-y-auto no-scrollbar pr-2">
+                                            {room.images?.map((img, idx) => (
+                                                <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden bg-muted group/item border border-muted-foreground/10">
+                                                    <Image src={img.src || 'https://picsum.photos/seed/placeholder/200/200'} alt={img.alt} fill className="object-cover" />
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/item:opacity-100 transition-opacity p-2 flex flex-col justify-between">
+                                                        <Button size="icon" variant="destructive" className="h-6 w-6 rounded-lg ml-auto" onClick={() => removeRoomImage(room.id, idx)} disabled={role === 'manager'}>
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </Button>
+                                                        <div className="space-y-1">
+                                                            <Input 
+                                                                type="file" 
+                                                                className="hidden" 
+                                                                id={`file-detail-${room.id}-${idx}`} 
+                                                                onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-detail-${room.id}-${idx}`, url => handleRoomImageChange(room.id, idx, 'src', url))} 
+                                                            />
+                                                            <Button size="sm" className="w-full h-6 text-[9px] font-black rounded-lg" onClick={() => document.getElementById(`file-detail-${room.id}-${idx}`)?.click()}>UPLOAD</Button>
+                                                            <Input value={img.src} className="h-5 text-[8px] bg-white/20 border-none text-white placeholder:text-white/50 rounded-md" placeholder="URL" onChange={(e) => handleRoomImageChange(room.id, idx, 'src', e.target.value)} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {(!room.images || room.images.length === 0) && (
+                                                <div className="col-span-2 flex flex-col items-center justify-center h-full text-muted-foreground opacity-40 border-2 border-dashed rounded-2xl gap-2">
+                                                    <ImageIcon className="h-8 w-8" />
+                                                    <p className="text-[10px] font-black uppercase">No Detail Images</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     ))}

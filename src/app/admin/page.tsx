@@ -359,7 +359,7 @@ function AdminContent() {
         </div>
       )}
 
-      {activeTab === 'users' && (activeTab === 'users' && (
+      {activeTab === 'users' && (
         <div className="space-y-6">
             <h2 className="text-2xl font-black tracking-tighter px-2">DIRECTORY</h2>
             {fetchErrors.users ? (
@@ -384,7 +384,7 @@ function AdminContent() {
                 </div>
             )}
         </div>
-      ))}
+      )}
     </div>
   );
 }

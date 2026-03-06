@@ -7,7 +7,7 @@ import { BarChart3, Building2, CreditCard, Home, Image as ImageIcon, LogOut, Mes
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 export default function AdminSidebar() {
   const router = useRouter();

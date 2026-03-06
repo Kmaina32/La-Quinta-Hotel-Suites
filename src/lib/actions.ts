@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getAuthAdmin, getStorage } from '@/lib/firebase-admin';
+import { getAuthAdmin, getStorage, getDb as getAdminDb } from '@/lib/firebase-admin';
 import { db as clientDb } from '@/lib/firebase';
 import { 
     collection, 
@@ -87,21 +87,24 @@ export async function uploadImage(formData: FormData): Promise<string> {
     const file = formData.get('file') as File;
     if (!file) throw new Error('No file provided');
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    try {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
-    const storage = getStorage();
-    if (!storage) throw new Error('Cloud Storage is unavailable. Please configure Firebase Admin credentials.');
+        const storage = getStorage();
+        const bucket = storage.bucket();
+        const fileName = `uploads/${Date.now()}-${file.name}`;
+        const fileUpload = bucket.file(fileName);
 
-    const bucket = storage.bucket();
-    const fileName = `uploads/${Date.now()}-${file.name}`;
-    const fileUpload = bucket.file(fileName);
+        await fileUpload.save(buffer, {
+            metadata: { contentType: file.type },
+        });
 
-    await fileUpload.save(buffer, {
-        metadata: { contentType: file.type },
-    });
-
-    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
+        return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
+    } catch (error: any) {
+        console.error('Upload failed:', error);
+        throw new Error('Image upload failed. Check your Firebase Storage permissions.');
+    }
 }
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
@@ -219,8 +222,6 @@ export async function confirmBookingFromWebhook(reference: string) {
 export async function getAllUsers(): Promise<UserData[]> {
     try {
         const authAdmin = getAuthAdmin();
-        if (!authAdmin) return [];
-        
         const userRecords = await authAdmin.listUsers();
         return userRecords.users.map(user => ({
             uid: user.uid,
@@ -293,7 +294,6 @@ export async function getMessages(): Promise<Message[]> {
 export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
     const messagesRef = collection(clientDb, 'messages');
     await addDoc(messagesRef, { ...messageData, sentAt: new Date().toISOString(), isRead: false });
-    revalidatePath('/admin');
 }
 
 export async function initializePaystackTransaction(email: string, amount: number) {

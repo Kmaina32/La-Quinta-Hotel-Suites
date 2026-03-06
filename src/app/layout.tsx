@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Metadata } from "next";
@@ -10,7 +9,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ContactSection } from "@/components/contact-section";
 import { usePathname } from "next/navigation";
-import AdminHeader from "@/components/admin-header";
+import AdminHeader from "@/components/header"; // This will be updated below
+import AdminSidebar from "@/components/admin-sidebar";
+import DashboardHeader from "@/components/admin-header";
 import AdminFooter from "@/components/admin-footer";
 import { useEffect, useState } from "react";
 import { getSiteSettings } from "@/lib/actions";
@@ -22,7 +23,6 @@ const ptSans = PT_Sans({
 
 const siteUrl = "https://www.laquitahotel.com/"; 
 const siteDescription = "Hotel, lounge and suits in Nakuru, Kenya along Pipeline Road offering accommodation, conference facilities, and a restaurant.";
-
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -51,7 +51,6 @@ const structuredData = {
   ]
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -67,7 +66,7 @@ export default function RootLayout({
         setTheme(settings.activeTheme || 'default');
     }
     fetchTheme();
-  }, [pathname]); // Re-fetch theme if path changes, e.g. after admin changes it.
+  }, [pathname]);
 
   return (
     <html lang="en" className="h-full" data-theme={theme}>
@@ -79,12 +78,23 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={`${ptSans.className} flex flex-col min-h-screen`}>
+      <body className={`${ptSans.className} flex flex-col min-h-screen bg-muted/5 transition-colors duration-500`}>
         <AuthProvider>
-          {isAdminPage ? <AdminHeader /> : <Header />}
-          <main className="flex-grow">{children}</main>
-          {isAdminPage ? <AdminFooter /> : (
+          {isAdminPage ? (
+            <div className="flex min-h-screen bg-muted/10">
+              <AdminSidebar />
+              <div className="flex-1 flex flex-col pl-28 pr-4 md:pr-8 gap-8 pb-8">
+                <DashboardHeader />
+                <main className="flex-1 bg-background rounded-[2.5rem] border shadow-sm p-8 overflow-hidden">
+                  {children}
+                </main>
+                <AdminFooter />
+              </div>
+            </div>
+          ) : (
             <>
+              <Header />
+              <main className="flex-grow">{children}</main>
               <ContactSection />
               <Footer />
             </>

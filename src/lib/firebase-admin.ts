@@ -18,11 +18,23 @@ function initializeAdmin() {
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // Handle escaped newlines in the private key from environment variables
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  
+  // Aggressively clean the private key to handle different environment variable managers
+  // 1. Replace literal "\n" strings with actual newline characters
+  // 2. Remove any surrounding double quotes that might have been added
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
+  const privateKey = rawKey.replace(/\\n/g, '\n').replace(/"/g, '').trim();
 
-  if (!projectId || !clientEmail || !privateKey) {
-    console.warn("Firebase Admin credentials missing from environment. Server-side data fetching may fail.");
+  if (!projectId) {
+    console.warn("FIREBASE_PROJECT_ID is missing from environment.");
+    return;
+  }
+  if (!clientEmail) {
+    console.warn("FIREBASE_CLIENT_EMAIL is missing from environment.");
+    return;
+  }
+  if (!privateKey || !privateKey.includes('BEGIN PRIVATE KEY')) {
+    console.warn("FIREBASE_PRIVATE_KEY is missing or malformed (missing header).");
     return;
   }
 
@@ -38,7 +50,9 @@ function initializeAdmin() {
     adminInitialized = true;
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
-    console.error('Firebase admin initialization error:', error.message);
+    console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
+    // Do not throw here, as it crashes the build/server action. 
+    // Instead, we leave adminInitialized as false.
   }
 }
 

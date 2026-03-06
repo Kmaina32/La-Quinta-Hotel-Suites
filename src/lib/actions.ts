@@ -35,8 +35,9 @@ export async function uploadImage(formData: FormData): Promise<string> {
         const file = formData.get('file') as File;
         if (!file) throw new Error('No file provided.');
 
+        // For uploads, we use the Admin Storage if possible, otherwise we'd need client-side storage
         const storage = getStorage();
-        if (!storage) throw new Error("Cloud Storage not available.");
+        if (!storage) throw new Error("Cloud Storage not available (Admin SDK not initialized).");
         
         const bucket = storage.bucket();
         const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -109,7 +110,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     }
 }
 
-// MUTATIONS (Mixed SDKs depending on privilege)
+// MUTATIONS (Using Client SDK for consistency)
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
     const docRef = doc(clientDb, 'rooms', id);
     await updateDoc(docRef, room);

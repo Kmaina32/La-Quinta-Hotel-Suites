@@ -16,30 +16,30 @@ function initializeAdmin() {
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
+  let rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
 
   if (!projectId || !clientEmail || !rawKey) {
-    console.warn("CRITICAL: Firebase Admin credentials missing from environment variables.");
+    console.warn("Firebase Admin credentials missing. Administrative features (User management) will be disabled.");
     return;
   }
 
-  // Aggressive PEM cleaning logic
-  let privateKey = rawKey.trim();
-  
-  // Remove wrapping quotes if they exist
-  if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
-    privateKey = privateKey.slice(1, -1);
-  }
-
-  // Standardize newlines (handle both literal newlines and escaped '\n' strings)
-  privateKey = privateKey.replace(/\\n/g, '\n');
-
-  // Ensure headers exist
-  if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-    privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
-  }
-
   try {
+    // Aggressive PEM cleaning logic
+    let privateKey = rawKey.trim();
+    
+    // Remove wrapping quotes
+    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+      privateKey = privateKey.slice(1, -1);
+    }
+
+    // Standardize newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
+    // Ensure headers exist correctly
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+      privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+    }
+
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId,
@@ -51,7 +51,8 @@ function initializeAdmin() {
     adminInitialized = true;
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
-    console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
+    console.error('Firebase Admin initialization failed safely:', error.message);
+    // We don't re-throw here to prevent the entire server module from failing to load
   }
 }
 

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Logo } from '@/components/logo';
 import type { UserRole } from '@/lib/types';
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('la-quita-admin-auth');
     setIsAdmin(false);
     setRole(null);
-    if(auth.currentUser) signOut(auth); // Also sign out from Firebase
+    signOut(auth); // Properly imported and called
   }, []);
 
   if (loading) {

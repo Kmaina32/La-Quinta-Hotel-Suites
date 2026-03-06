@@ -1,4 +1,3 @@
-
 import admin from 'firebase-admin';
 
 // This is a singleton to ensure we only initialize the app once.
@@ -10,7 +9,7 @@ let adminInitialized = false;
 function initializeAdmin() {
   if (adminInitialized) return;
   
-  // Check if any app is already initialized (singleton behavior)
+  // Check if any app is already initialized
   if (admin.apps.length > 0) {
     adminInitialized = true;
     return;
@@ -18,23 +17,16 @@ function initializeAdmin() {
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  
-  // Aggressively clean the private key to handle different environment variable managers
-  // 1. Replace literal "\n" strings with actual newline characters
-  // 2. Remove any surrounding double quotes that might have been added
   const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
-  const privateKey = rawKey.replace(/\\n/g, '\n').replace(/"/g, '').trim();
 
-  if (!projectId) {
-    console.warn("FIREBASE_PROJECT_ID is missing from environment.");
-    return;
-  }
-  if (!clientEmail) {
-    console.warn("FIREBASE_CLIENT_EMAIL is missing from environment.");
-    return;
-  }
-  if (!privateKey || !privateKey.includes('BEGIN PRIVATE KEY')) {
-    console.warn("FIREBASE_PRIVATE_KEY is missing or malformed (missing header).");
+  // Aggressively clean the private key to handle Vercel/Firebase env formatting
+  const privateKey = rawKey
+    .replace(/\\n/g, '\n') // Convert escaped newlines back to real newlines
+    .replace(/^['"]|['"]$/g, '') // Remove surrounding single/double quotes
+    .trim();
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.warn("CRITICAL: Firebase Admin credentials missing from environment.");
     return;
   }
 
@@ -51,8 +43,8 @@ function initializeAdmin() {
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
     console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
-    // Do not throw here, as it crashes the build/server action. 
-    // Instead, we leave adminInitialized as false.
+    // We don't throw here to avoid crashing the whole process, 
+    // but adminInitialized remains false.
   }
 }
 
@@ -84,4 +76,12 @@ export function getAuthAdmin(): admin.auth.Auth | null {
   if (!adminInitialized) return null;
   if (!auth) auth = admin.auth();
   return auth;
+}
+
+/**
+ * Helper to check if admin was successfully set up
+ */
+export function isAdminReady(): boolean {
+    initializeAdmin();
+    return adminInitialized;
 }

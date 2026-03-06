@@ -1,17 +1,15 @@
-
 'use server';
 
-import { getDb, getStorage, getAuthAdmin } from '@/lib/firebase-admin';
+import { getDb, getStorage, getAuthAdmin, isAdminReady } from '@/lib/firebase-admin';
 import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings, UserRole, AnalyticsData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { FieldValue } from 'firebase-admin/firestore';
-import crypto from 'crypto';
 
 // Helper to handle missing DB initialization in actions
 function ensureDb() {
     const db = getDb();
-    if (!db) throw new Error("Database not available. Check your Firebase Admin credentials.");
+    if (!db) throw new Error("Database not available. Check your Firebase environment variable configuration.");
     return db;
 }
 
@@ -38,6 +36,7 @@ export async function uploadImage(formData: FormData): Promise<string> {
 
 // == Rooms ==
 export async function getRooms(): Promise<Room[]> {
+    if (!isAdminReady()) return [];
     const db = getDb();
     if (!db) return [];
     try {
@@ -54,6 +53,7 @@ export async function getRooms(): Promise<Room[]> {
 }
 
 export async function getRoom(id: string): Promise<Room | null> {
+    if (!isAdminReady()) return null;
     const db = getDb();
     if (!db) return null;
     try {
@@ -76,10 +76,10 @@ export async function updateRoomDetails(id: string, room: Partial<Room>) {
     revalidatePath('/admin');
 }
 
-export async function addRoom(newRoom: Omit<Room, 'id'>) {
+export async function addRoom(newRoom: Omit<Room, 'id' | 'booked'>) {
     const db = ensureDb();
-    const roomRef = await db.collection('rooms').add(newRoom);
-    await roomRef.update({ id: roomRef.id, inventory: 1, booked: {} });
+    const roomRef = await db.collection('rooms').add({ ...newRoom, booked: {} });
+    await roomRef.update({ id: roomRef.id });
     revalidatePath('/');
     revalidatePath('/admin');
     return roomRef.id;
@@ -94,6 +94,7 @@ export async function deleteRoom(id: string) {
 
 // == Establishment Images & Settings ==
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
+    if (!isAdminReady()) return { heroImage: null, galleryImages: [] };
     const db = getDb();
     if (!db) return { heroImage: null, galleryImages: [] };
     try {
@@ -141,6 +142,7 @@ export async function deleteGalleryImage(id: string) {
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
+    if (!isAdminReady()) return { activeTheme: 'default' };
     const db = getDb();
     if (!db) return { activeTheme: 'default' };
     try {
@@ -175,7 +177,8 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
         const updates: Record<string, FieldValue> = {};
         for (const day of bookingDates.slice(0, -1)) {
             const dateString = format(day, 'yyyy-MM-dd');
-            if ((room.booked?.[dateString] || 0) >= (room.inventory || 1)) {
+            const currentBooked = room.booked?.[dateString] || 0;
+            if (currentBooked >= (room.inventory || 1)) {
                 return `Room is fully booked on ${dateString}.`;
             }
             updates[`booked.${dateString}`] = FieldValue.increment(1);
@@ -183,7 +186,11 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
 
         transaction.update(roomRef, updates);
         const newBookingRef = bookingData.transactionRef ? db.collection('bookings').doc(bookingData.transactionRef) : db.collection('bookings').doc();
-        transaction.set(newBookingRef, { ...bookingData, bookedOn: new Date().toISOString(), status: isReservation ? 'pending' : 'confirmed' });
+        transaction.set(newBookingRef, { 
+            ...bookingData, 
+            bookedOn: new Date().toISOString(), 
+            status: isReservation ? 'pending' : 'confirmed' 
+        });
         return null;
     });
 
@@ -193,17 +200,27 @@ export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn'
 }
 
 export async function getBookingsForUser(userId: string): Promise<Booking[]> {
+    if (!isAdminReady()) return [];
     const db = getDb();
     if (!db) return [];
-    const snapshot = await db.collection('bookings').where('userId', '==', userId).get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Booking).sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+    try {
+        const snapshot = await db.collection('bookings').where('userId', '==', userId).get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Booking).sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+    } catch (e) {
+        return [];
+    }
 }
 
 export async function getAllBookings(): Promise<Booking[]> {
+    if (!isAdminReady()) return [];
     const db = getDb();
     if (!db) return [];
-    const snapshot = await db.collection('bookings').orderBy('bookedOn', 'desc').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Booking);
+    try {
+        const snapshot = await db.collection('bookings').orderBy('bookedOn', 'desc').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Booking);
+    } catch (e) {
+        return [];
+    }
 }
 
 export async function cancelBooking(bookingId: string) {
@@ -243,10 +260,15 @@ export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | '
 }
 
 export async function getMessages(): Promise<Message[]> {
+    if (!isAdminReady()) return [];
     const db = getDb();
     if (!db) return [];
-    const snapshot = await db.collection('messages').orderBy('sentAt', 'desc').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message[]);
+    try {
+        const snapshot = await db.collection('messages').orderBy('sentAt', 'desc').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message[]);
+    } catch (e) {
+        return [];
+    }
 }
 
 // == Users & Roles ==
@@ -280,14 +302,14 @@ export async function initializePaystackTransaction(email: string, amount: numbe
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) throw new Error('Paystack secret key is not configured.');
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002';
-    const params = { email, amount: amount * 100, currency: 'KES', callback_url: `${siteUrl}/bookings/status` };
+    const params = { email, amount: Math.round(amount * 100), currency: 'KES', callback_url: `${siteUrl}/bookings/status` };
     const res = await fetch('https://api.paystack.co/transaction/initialize', {
         method: 'POST',
         headers: { Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
     });
     const data = await res.json();
-    if (!data.status) throw new Error(data.message || 'Paystack init failed.');
+    if (!data.status) throw new Error(data.message || 'Paystack initialization failed.');
     return data.data;
 }
 
@@ -304,6 +326,7 @@ export async function verifyPaystackTransaction(reference: string) {
 }
 
 export async function confirmBookingFromWebhook(reference: string) {
+    if (!isAdminReady()) return;
     const db = getDb();
     if (!db) return;
     const bookingRef = db.collection('bookings').doc(reference);
@@ -317,8 +340,7 @@ export async function confirmBookingFromWebhook(reference: string) {
 
 // == Analytics ==
 export async function getAnalyticsData(): Promise<AnalyticsData> {
-    const db = getDb();
-    if (!db) return { totalRevenue: 0, totalBookings: 0, occupancyRate: 0, revenueByRoom: [], bookingsPerMonth: [] };
+    if (!isAdminReady()) return { totalRevenue: 0, totalBookings: 0, occupancyRate: 0, revenueByRoom: [], bookingsPerMonth: [] };
     
     try {
         const bookings = await getAllBookings();

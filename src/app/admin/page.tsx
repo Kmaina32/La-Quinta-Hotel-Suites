@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createPoster } from '@/ai/flows/create-poster-flow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -109,16 +109,13 @@ export default function AdminPage() {
              try {
                 const data = await getRooms();
                 setRooms(data);
-                if (data.length === 0 && activeTab === 'rooms') {
-                    // Could be valid or error
-                }
             } catch (e) { handleError('rooms', e); }
         }
         if (activeTab === 'content') {
              try {
                 const establishmentData = await getEstablishmentImages();
                 if (establishmentData) {
-                    const sortedGallery = establishmentData.galleryImages.sort((a: any, b: any) => a.id.localeCompare(b.id));
+                    const sortedGallery = (establishmentData.galleryImages || []).sort((a: any, b: any) => a.id.localeCompare(b.id));
                     setGalleryImages(sortedGallery);
                     setHeroImage(establishmentData.heroImage?.src || '');
                     const defaultImage = establishmentData.heroImage?.src || establishmentData.galleryImages[0]?.src || '';
@@ -151,7 +148,6 @@ export default function AdminPage() {
              try {
                 const data = await getAllUsers();
                 setUsers(data);
-                if (data.length === 0) setFetchErrors(prev => ({...prev, users: true}));
              } catch (e) { handleError('users', e); }
         }
     } catch (error) {
@@ -450,7 +446,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-4">
        {activeTab === 'analytics' && (
         <div className="space-y-6">
             <Card>
@@ -732,7 +728,7 @@ export default function AdminPage() {
                                 <Input type="file" className="max-w-xs" onChange={e => e.target.files && handleFileUpload(e.target.files[0], `room-main-${room.id}`, url => handleRoomChange(room.id, 'imageUrl', url))} />
                                 {uploadingStates[`room-main-${room.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                             </div>
-                            <Input value={room.imageUrl} onChange={e => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
+                            <Input value={room.imageUrl} onChange={(e) => handleRoomChange(room.id, 'imageUrl', e.target.value)} placeholder="Or paste URL" readOnly={role === 'manager'}/>
                             </div>
                             <div className="md:col-span-3 space-y-3">
                             <div className="flex justify-between items-center"><label className="text-sm font-medium">Detail Images</label>
@@ -746,7 +742,7 @@ export default function AdminPage() {
                                     {uploadingStates[`room-detail-${img.id}`] && <Loader2 className="h-5 w-5 animate-spin" />}
                                     <Button variant="ghost" size="icon" onClick={() => removeRoomImage(room.id, img.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 </div>
-                                <Input value={img.src} onChange={e => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" readOnly={role === 'manager'} />
+                                <Input value={img.src} onChange={(e) => handleRoomImageChange(room.id, img.id, e.target.value)} placeholder="Or paste image URL" readOnly={role === 'manager'} />
                                 </div>
                             ))}
                             </div>

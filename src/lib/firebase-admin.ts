@@ -1,6 +1,6 @@
+
 import admin from 'firebase-admin';
 
-// This is a singleton to ensure we only initialize the app once.
 let db: admin.firestore.Firestore | null = null;
 let storage: admin.storage.Storage | null = null;
 let auth: admin.auth.Auth | null = null;
@@ -9,7 +9,6 @@ let adminInitialized = false;
 function initializeAdmin() {
   if (adminInitialized) return;
   
-  // Check if any app is already initialized
   if (admin.apps.length > 0) {
     adminInitialized = true;
     return;
@@ -19,14 +18,14 @@ function initializeAdmin() {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
 
-  // Aggressively clean the private key to handle Vercel/Firebase env formatting
+  // Handle common ENV formatting issues (quotes, escaped newlines)
   const privateKey = rawKey
-    .replace(/\\n/g, '\n') // Convert escaped newlines back to real newlines
-    .replace(/^['"]|['"]$/g, '') // Remove surrounding single/double quotes
+    .replace(/\\n/g, '\n')
+    .replace(/^['"]|['"]$/g, '')
     .trim();
 
   if (!projectId || !clientEmail || !privateKey) {
-    console.warn("CRITICAL: Firebase Admin credentials missing from environment.");
+    console.warn("CRITICAL: Firebase Admin credentials missing from environment variables.");
     return;
   }
 
@@ -42,15 +41,11 @@ function initializeAdmin() {
     adminInitialized = true;
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
-    console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
-    // We don't throw here to avoid crashing the whole process, 
-    // but adminInitialized remains false.
+    console.error('Firebase admin initialization error:', error.message);
+    // We do not throw here to avoid crashing the Next.js server process (prevents 500 errors)
   }
 }
 
-/**
- * Returns an initialized Firestore database instance.
- */
 export function getDb(): admin.firestore.Firestore | null {
   initializeAdmin();
   if (!adminInitialized) return null;
@@ -58,9 +53,6 @@ export function getDb(): admin.firestore.Firestore | null {
   return db;
 }
 
-/**
- * Returns an initialized Storage instance.
- */
 export function getStorage(): admin.storage.Storage | null {
   initializeAdmin();
   if (!adminInitialized) return null;
@@ -68,9 +60,6 @@ export function getStorage(): admin.storage.Storage | null {
   return storage;
 }
 
-/**
- * Returns an initialized Auth instance.
- */
 export function getAuthAdmin(): admin.auth.Auth | null {
   initializeAdmin();
   if (!adminInitialized) return null;
@@ -78,9 +67,6 @@ export function getAuthAdmin(): admin.auth.Auth | null {
   return auth;
 }
 
-/**
- * Helper to check if admin was successfully set up
- */
 export function isAdminReady(): boolean {
     initializeAdmin();
     return adminInitialized;

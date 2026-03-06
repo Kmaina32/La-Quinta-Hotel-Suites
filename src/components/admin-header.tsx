@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -23,7 +24,7 @@ export default function AdminHeader() {
   };
 
   return (
-    <header className="sticky top-4 z-40 mb-2">
+    <header className="sticky top-4 z-40 mb-6">
       <div className="flex justify-between items-center h-16 bg-background/80 backdrop-blur-md border rounded-[1.5rem] shadow-xl px-6 lg:px-8">
         <div className="flex flex-col">
           <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80">Master Control</span>

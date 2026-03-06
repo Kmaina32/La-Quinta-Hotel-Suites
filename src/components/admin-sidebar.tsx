@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -35,7 +36,7 @@ export default function AdminSidebar() {
   if (!isAdmin) return null;
 
   return (
-    <aside className="fixed left-4 top-4 bottom-4 w-16 z-50 flex flex-col items-center py-6 bg-background/80 backdrop-blur-md border rounded-[2rem] shadow-xl gap-6 transition-all duration-300">
+    <aside className="fixed left-4 top-4 bottom-4 w-16 z-50 flex flex-col items-center py-6 bg-background/80 backdrop-blur-md border rounded-[2rem] shadow-xl gap-6">
       <div className="flex flex-col items-center gap-4 w-full px-2">
         <TooltipProvider delayDuration={0}>
           <Tooltip>

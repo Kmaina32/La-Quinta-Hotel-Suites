@@ -14,17 +14,17 @@ function initializeAdmin() {
     return;
   }
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const projectId = process.env.FIREBASE_PROJECT_ID || 'la-quinta-reservations';
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  let rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
+  let rawKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !rawKey) {
-    console.warn("Firebase Admin credentials missing. High-privilege features disabled.");
+    console.warn("Firebase Admin: One or more credentials missing. High-privilege features disabled.");
     return;
   }
 
   try {
-    // Aggressive cleaning of the private key to handle newline issues in .env
+    // Robust cleaning of the private key
     let privateKey = rawKey.trim();
     
     // Remove wrapping quotes if they exist
@@ -54,7 +54,6 @@ function initializeAdmin() {
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
     console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
-    // Fail soft to keep the app running
   }
 }
 

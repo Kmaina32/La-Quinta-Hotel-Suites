@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getDb, getStorage, getAuthAdmin, isAdminReady } from '@/lib/firebase-admin';
+import { getAuthAdmin } from '@/lib/firebase-admin';
 import { db as clientDb } from '@/lib/firebase';
 import { 
     collection, 
@@ -16,15 +16,13 @@ import {
     deleteDoc, 
     setDoc,
     increment,
-    runTransaction,
-    Timestamp
 } from 'firebase/firestore';
 import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings, UserRole, AnalyticsData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval, eachMonthOfInterval, addDays } from 'date-fns';
 
 /**
- * Standard Data Fetching (Uses Client SDK for stability on deployment)
+ * Public Data Fetching (Uses Client SDK for max reliability)
  */
 
 export async function getRooms(): Promise<Room[]> {
@@ -82,7 +80,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 }
 
 /**
- * Mutations (Using Client SDK for consistent permissions)
+ * Mutations
  */
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
@@ -143,40 +141,6 @@ export async function updateSiteSettings(settings: SiteSettings) {
 }
 
 /**
- * Image Upload (Server-side via Admin SDK)
- */
-export async function uploadImage(formData: FormData): Promise<string> {
-    const file = formData.get('file') as File;
-    if (!file) throw new Error('No file provided');
-
-    try {
-        const storage = getStorage();
-        if (!storage) throw new Error('Firebase Admin Storage not initialized');
-
-        const bucket = storage.bucket();
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-        const fileRef = bucket.file(filename);
-
-        await fileRef.save(buffer, {
-            metadata: { contentType: file.type },
-        });
-
-        // Use public URL if bucket is configured for public access, 
-        // or generate a signed URL for safety.
-        const [url] = await fileRef.getSignedUrl({
-            action: 'read',
-            expires: '03-01-2500',
-        });
-
-        return url;
-    } catch (e: any) {
-        console.error("Upload failed:", e.message);
-        throw new Error("Failed to upload image. Ensure FIREBASE_PRIVATE_KEY is correctly set.");
-    }
-}
-
-/**
  * Booking Management
  */
 export async function createBooking(bookingData: any, isReservation: boolean) {
@@ -190,7 +154,6 @@ export async function createBooking(bookingData: any, isReservation: boolean) {
             bookedOn: new Date().toISOString(),
         });
 
-        // Simplified inventory tracking
         const roomRef = doc(clientDb, 'rooms', bookingData.roomId);
         const checkIn = new Date(bookingData.checkIn);
         const checkOut = new Date(bookingData.checkOut);
@@ -229,7 +192,7 @@ export async function confirmBookingFromWebhook(reference: string) {
 }
 
 /**
- * Privileged Operations (Require Admin SDK)
+ * Admin Features (Require Service Account)
  */
 
 export async function getAllUsers(): Promise<UserData[]> {
@@ -282,10 +245,6 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
     }
 }
 
-/**
- * Generic Fetchers (Resilient)
- */
-
 export async function getAllBookings(): Promise<Booking[]> {
     try {
         const bookingsRef = collection(clientDb, 'bookings');
@@ -303,7 +262,7 @@ export async function getMessages(): Promise<Message[]> {
         const messagesRef = collection(clientDb, 'messages');
         const snapshot = await getDocs(messagesRef);
         return snapshot.docs
-            .map(d => ({ id: d.id, ...d.data() }) as Message[])
+            .map(d => ({ id: d.id, ...d.data() }) as Message)
             .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
     } catch (e) {
         return [];

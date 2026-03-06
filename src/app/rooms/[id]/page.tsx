@@ -4,7 +4,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import RoomDetailsClient from './room-details-client';
 
-// In Next.js 15, params is a Promise
 type Props = {
   params: Promise<{ id: string }>;
 };

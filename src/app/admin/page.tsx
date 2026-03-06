@@ -9,7 +9,6 @@ import type { Room, EstablishmentImage, Message, Booking, SiteSettings, UserData
 import { Loader2, PlusCircle, Trash2, Bed, Users, AlertTriangle, Image as ImageIcon, Bath, BedDouble, Layers, Clock, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/components/ui/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -43,7 +42,7 @@ function ErrorDisplay({ title, message }: { title: string; message: string }) {
 
 function AdminContent() {
   const [password, setPassword] = useState('');
-  const { isAdmin, loginAdmin, logoutAdmin, role } = useAuth();
+  const { isAdmin, loginAdmin, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [fetchErrors, setFetchErrors] = useState<Record<string, boolean>>({});
   
@@ -78,7 +77,7 @@ function AdminContent() {
         if (activeTab === 'analytics') {
             const data = await getAnalyticsData();
             setAnalyticsData(data);
-            if (!data || data.totalRevenue === 0 && data.totalBookings === 0) {
+            if (!data || (data.totalRevenue === 0 && data.totalBookings === 0)) {
                 setFetchErrors(p => ({...p, analytics: true}));
             }
         }
@@ -130,22 +129,6 @@ function AdminContent() {
   
   const handleRoomChange = (id: string, field: keyof Room, value: any) => {
     setRooms(rooms.map(room => room.id === id ? { ...room, [field]: value } : room));
-  };
-
-  const handleRoomImageChange = (roomId: string, index: number, field: string, value: string) => {
-    setRooms(rooms.map(room => {
-        if (room.id !== roomId) return room;
-        const newImages = [...(room.images || [])];
-        newImages[index] = { ...newImages[index], [field]: value };
-        return { ...room, images: newImages };
-    }));
-  };
-
-  const addRoomImage = (roomId: string) => {
-    setRooms(rooms.map(room => {
-        if (room.id !== roomId) return room;
-        return { ...room, images: [...(room.images || []), { id: Date.now().toString(), src: '', alt: room.name }] };
-    }));
   };
 
   const handleSave = async (type: 'hero' | 'gallery' | 'room' | 'settings', id: string) => {

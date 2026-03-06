@@ -21,16 +21,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// This function runs only on the client and avoids the flicker.
-const getInitialAuthState = () => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    const item = sessionStorage.getItem('la-quita-admin-auth');
-    return item === 'true';
-};
-
-
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user } = useAuth();

@@ -76,7 +76,7 @@ export default function AdminPage() {
     } else {
       setLoading(false);
     }
-  }, [isAdmin, activeTab]); // re-fetch if tab changes
+  }, [isAdmin, activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -665,13 +665,16 @@ export default function AdminPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1"><label className="text-sm font-medium">Name</label><Input value={room.name} onChange={e => handleRoomChange(room.id, 'name', e.target.value)} readOnly={role === 'manager'} /></div>
-                    <div className="space-y-1"><label className="text-sm font-medium">Price</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                    <div className="space-y-1"><label className="text-sm font-medium">{room.type === 'conference' ? 'Full Day Price (per person)' : 'Price per Night'}</label><Input type="number" value={room.price} onChange={e => handleRoomChange(room.id, 'price', Number(e.target.value))} readOnly={role === 'manager'} /></div>
                     <div className="space-y-1"><label className="text-sm font-medium">Type</label>
                       <Select value={room.type || 'room'} onValueChange={(value: 'room' | 'conference') => handleRoomChange(room.id, 'type', value)} disabled={role === 'manager'}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="room">Room</SelectItem><SelectItem value="conference">Conference</SelectItem></SelectContent>
                       </Select>
                     </div>
+                    {room.type === 'conference' && (
+                      <div className="space-y-1"><label className="text-sm font-medium">Half Day Price (per person)</label><Input type="number" value={room.halfDayPrice || 0} onChange={e => handleRoomChange(room.id, 'halfDayPrice', Number(e.target.value))} readOnly={role === 'manager'} /></div>
+                    )}
                     <div className="space-y-1"><label className="text-sm font-medium">Capacity</label><Input type="number" value={room.capacity} onChange={e => handleRoomChange(room.id, 'capacity', Number(e.target.value))} readOnly={role === 'manager'} /></div>
                      <div className="space-y-1"><label className="text-sm font-medium">Inventory</label><Input type="number" value={room.inventory} onChange={e => handleRoomChange(room.id, 'inventory', Number(e.target.value))} readOnly={role === 'manager'} /></div>
                     {room.type !== 'conference' && <>
@@ -736,8 +739,11 @@ export default function AdminPage() {
                                     <p className="text-sm text-muted-foreground">Guest: {booking.userEmail}</p>
                                     <div className="flex items-center gap-4 text-sm">
                                         <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4"/><span>{format(new Date(booking.checkIn), 'PP')} to {format(new Date(booking.checkOut), 'PP')}</span></div>
-                                        <div className="flex items-center gap-2"><Users className="h-4 w-4"/><span>{booking.nights} night(s)</span></div>
+                                        <div className="flex items-center gap-2"><Users className="h-4 w-4"/><span>{booking.nights} {booking.numPeople ? 'day(s)' : 'night(s)'}</span></div>
                                     </div>
+                                    {booking.numPeople && (
+                                      <p className="text-sm font-medium">Conference for {booking.numPeople} people ({booking.conferenceOption === 'half' ? 'Half Day' : 'Full Day'})</p>
+                                    )}
                                     <p className="text-sm">Booked {formatDistanceToNow(new Date(booking.bookedOn), { addSuffix: true })}</p>
                                 </div>
                                 <div className="space-y-2 text-sm">
@@ -870,5 +876,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    

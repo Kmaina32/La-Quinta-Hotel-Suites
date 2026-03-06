@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
-import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle, Clock } from 'lucide-react';
+import { Bath, BedDouble, User, Loader2, Calendar as CalendarIcon, CreditCard, AlertCircle, Clock, Users } from 'lucide-react';
 import { createBooking, initializePaystackTransaction } from '@/lib/actions';
 import type { Room } from '@/lib/types';
 import { format, addDays, eachDayOfInterval, differenceInCalendarDays } from "date-fns";
@@ -21,11 +21,15 @@ import { useAuth } from '@/hooks/use-auth';
 import PaystackPop from '@paystack/inline-js';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay"
+import { RadioGroup, RadioItem } from '@/components/ui/radio-group';
 
 
 export default function RoomDetailsClient({ room }: { room: Room }) {
   const [isBooking, setIsBooking] = useState(false);
   const [activePaymentMethod, setActivePaymentMethod] = useState('');
+  const [numPeople, setNumPeople] = useState(1);
+  const [conferenceOption, setConferenceOption] = useState<'half' | 'full'>('full');
+  
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -58,14 +62,13 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
 
 
     const handleBooking = async (paymentMethod: string, transactionRef?: string) => {
-        if (!user) return; // Should be handled by UI checks already
+        if (!user) return;
 
         setIsBooking(true);
         setActivePaymentMethod(paymentMethod);
         
         try {
             const nights = differenceInCalendarDays(date!.to!, date!.from!);
-            const totalCost = nights * room.price;
             const isReservation = paymentMethod === 'Pay at Hotel';
 
             const bookingData = {
@@ -80,6 +83,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                 totalCost,
                 paymentMethod,
                 ...(transactionRef && { transactionRef }),
+                ...(room.type === 'conference' && { numPeople, conferenceOption }),
             };
 
             await createBooking(bookingData, isReservation);
@@ -127,6 +131,11 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
         return false;
     }
 
+    if (room.type === 'conference' && (numPeople <= 0 || numPeople > room.capacity)) {
+        toast({ title: "Invalid Occupancy", description: `Please select between 1 and ${room.capacity} people.`, variant: "destructive"});
+        return false;
+    }
+
     if (!isRoomAvailable) {
         toast({ title: "Not Available", description: "This room is fully booked for the selected dates. Please choose different dates.", variant: "destructive" });
         return false;
@@ -141,19 +150,15 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
     setActivePaymentMethod('Paystack');
 
     try {
-        const nights = differenceInCalendarDays(date!.to!, date!.from!);
-        const totalCost = nights * room.price;
-
         const transactionData = await initializePaystackTransaction(user!.email!, totalCost);
         
         const paystack = new PaystackPop();
         paystack.newTransaction({
-            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!, // Public key from env vars
+            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
             email: user!.email!,
             amount: totalCost * 100,
             access_code: transactionData.access_code,
             onSuccess: (transaction) => {
-                // Pass the reference to the booking handler
                 handleBooking('Paystack', transaction.reference);
             },
             onCancel: () => {
@@ -172,7 +177,15 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
 
 
   const nights = date?.to && date?.from ? Math.max(0, differenceInCalendarDays(date.to, date.from)) : 0;
-  const totalCost = nights * room.price;
+  
+  const totalCost = useMemo(() => {
+    if (room.type === 'conference') {
+      const perPersonPrice = conferenceOption === 'half' ? (room.halfDayPrice || room.price) : room.price;
+      return perPersonPrice * numPeople * nights;
+    }
+    return nights * room.price;
+  }, [room, nights, numPeople, conferenceOption]);
+
   const allImages = [room.imageUrl, ...(room.images || []).map(img => img.src)].filter(Boolean);
 
 
@@ -273,7 +286,7 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
           <div className="flex flex-wrap gap-6 text-lg mb-6">
             <div className="flex items-center gap-2">
               <User className="text-primary"/>
-              <span>{room.capacity} Guests</span>
+              <span>Up to {room.capacity} {room.type === 'conference' ? 'Attendees' : 'Guests'}</span>
             </div>
             {room.type !== 'conference' && (
               <>
@@ -290,14 +303,14 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
           </div>
            <Separator className="my-8" />
            <div className="space-y-4">
-            <h3 className="text-2xl font-semibold">Hotel Policies</h3>
+            <h3 className="text-2xl font-semibold">Establishment Policies</h3>
             <div className="flex items-center gap-4 text-muted-foreground">
                 <Clock className="h-5 w-5"/>
-                <p>Check-in: <strong>2:00 PM</strong></p>
+                <p>Standard Check-in: <strong>2:00 PM</strong></p>
             </div>
             <div className="flex items-center gap-4 text-muted-foreground">
                 <Clock className="h-5 w-5"/>
-                <p>Check-out: <strong>11:00 AM</strong></p>
+                <p>Standard Check-out: <strong>11:00 AM</strong></p>
             </div>
           </div>
         </div>
@@ -307,13 +320,59 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
             <CardHeader>
               <CardTitle className="text-2xl">Book Your Stay</CardTitle>
               <CardDescription>
-                 <span className="text-3xl font-bold text-foreground">KES {room.price}</span>
-                 <span className="text-base font-normal text-muted-foreground"> / {room.type === 'room' ? 'night' : 'day'}</span>
+                 {room.type === 'conference' ? (
+                   <div className="space-y-1">
+                      <p><span className="text-2xl font-bold text-foreground">KES {room.halfDayPrice || room.price}</span> / half day</p>
+                      <p><span className="text-2xl font-bold text-foreground">KES {room.price}</span> / full day</p>
+                      <p className="text-xs text-muted-foreground mt-1">* Prices are per person</p>
+                   </div>
+                 ) : (
+                   <>
+                    <span className="text-3xl font-bold text-foreground">KES {room.price}</span>
+                    <span className="text-base font-normal text-muted-foreground"> / night</span>
+                   </>
+                 )}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
+                {room.type === 'conference' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Conference Option</Label>
+                      <RadioGroup 
+                        value={conferenceOption} 
+                        onValueChange={(val: any) => setConferenceOption(val)}
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-accent transition-colors">
+                          <RadioItem value="half" id="half" />
+                          <Label htmlFor="half" className="cursor-pointer">Half Day</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-accent transition-colors">
+                          <RadioItem value="full" id="full" />
+                          <Label htmlFor="full" className="cursor-pointer">Full Day</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="people">Number of People</Label>
+                      <div className="flex items-center gap-3">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <Input 
+                          id="people" 
+                          type="number" 
+                          min={1} 
+                          max={room.capacity} 
+                          value={numPeople} 
+                          onChange={(e) => setNumPeople(Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="grid gap-2">
-                  <Label htmlFor="dates">Check-in / Check-out</Label>
+                  <Label htmlFor="dates">{room.type === 'conference' ? 'Dates' : 'Check-in / Check-out'}</Label>
                    <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -355,12 +414,17 @@ export default function RoomDetailsClient({ room }: { room: Room }) {
                 </div>
 
                 {nights > 0 && (
-                  <div className="grid gap-2 text-sm">
+                  <div className="grid gap-2 text-sm border-t pt-4">
                     <div className="flex justify-between">
-                      <span>{nights} night{nights > 1 ? 's' : ''}</span>
+                      <span>
+                        {room.type === 'conference' 
+                          ? `${numPeople} people x ${nights} day(s)` 
+                          : `${nights} night(s)`
+                        }
+                      </span>
                       <span>KES {totalCost.toFixed(2)}</span>
                     </div>
-                     <div className="flex justify-between font-bold">
+                     <div className="flex justify-between font-bold text-lg">
                       <span>Total</span>
                       <span>KES {totalCost.toFixed(2)}</span>
                     </div>

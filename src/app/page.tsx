@@ -76,19 +76,28 @@ export default async function Home() {
                         <User size={16} />
                         <span>{room.capacity} Guests</span>
                       </div>
-                       {room.beds > 0 && <div className="flex items-center gap-2">
+                       {room.type !== 'conference' && room.beds > 0 && <div className="flex items-center gap-2">
                         <BedDouble size={16} />
                         <span>{room.beds} Bed(s)</span>
                       </div>}
-                      {room.baths > 0 && <div className="flex items-center gap-2">
+                      {room.type !== 'conference' && room.baths > 0 && <div className="flex items-center gap-2">
                         <Bath size={16} />
                         <span>{room.baths} Bath(s)</span>
                       </div>}
                     </div>
                     <div className="flex justify-between items-center">
-                      <p className="text-lg font-semibold">
-                        KES {room.price} <span className="text-sm font-normal text-muted-foreground">/ {room.type === 'room' ? 'night' : 'day'}</span>
-                      </p>
+                      <div className="text-lg font-semibold">
+                        {room.type === 'conference' ? (
+                          <>
+                            <span className="text-sm font-normal block">Starting from</span>
+                            KES {room.halfDayPrice || room.price} <span className="text-sm font-normal text-muted-foreground">/ person</span>
+                          </>
+                        ) : (
+                          <>
+                            KES {room.price} <span className="text-sm font-normal text-muted-foreground">/ night</span>
+                          </>
+                        )}
+                      </div>
                       <Button asChild>
                         <Link href={`/rooms/${room.id}`}>View Details</Link>
                       </Button>

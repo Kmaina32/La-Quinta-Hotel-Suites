@@ -5,7 +5,8 @@ export interface Room {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // For rooms: per night. For conference: Full Day per person.
+  halfDayPrice?: number; // For conference: Half Day per person.
   capacity: number;
   beds: number;
   baths: number;
@@ -30,27 +31,29 @@ export interface SiteSettings {
 export interface Booking {
   id:string;
   userId: string;
-  userEmail: string; // Keep user's email for display
+  userEmail: string;
   roomId: string;
   roomName: string;
   roomImage: string;
   checkIn: string; // ISO string
   checkOut: string; // ISO string
-  nights: number;
+  nights: number; // For conference: number of days
   totalCost: number;
   paymentMethod: string;
-  transactionRef?: string; // Add this line
+  transactionRef?: string;
   bookedOn: string; // ISO string
   status: 'confirmed' | 'cancelled' | 'pending';
+  numPeople?: number; // Conference specific
+  conferenceOption?: 'half' | 'full'; // Conference specific
 }
 
 export interface Message {
   id: string;
   name: string;
   email: string;
-  phone?: string; // Optional phone number
+  phone?: string;
   message: string;
-  sentAt: string; // ISO string
+  sentAt: string;
   isRead: boolean;
 }
 

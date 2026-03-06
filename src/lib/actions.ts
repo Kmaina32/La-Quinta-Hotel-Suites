@@ -23,45 +23,16 @@ import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
 
-// Helper to ensure Admin DB is ready for privileged operations
-function ensureAdminDb() {
-    const db = getDb();
-    if (!db) throw new Error("Admin SDK not configured. Check your private key settings.");
-    return db;
-}
+/**
+ * Standard Data Fetching (Uses Client SDK for stability on deployment)
+ */
 
-export async function uploadImage(formData: FormData): Promise<string> {
-    try {
-        const file = formData.get('file') as File;
-        if (!file) throw new Error('No file provided.');
-
-        // For uploads, we use the Admin Storage if possible, otherwise we'd need client-side storage
-        const storage = getStorage();
-        if (!storage) throw new Error("Cloud Storage not available (Admin SDK not initialized).");
-        
-        const bucket = storage.bucket();
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `images/${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-        const fileUpload = bucket.file(fileName);
-
-        await fileUpload.save(fileBuffer, {
-            metadata: { contentType: file.type },
-        });
-
-        await fileUpload.makePublic();
-        return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-    } catch (e) {
-        console.error("Upload error:", e);
-        throw e;
-    }
-}
-
-// FETCHING DATA (Uses Client SDK for resilience)
 export async function getRooms(): Promise<Room[]> {
     try {
         const roomsRef = collection(clientDb, 'rooms');
         const q = query(roomsRef, orderBy('price'));
         const snapshot = await getDocs(q);
+        if (snapshot.empty) return [];
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Room[];
     } catch (error) {
         console.error('Error fetching rooms:', error);
@@ -110,29 +81,47 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     }
 }
 
-// MUTATIONS (Using Client SDK for consistency)
+/**
+ * Mutations (Using Client SDK for consistent permissions)
+ */
+
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
-    const docRef = doc(clientDb, 'rooms', id);
-    await updateDoc(docRef, room);
-    revalidatePath('/');
-    revalidatePath(`/rooms/${id}`);
-    revalidatePath('/admin');
+    try {
+        const docRef = doc(clientDb, 'rooms', id);
+        await updateDoc(docRef, room);
+        revalidatePath('/');
+        revalidatePath(`/rooms/${id}`);
+        revalidatePath('/admin');
+    } catch (e) {
+        console.error("Mutation failed:", e);
+        throw e;
+    }
 }
 
 export async function addRoom(newRoom: Omit<Room, 'id' | 'booked'>) {
-    const roomsRef = collection(clientDb, 'rooms');
-    const docRef = await addDoc(roomsRef, { ...newRoom, booked: {} });
-    await updateDoc(docRef, { id: docRef.id });
-    revalidatePath('/');
-    revalidatePath('/admin');
-    return docRef.id;
+    try {
+        const roomsRef = collection(clientDb, 'rooms');
+        const docRef = await addDoc(roomsRef, { ...newRoom, booked: {} });
+        await updateDoc(docRef, { id: docRef.id });
+        revalidatePath('/');
+        revalidatePath('/admin');
+        return docRef.id;
+    } catch (e) {
+        console.error("Add room failed:", e);
+        throw e;
+    }
 }
 
 export async function deleteRoom(id: string) {
-    const docRef = doc(clientDb, 'rooms', id);
-    await deleteDoc(docRef);
-    revalidatePath('/');
-    revalidatePath('/admin');
+    try {
+        const docRef = doc(clientDb, 'rooms', id);
+        await deleteDoc(docRef);
+        revalidatePath('/');
+        revalidatePath('/admin');
+    } catch (e) {
+        console.error("Delete failed:", e);
+        throw e;
+    }
 }
 
 export async function updateHeroImage(src: string) {
@@ -147,149 +136,24 @@ export async function updateGalleryImage(id: string, src: string) {
     revalidatePath('/');
 }
 
-export async function addGalleryImage(newImage: Omit<EstablishmentImage, 'id'>) {
-    const estRef = collection(clientDb, 'establishment');
-    const docRef = await addDoc(estRef, newImage);
-    await updateDoc(docRef, { id: docRef.id });
-    revalidatePath('/');
-    return docRef.id;
-}
-
-export async function deleteGalleryImage(id: string) {
-    if (id === 'hero-image') return;
-    const imgRef = doc(clientDb, 'establishment', id);
-    await deleteDoc(imgRef);
-    revalidatePath('/');
-}
-
 export async function updateSiteSettings(settings: SiteSettings) {
     const settingsRef = doc(clientDb, 'establishment', 'site-settings');
     await setDoc(settingsRef, settings, { merge: true });
     revalidatePath('/', 'layout');
 }
 
-export async function createBooking(bookingData: Omit<Booking, 'id' | 'bookedOn' | 'status'>, isReservation: boolean = false) {
-    try {
-        const roomRef = doc(clientDb, 'rooms', bookingData.roomId);
-        
-        await runTransaction(clientDb, async (transaction) => {
-            const roomDoc = await transaction.get(roomRef);
-            if (!roomDoc.exists()) throw new Error("Room does not exist.");
+/**
+ * Privileged Operations (Require Admin SDK)
+ */
 
-            const room = roomDoc.data() as Room;
-            const bookingDates = eachDayOfInterval({
-                start: new Date(bookingData.checkIn),
-                end: new Date(bookingData.checkOut)
-            });
-
-            const updates: Record<string, any> = {};
-            for (const day of bookingDates.slice(0, -1)) {
-                const dateString = format(day, 'yyyy-MM-dd');
-                const currentBooked = room.booked?.[dateString] || 0;
-                if (currentBooked >= (room.inventory || 1)) {
-                    throw new Error(`Room is fully booked on ${dateString}.`);
-                }
-                updates[`booked.${dateString}`] = increment(1);
-            }
-
-            transaction.update(roomRef, updates);
-            const bookingsRef = collection(clientDb, 'bookings');
-            const newBookingRef = bookingData.transactionRef ? doc(clientDb, 'bookings', bookingData.transactionRef) : doc(bookingsRef);
-            
-            transaction.set(newBookingRef, { 
-                ...bookingData, 
-                bookedOn: new Date().toISOString(), 
-                status: isReservation ? 'pending' : 'confirmed' 
-            });
-        });
-
-        revalidatePath('/bookings');
-        revalidatePath('/admin');
-    } catch (e: any) {
-        throw new Error(e.message);
-    }
-}
-
-export async function getBookingsForUser(userId: string): Promise<Booking[]> {
-    try {
-        const bookingsRef = collection(clientDb, 'bookings');
-        const q = query(bookingsRef, where('userId', '==', userId));
-        const snapshot = await getDocs(q);
-        return snapshot.docs
-            .map(d => ({ id: d.id, ...d.data() }) as Booking)
-            .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
-    } catch (e) {
-        return [];
-    }
-}
-
-export async function getAllBookings(): Promise<Booking[]> {
-    try {
-        const bookingsRef = collection(clientDb, 'bookings');
-        const snapshot = await getDocs(bookingsRef);
-        return snapshot.docs
-            .map(d => ({ id: d.id, ...d.data() }) as Booking)
-            .sort((a, b) => new Date(b.bookedOn).getTime() - new Date(a.bookedOn).getTime());
-    } catch (e) {
-        return [];
-    }
-}
-
-export async function cancelBooking(bookingId: string) {
-    try {
-        const bookingRef = doc(clientDb, 'bookings', bookingId);
-        
-        await runTransaction(clientDb, async (transaction) => {
-            const bookingDoc = await transaction.get(bookingRef);
-            if (!bookingDoc.exists()) throw new Error("Booking not found.");
-            const booking = bookingDoc.data() as Booking;
-            if (booking.status === 'cancelled') throw new Error("Already cancelled.");
-
-            const roomRef = doc(clientDb, 'rooms', booking.roomId);
-            const roomDoc = await transaction.get(roomRef);
-            if (roomDoc.exists()) {
-                const updates: Record<string, any> = {};
-                const dates = eachDayOfInterval({ start: new Date(booking.checkIn), end: new Date(booking.checkOut) });
-                for (const day of dates.slice(0, -1)) {
-                    const ds = format(day, 'yyyy-MM-dd');
-                    if ((roomDoc.data()?.booked?.[ds] || 0) > 0) updates[`booked.${ds}`] = increment(-1);
-                }
-                if (Object.keys(updates).length > 0) transaction.update(roomRef, updates);
-            }
-            transaction.update(bookingRef, { status: 'cancelled' });
-        });
-
-        revalidatePath('/bookings');
-        revalidatePath('/admin');
-    } catch (e: any) {
-        throw new Error(e.message);
-    }
-}
-
-export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
-    const messagesRef = collection(clientDb, 'messages');
-    await addDoc(messagesRef, { ...messageData, sentAt: new Date().toISOString(), isRead: false });
-    revalidatePath('/admin');
-}
-
-export async function getMessages(): Promise<Message[]> {
-    try {
-        const messagesRef = collection(clientDb, 'messages');
-        const snapshot = await getDocs(messagesRef);
-        return snapshot.docs
-            .map(d => ({ id: d.id, ...d.data() }) as Message[])
-            .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-    } catch (e) {
-        return [];
-    }
-}
-
-// PRIVILEGED OPERATIONS (Require Admin SDK)
 export async function getAllUsers(): Promise<UserData[]> {
-    const auth = getAuthAdmin();
-    if (!auth) return [];
+    const authAdmin = getAuthAdmin();
+    if (!authAdmin) {
+        console.warn("getAllUsers requested but Admin SDK not configured.");
+        return [];
+    }
     try {
-        const userRecords = await auth.listUsers();
+        const userRecords = await authAdmin.listUsers();
         return userRecords.users.map(user => ({
             uid: user.uid,
             email: user.email || null,
@@ -299,16 +163,9 @@ export async function getAllUsers(): Promise<UserData[]> {
             role: (user.customClaims?.role as UserRole) || undefined,
         }));
     } catch (e) {
-        console.error("Auth error:", e);
+        console.error("Admin SDK Auth error:", e);
         return [];
     }
-}
-
-export async function setUserRole(uid: string, role: UserRole | null) {
-    const auth = getAuthAdmin();
-    if (!auth) throw new Error("Auth service unavailable.");
-    await auth.setCustomUserClaims(uid, { role });
-    revalidatePath('/admin');
 }
 
 export async function getAnalyticsData(): Promise<AnalyticsData> {
@@ -341,7 +198,40 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
     }
 }
 
-// EXTERNAL SERVICES
+/**
+ * Generic Fetchers (Resilient)
+ */
+
+export async function getAllBookings(): Promise<Booking[]> {
+    try {
+        const bookingsRef = collection(clientDb, 'bookings');
+        const snapshot = await getDocs(bookingsRef);
+        return snapshot.docs
+            .map(d => ({ id: d.id, ...d.data() }) as Booking)
+            .sort((a, b) => new Date(b.bookedOn).getTime() - new Date(a.bookedOn).getTime());
+    } catch (e) {
+        return [];
+    }
+}
+
+export async function getMessages(): Promise<Message[]> {
+    try {
+        const messagesRef = collection(clientDb, 'messages');
+        const snapshot = await getDocs(messagesRef);
+        return snapshot.docs
+            .map(d => ({ id: d.id, ...d.data() }) as Message[])
+            .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+    } catch (e) {
+        return [];
+    }
+}
+
+export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
+    const messagesRef = collection(clientDb, 'messages');
+    await addDoc(messagesRef, { ...messageData, sentAt: new Date().toISOString(), isRead: false });
+    revalidatePath('/admin');
+}
+
 export async function initializePaystackTransaction(email: string, amount: number) {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) throw new Error('Paystack secret key is not configured.');
@@ -367,14 +257,4 @@ export async function verifyPaystackTransaction(reference: string) {
     const data = await res.json();
     if (!data.status) throw new Error(data.message || 'Verification failed.');
     return data.data;
-}
-
-export async function confirmBookingFromWebhook(reference: string) {
-    const bookingRef = doc(clientDb, 'bookings', reference);
-    const snap = await getDoc(bookingRef);
-    if (snap.exists()) {
-        await updateDoc(bookingRef, { status: 'confirmed' });
-        revalidatePath('/bookings');
-        revalidatePath('/admin');
-    }
 }

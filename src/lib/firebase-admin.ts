@@ -24,18 +24,20 @@ function initializeAdmin() {
   }
 
   try {
-    // Aggressive PEM cleaning logic
+    // 1. Clean the key: remove literal quotes if present
     let privateKey = rawKey.trim();
-    
-    // Remove wrapping quotes
-    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
       privateKey = privateKey.slice(1, -1);
     }
 
-    // Standardize newlines
+    // 2. CRITICAL: Replace literal \n strings with actual newline characters
+    // This is the most common cause of "Invalid PEM formatted message" in .env files
     privateKey = privateKey.replace(/\\n/g, '\n');
 
-    // Ensure headers exist correctly
+    // 3. Ensure the key has the correct RSA headers
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
       privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
     }
@@ -51,8 +53,8 @@ function initializeAdmin() {
     adminInitialized = true;
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
-    console.error('Firebase Admin initialization failed safely:', error.message);
-    // We don't re-throw here to prevent the entire server module from failing to load
+    console.error('CRITICAL: Firebase Admin initialization failed:', error.message);
+    // Do not re-throw to allow standard site features to continue via Client SDK
   }
 }
 

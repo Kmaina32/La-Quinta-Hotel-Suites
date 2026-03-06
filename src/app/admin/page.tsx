@@ -78,10 +78,6 @@ function AdminContent() {
         if (activeTab === 'analytics') {
             const data = await getAnalyticsData();
             setAnalyticsData(data);
-            if (!data || (data.totalRevenue === 0 && data.totalBookings === 0 && data.revenueByRoom.length === 0)) {
-                // Only error if data is null (meaning SDK fail), not just empty
-                if (!data) setFetchErrors(p => ({...p, analytics: true}));
-            }
         }
         if (activeTab === 'rooms') setRooms(await getRooms());
         if (activeTab === 'content') {
@@ -92,14 +88,9 @@ function AdminContent() {
         if (activeTab === 'messages') setMessages(await getMessages());
         if (activeTab === 'transactions') setBookings(await getAllBookings());
         if (activeTab === 'settings') setSiteSettings(await getSiteSettings());
-        if (activeTab === 'users') {
-            const data = await getAllUsers();
-            setUsers(data);
-            if (!data || data.length === 0) {
-                if (!data) setFetchErrors(p => ({...p, users: true}));
-            }
-        }
+        if (activeTab === 'users') setUsers(await getAllUsers());
     } catch (error) {
+        console.error(`Failed to fetch data for ${activeTab}:`, error);
         setFetchErrors(prev => ({...prev, [activeTab]: true}));
     } finally {
         setLoading(false);
@@ -185,20 +176,16 @@ function AdminContent() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
        {activeTab === 'analytics' && (
         <div className="space-y-8">
-            {fetchErrors.analytics ? (
-                <ErrorDisplay title="Database Offline" message="Standard SDK failed. Verify your service account in firebase-admin.ts." />
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="rounded-[2rem] border-none bg-primary/5 p-6">
-                        <p className="text-[10px] font-black uppercase text-primary mb-1 tracking-widest">Gross Revenue</p>
-                        <p className="text-2xl font-black">KES {analyticsData?.totalRevenue.toLocaleString()}</p>
-                    </Card>
-                    <Card className="rounded-[2rem] border-none bg-blue-500/5 p-6">
-                        <p className="text-[10px] font-black uppercase text-blue-600 mb-1 tracking-widest">Total Bookings</p>
-                        <p className="text-2xl font-black">{analyticsData?.totalBookings}</p>
-                    </Card>
-                </div>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="rounded-[2rem] border-none bg-primary/5 p-6">
+                    <p className="text-[10px] font-black uppercase text-primary mb-1 tracking-widest">Gross Revenue</p>
+                    <p className="text-2xl font-black">KES {analyticsData?.totalRevenue.toLocaleString()}</p>
+                </Card>
+                <Card className="rounded-[2rem] border-none bg-blue-500/5 p-6">
+                    <p className="text-[10px] font-black uppercase text-blue-600 mb-1 tracking-widest">Total Bookings</p>
+                    <p className="text-2xl font-black">{analyticsData?.totalBookings}</p>
+                </Card>
+            </div>
         </div>
       )}
 
@@ -365,27 +352,23 @@ function AdminContent() {
       {activeTab === 'users' && (
         <div className="space-y-6">
             <h2 className="text-2xl font-black tracking-tighter px-2">DIRECTORY</h2>
-            {fetchErrors.users ? (
-                <ErrorDisplay title="Access Restricted" message="User management requires standard Firebase initialization. Check your credentials." />
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {users.map(user => (
-                        <Card key={user.uid} className="rounded-[2rem] p-6 border-none bg-muted/10 hover:bg-muted/20 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-12 w-12 border-2 border-background shadow-md">
-                                    <AvatarImage src={user.photoURL || ''} />
-                                    <AvatarFallback className="font-black bg-primary/10 text-primary">{user.displayName?.[0] || user.email?.[0]}</AvatarFallback>
-                                </Avatar>
-                                <div className="overflow-hidden">
-                                    <p className="font-black text-sm truncate">{user.displayName || 'Anonymous'}</p>
-                                    <p className="text-[10px] opacity-50 truncate">{user.email}</p>
-                                    <div className="mt-1"><span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">{user.role || 'Guest'}</span></div>
-                                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {users.map(user => (
+                    <Card key={user.uid} className="rounded-[2rem] p-6 border-none bg-muted/10 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12 border-2 border-background shadow-md">
+                                <AvatarImage src={user.photoURL || ''} />
+                                <AvatarFallback className="font-black bg-primary/10 text-primary">{user.displayName?.[0] || user.email?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="overflow-hidden">
+                                <p className="font-black text-sm truncate">{user.displayName || 'Anonymous'}</p>
+                                <p className="text-[10px] opacity-50 truncate">{user.email}</p>
+                                <div className="mt-1"><span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">{user.role || 'Guest'}</span></div>
                             </div>
-                        </Card>
-                    ))}
-                </div>
-            )}
+                        </div>
+                    </Card>
+                ))}
+            </div>
         </div>
       )}
     </div>

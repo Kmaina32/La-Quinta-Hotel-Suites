@@ -1,35 +1,19 @@
 
 'use server';
 
-import { getAuthAdmin, getStorage, getDb as getAdminDb } from '@/lib/firebase-admin';
-import { db as clientDb } from '@/lib/firebase';
-import { 
-    collection, 
-    getDocs, 
-    getDoc, 
-    doc, 
-    query, 
-    orderBy, 
-    where, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc, 
-    setDoc,
-    increment,
-} from 'firebase/firestore';
+import { getAuthAdmin, getStorage, getDb } from '@/lib/firebase-admin';
 import type { Room, EstablishmentImage, Booking, Message, UserData, SiteSettings, UserRole, AnalyticsData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { format, eachDayOfInterval, eachMonthOfInterval, addDays } from 'date-fns';
 
 /**
- * Public Data Fetching (Uses Client SDK for max reliability)
+ * Data Fetching (Uses Admin SDK for maximum reliability on Server)
  */
 
 export async function getRooms(): Promise<Room[]> {
     try {
-        const roomsRef = collection(clientDb, 'rooms');
-        const q = query(roomsRef, orderBy('price'));
-        const snapshot = await getDocs(q);
+        const db = getDb();
+        const snapshot = await db.collection('rooms').orderBy('price').get();
         if (snapshot.empty) return [];
         return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Room[];
     } catch (error) {
@@ -40,10 +24,10 @@ export async function getRooms(): Promise<Room[]> {
 
 export async function getRoom(id: string): Promise<Room | null> {
     try {
-        const docRef = doc(clientDb, 'rooms', id);
-        const snapshot = await getDoc(docRef);
-        if (!snapshot.exists()) return null;
-        return { id: snapshot.id, ...snapshot.data() } as Room;
+        const db = getDb();
+        const doc = await db.collection('rooms').doc(id).get();
+        if (!doc.exists) return null;
+        return { id: doc.id, ...doc.data() } as Room;
     } catch (error) {
         console.error(`Error fetching room ${id}:`, error);
         return null;
@@ -52,12 +36,11 @@ export async function getRoom(id: string): Promise<Room | null> {
 
 export async function getEstablishmentImages(): Promise<{ heroImage: EstablishmentImage | null; galleryImages: EstablishmentImage[] }> {
     try {
-        const estRef = collection(clientDb, 'establishment');
-        const heroRef = doc(clientDb, 'establishment', 'hero-image');
-        const heroSnap = await getDoc(heroRef);
-        const heroImage = heroSnap.exists() ? { id: heroSnap.id, ...heroSnap.data() } as EstablishmentImage : null;
+        const db = getDb();
+        const heroDoc = await db.collection('establishment').doc('hero-image').get();
+        const heroImage = heroDoc.exists ? { id: heroDoc.id, ...heroDoc.data() } as EstablishmentImage : null;
 
-        const snapshot = await getDocs(estRef);
+        const snapshot = await db.collection('establishment').get();
         const galleryImages = snapshot.docs
             .map(d => ({ id: d.id, ...d.data() } as EstablishmentImage))
             .filter(img => img.id !== 'hero-image' && img.id !== 'site-settings' && img.src !== '');
@@ -71,9 +54,9 @@ export async function getEstablishmentImages(): Promise<{ heroImage: Establishme
 
 export async function getSiteSettings(): Promise<SiteSettings> {
     try {
-        const settingsRef = doc(clientDb, 'establishment', 'site-settings');
-        const snapshot = await getDoc(settingsRef);
-        return (snapshot.exists() ? snapshot.data() : { activeTheme: 'default' }) as SiteSettings;
+        const db = getDb();
+        const settingsDoc = await db.collection('establishment').doc('site-settings').get();
+        return (settingsDoc.exists ? settingsDoc.data() : { activeTheme: 'default' }) as SiteSettings;
     } catch (error) {
         return { activeTheme: 'default' };
     }
@@ -100,17 +83,18 @@ export async function uploadImage(formData: FormData): Promise<string> {
             metadata: { contentType: file.type },
         });
 
+        // Use the standardized public URL format for Firebase Storage
         return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
     } catch (error: any) {
         console.error('Upload failed:', error);
-        throw new Error('Image upload failed. Check your Firebase Storage permissions.');
+        throw new Error('Image upload failed. Ensure your Storage bucket is public.');
     }
 }
 
 export async function updateRoomDetails(id: string, room: Partial<Room>) {
     try {
-        const docRef = doc(clientDb, 'rooms', id);
-        await updateDoc(docRef, room);
+        const db = getDb();
+        await db.collection('rooms').doc(id).update(room);
         revalidatePath('/');
         revalidatePath(`/rooms/${id}`);
         revalidatePath('/admin');
@@ -122,9 +106,9 @@ export async function updateRoomDetails(id: string, room: Partial<Room>) {
 
 export async function addRoom(newRoom: Omit<Room, 'id' | 'booked'>) {
     try {
-        const roomsRef = collection(clientDb, 'rooms');
-        const docRef = await addDoc(roomsRef, { ...newRoom, booked: {} });
-        await updateDoc(docRef, { id: docRef.id });
+        const db = getDb();
+        const docRef = await db.collection('rooms').add({ ...newRoom, booked: {} });
+        await docRef.update({ id: docRef.id });
         revalidatePath('/');
         revalidatePath('/admin');
         return docRef.id;
@@ -136,8 +120,8 @@ export async function addRoom(newRoom: Omit<Room, 'id' | 'booked'>) {
 
 export async function deleteRoom(id: string) {
     try {
-        const docRef = doc(clientDb, 'rooms', id);
-        await deleteDoc(docRef);
+        const db = getDb();
+        await db.collection('rooms').doc(id).delete();
         revalidatePath('/');
         revalidatePath('/admin');
     } catch (e) {
@@ -147,20 +131,14 @@ export async function deleteRoom(id: string) {
 }
 
 export async function updateHeroImage(src: string) {
-    const heroRef = doc(clientDb, 'establishment', 'hero-image');
-    await setDoc(heroRef, { src, alt: 'Hero Image', 'data-ai-hint': 'hotel exterior' }, { merge: true });
-    revalidatePath('/');
-}
-
-export async function updateGalleryImage(id: string, src: string) {
-    const imgRef = doc(clientDb, 'establishment', id);
-    await updateDoc(imgRef, { src });
+    const db = getDb();
+    await db.collection('establishment').doc('hero-image').set({ src, alt: 'Hero Image', 'data-ai-hint': 'hotel exterior' }, { merge: true });
     revalidatePath('/');
 }
 
 export async function updateSiteSettings(settings: SiteSettings) {
-    const settingsRef = doc(clientDb, 'establishment', 'site-settings');
-    await setDoc(settingsRef, settings, { merge: true });
+    const db = getDb();
+    await db.collection('establishment').doc('site-settings').set(settings, { merge: true });
     revalidatePath('/', 'layout');
 }
 
@@ -169,27 +147,29 @@ export async function updateSiteSettings(settings: SiteSettings) {
  */
 export async function createBooking(bookingData: any, isReservation: boolean) {
     try {
-        const bookingsRef = collection(clientDb, 'bookings');
+        const db = getDb();
         const status = isReservation ? 'pending' : 'confirmed';
         
-        const docRef = await addDoc(bookingsRef, {
+        const docRef = await db.collection('bookings').add({
             ...bookingData,
             status,
             bookedOn: new Date().toISOString(),
         });
 
-        const roomRef = doc(clientDb, 'rooms', bookingData.roomId);
         const checkIn = new Date(bookingData.checkIn);
         const checkOut = new Date(bookingData.checkOut);
         const dates = eachDayOfInterval({ start: checkIn, end: addDays(checkOut, -1) });
 
-        const updates: any = {};
+        const roomRef = db.collection('rooms').doc(bookingData.roomId);
+        const roomDoc = await roomRef.get();
+        const currentBooked = roomDoc.exists ? (roomDoc.data()?.booked || {}) : {};
+
         dates.forEach(d => {
             const dateStr = format(d, 'yyyy-MM-dd');
-            updates[`booked.${dateStr}`] = increment(1);
+            currentBooked[dateStr] = (currentBooked[dateStr] || 0) + 1;
         });
 
-        await updateDoc(roomRef, updates);
+        await roomRef.update({ booked: currentBooked });
 
         revalidatePath('/admin');
         revalidatePath('/bookings');
@@ -200,23 +180,18 @@ export async function createBooking(bookingData: any, isReservation: boolean) {
     }
 }
 
-export async function confirmBookingFromWebhook(reference: string) {
+export async function getBookingsForUser(userId: string): Promise<Booking[]> {
     try {
-        const bookingsRef = collection(clientDb, 'bookings');
-        const q = query(bookingsRef, where('transactionRef', '==', reference));
-        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-            const bookingDoc = snapshot.docs[0];
-            await updateDoc(bookingDoc.ref, { status: 'confirmed' });
-        }
+        const db = getDb();
+        const snapshot = await db.collection('bookings').where('userId', '==', userId).get();
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Booking);
     } catch (e) {
-        console.error("Webhook confirmation failed:", e);
+        return [];
     }
 }
 
 /**
- * Admin Features (Require Service Account)
+ * Admin SDK Required Features
  */
 
 export async function getAllUsers(): Promise<UserData[]> {
@@ -269,8 +244,8 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
 
 export async function getAllBookings(): Promise<Booking[]> {
     try {
-        const bookingsRef = collection(clientDb, 'bookings');
-        const snapshot = await getDocs(bookingsRef);
+        const db = getDb();
+        const snapshot = await db.collection('bookings').get();
         return snapshot.docs
             .map(d => ({ id: d.id, ...d.data() }) as Booking)
             .sort((a, b) => new Date(b.bookedOn).getTime() - new Date(a.bookedOn).getTime());
@@ -281,8 +256,8 @@ export async function getAllBookings(): Promise<Booking[]> {
 
 export async function getMessages(): Promise<Message[]> {
     try {
-        const messagesRef = collection(clientDb, 'messages');
-        const snapshot = await getDocs(messagesRef);
+        const db = getDb();
+        const snapshot = await db.collection('messages').get();
         return snapshot.docs
             .map(d => ({ id: d.id, ...d.data() }) as Message)
             .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
@@ -292,8 +267,21 @@ export async function getMessages(): Promise<Message[]> {
 }
 
 export async function saveMessage(messageData: Omit<Message, 'id' | 'sentAt' | 'isRead'>): Promise<void> {
-    const messagesRef = collection(clientDb, 'messages');
-    await addDoc(messagesRef, { ...messageData, sentAt: new Date().toISOString(), isRead: false });
+    const db = getDb();
+    await db.collection('messages').add({ ...messageData, sentAt: new Date().toISOString(), isRead: false });
+}
+
+export async function confirmBookingFromWebhook(reference: string) {
+    try {
+        const db = getDb();
+        const snapshot = await db.collection('bookings').where('transactionRef', '==', reference).get();
+        if (!snapshot.empty) {
+            const bookingDoc = snapshot.docs[0];
+            await bookingDoc.ref.update({ status: 'confirmed' });
+        }
+    } catch (e) {
+        console.error("Webhook confirmation failed:", e);
+    }
 }
 
 export async function initializePaystackTransaction(email: string, amount: number) {

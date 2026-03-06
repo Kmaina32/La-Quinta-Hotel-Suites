@@ -78,8 +78,9 @@ function AdminContent() {
         if (activeTab === 'analytics') {
             const data = await getAnalyticsData();
             setAnalyticsData(data);
-            if (!data || (data.totalRevenue === 0 && data.totalBookings === 0)) {
-                setFetchErrors(p => ({...p, analytics: true}));
+            if (!data || (data.totalRevenue === 0 && data.totalBookings === 0 && data.revenueByRoom.length === 0)) {
+                // Only error if data is null (meaning SDK fail), not just empty
+                if (!data) setFetchErrors(p => ({...p, analytics: true}));
             }
         }
         if (activeTab === 'rooms') setRooms(await getRooms());
@@ -94,7 +95,9 @@ function AdminContent() {
         if (activeTab === 'users') {
             const data = await getAllUsers();
             setUsers(data);
-            if (!data || data.length === 0) setFetchErrors(p => ({...p, users: true}));
+            if (!data || data.length === 0) {
+                if (!data) setFetchErrors(p => ({...p, users: true}));
+            }
         }
     } catch (error) {
         setFetchErrors(prev => ({...prev, [activeTab]: true}));
@@ -183,7 +186,7 @@ function AdminContent() {
        {activeTab === 'analytics' && (
         <div className="space-y-8">
             {fetchErrors.analytics ? (
-                <ErrorDisplay title="Database Offline" message="Connect your FIREBASE_PRIVATE_KEY to view revenue and booking metrics." />
+                <ErrorDisplay title="Database Offline" message="Standard SDK failed. Verify your service account in firebase-admin.ts." />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Card className="rounded-[2rem] border-none bg-primary/5 p-6">
@@ -363,7 +366,7 @@ function AdminContent() {
         <div className="space-y-6">
             <h2 className="text-2xl font-black tracking-tighter px-2">DIRECTORY</h2>
             {fetchErrors.users ? (
-                <ErrorDisplay title="Access Restricted" message="User management requires a valid FIREBASE_PRIVATE_KEY in your environment variables." />
+                <ErrorDisplay title="Access Restricted" message="User management requires standard Firebase initialization. Check your credentials." />
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {users.map(user => (
